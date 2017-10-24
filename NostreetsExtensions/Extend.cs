@@ -18,8 +18,9 @@ using System.Net.Http.Headers;
 using System.Linq.Expressions;
 using System.Collections.Specialized;
 using System.Web;
-using Unity;
 using NostreetsExtensions.Utilities;
+using System.Text;
+using Unity;
 
 namespace NostreetsExtensions
 {
@@ -643,25 +644,46 @@ namespace NostreetsExtensions
 
         public static List<Tuple<TAttribute, object>> GetObjectsWithAttribute<TAttribute>(this List<Tuple<TAttribute, object>> obj, ClassTypes types = ClassTypes.Any) where TAttribute : Attribute
         {
-            return AttributeScanner<TAttribute>.ScanAssembliesForAttributes(types);
+            try
+            {
+                return AttributeScanner<TAttribute>.ScanAssembliesForAttributes(types);
+            }
+            catch (ReflectionTypeLoadException ex)
+            {
+                throw new Exception(ex.CatchReflectionTypeLoadException());
+            }
         }
 
         public static List<TAttribute> GetAttributes<TAttribute>(this List<TAttribute> obj) where TAttribute : Attribute
         {
-            List<TAttribute> result = new List<TAttribute>();
+            try
+            {
+                List<TAttribute> result = new List<TAttribute>();
 
-            foreach (var item in AttributeScanner<TAttribute>.ScanAssembliesForAttributes()) { result.Add(item.Item1); }
+                foreach (var item in AttributeScanner<TAttribute>.ScanAssembliesForAttributes()) { result.Add(item.Item1); }
 
-            return result;
+                return result;
+            }
+            catch (ReflectionTypeLoadException ex)
+            {
+                throw new Exception(ex.CatchReflectionTypeLoadException());
+            }
         }
 
         public static List<object> GetObjectsWithAttribute<TAttribute>(this List<object> obj) where TAttribute : Attribute
         {
-            List<object> result = new List<object>();
+            try
+            {
+                List<object> result = new List<object>();
 
-            foreach (var item in AttributeScanner<TAttribute>.ScanAssembliesForAttributes()) { result.Add(item.Item2); }
+                foreach (var item in AttributeScanner<TAttribute>.ScanAssembliesForAttributes()) { result.Add(item.Item2); }
 
-            return result;
+                return result;
+            }
+            catch (ReflectionTypeLoadException ex)
+            {
+                throw new Exception(ex.CatchReflectionTypeLoadException());
+            }
         }
 
         public static object Instantiate(this Type type)
@@ -687,8 +709,38 @@ namespace NostreetsExtensions
 
         public static object ScanAssembliesForObject(this string nameToCheckFor, params string[] assembliesToSkip)
         {
-            object result = AssemblyScanner.ScanAssembliesForObject(nameToCheckFor, assembliesToSkip);
-            return result;
+            try
+            {
+                object result = AssemblyScanner.ScanAssembliesForObject(nameToCheckFor, assembliesToSkip);
+
+                return result;
+            }
+            catch (ReflectionTypeLoadException ex)
+            {
+                throw new Exception(ex.CatchReflectionTypeLoadException());
+            }
+        }
+
+        public static string CatchReflectionTypeLoadException(this ReflectionTypeLoadException ex)
+        {
+            StringBuilder sb = new StringBuilder();
+            foreach (Exception exSub in ex.LoaderExceptions)
+            {
+                sb.AppendLine(exSub.Message);
+                FileNotFoundException exFileNotFound = exSub as FileNotFoundException;
+                if (exFileNotFound != null)
+                {
+                    if (!string.IsNullOrEmpty(exFileNotFound.FusionLog))
+                    {
+                        sb.AppendLine("Fusion Log:");
+                        sb.AppendLine(exFileNotFound.FusionLog);
+                    }
+                }
+                sb.AppendLine();
+            }
+
+            string errorMessage = sb.ToString();
+            return errorMessage;
         }
     }
 }
