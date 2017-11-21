@@ -1,5 +1,4 @@
 ﻿using Newtonsoft.Json;
-using NostreetsORM;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -20,7 +19,10 @@ using System.Collections.Specialized;
 using System.Web;
 using NostreetsExtensions.Utilities;
 using System.Text;
-using Unity;
+using Microsoft.Practices.Unity;
+using System.Web.Http;
+using Newtonsoft.Json.Serialization;
+using NostreetsExtensions.Helpers;
 
 namespace NostreetsExtensions
 {
@@ -72,6 +74,22 @@ namespace NostreetsExtensions
         {
             if (format != null) { return DateTime.ParseExact(obj, format, CultureInfo.InvariantCulture); }
             else { return Convert.ToDateTime(obj); }
+        }
+
+        public static DateTime StartOfWeek(this DateTime dt)
+        {
+            DayOfWeek firstDay = CultureInfo.CurrentCulture.DateTimeFormat.FirstDayOfWeek;
+            DateTime firstDayInWeek = dt.Date;
+            while (firstDayInWeek.DayOfWeek != firstDay)
+                firstDayInWeek = firstDayInWeek.AddDays(-1);
+
+            return firstDayInWeek;
+        }
+
+        public static DateTime EndOfWeek(this DateTime dt)
+        {
+            DateTime start = StartOfWeek(dt);
+            return start.AddDays(6);
         }
 
         public static object HitEndpoint(this BaseService obj, string url, string method = "GET", object data = null, string contentType = "application/json", Dictionary<string, string> headers = null)
@@ -390,42 +408,14 @@ namespace NostreetsExtensions
             return result;
         }
 
-        public static void SetCookie(this HttpRequestHeaders headers, string name, string value)
-        {
-            string[] temp = null;
-            string result = null;
-            if (headers.Contains("Cookie"))
-            {
-                temp = headers.GetValues("Cookie").ToArray();
-                headers.Remove("Cookie");
-            }
-
-            foreach (string cookie in temp) { if (!cookie.Contains(name)) { string[] coll = cookie.Split('='); result += String.Format("{0}={1}; ", coll[0], coll[1]); } }
-            result += name + '=' + value;
-
-
-            headers.Add("Cookie", result);
-        }
-
-        public static void SetCookie(this HttpRequestMessage request, ref HttpResponseMessage response, string cookieName, string value, DateTimeOffset? expires = null)
+        public static void SetCookie(this HttpContext context, string cookieName, string value, DateTime? expires = null)
         {
             try
             {
-                CookieHeaderValue storedCookie = request.Headers.GetCookies(cookieName).FirstOrDefault();
-                request.Headers.SetCookie(cookieName, value);
+                HttpCookie cookie = new HttpCookie(cookieName, value);
+                cookie.Expires = (expires != null) ? expires.Value : default(DateTime);
 
-                //if (storedCookie != null)
-                //{
-                //   // storedCookie.Expires = expires;
-                //    //storedCookie[cookieName].Value = value;
-                //}
-                //else
-                //{
-                //    storedCookie = new CookieHeaderValue(cookieName, value);
-                //    storedCookie.Expires = expires;
-                //}
-
-                //response.Headers.AddCookies(new CookieHeaderValue[] { storedCookie });
+                context.Response.Cookies.Add(cookie);
 
             }
             catch (Exception ex)
@@ -435,27 +425,26 @@ namespace NostreetsExtensions
 
         }
 
-        public static void SetCookie(this HttpRequestMessage request, ref HttpResponseMessage response, string cookieName, Dictionary<string, string> values, DateTimeOffset? expires = null)
+        public static void SetCookie(this HttpContext context, string cookieName, Dictionary<string, string> values, DateTime? expires = null)
         {
             try
             {
-                CookieHeaderValue storedCookie = request.Headers.GetCookies(cookieName).FirstOrDefault();
-                if (storedCookie != null)
+                string value = null;
+                if (values != null && values.Count > 0)
                 {
-                    storedCookie.Expires = expires;
-
-                    foreach (var item in values)
+                    int i = 0;
+                    foreach (KeyValuePair<string, string> val in values)
                     {
-                        storedCookie[item.Key].Value = item.Value;
+                        value += String.Format((i == values.Count - 1) ? "{0}={1}" : "{0}={1}, ", val.Key, val.Value); i++;
                     }
                 }
-                else
-                {
-                    CookieHeaderValue currentCookie = new CookieHeaderValue(cookieName, values.ToNameValueCollection());
-                    currentCookie.Expires = expires;
 
-                    response.Headers.AddCookies(new CookieHeaderValue[] { currentCookie });
-                }
+                HttpCookie cookie = new HttpCookie(cookieName, value);
+                cookie.Expires = (expires != null) ? expires.Value : default(DateTime);
+
+
+                context.Response.Cookies.Add(cookie);
+
             }
             catch (Exception ex)
             {
@@ -642,48 +631,99 @@ namespace NostreetsExtensions
             return (MethodInfo)fullMethodName.ScanAssembliesForObject();
         }
 
-        public static List<Tuple<TAttribute, object>> GetObjectsWithAttribute<TAttribute>(this List<Tuple<TAttribute, object>> obj, ClassTypes types = ClassTypes.Any) where TAttribute : Attribute
+        public static List<Tuple<TAttribute, object>> GetObjectsWithAttribute<TAttribute>(this List<Tuple<TAttribute, object>> obj, ClassTypes types) where TAttribute : Attribute
         {
-            try
-            {
-                return AttributeScanner<TAttribute>.ScanAssembliesForAttributes(types);
-            }
-            catch (ReflectionTypeLoadException ex)
-            {
-                throw new Exception(ex.CatchReflectionTypeLoadException());
-            }
+            return AttributeScanner<TAttribute>.ScanAssembliesForAttributes(types);
         }
 
-        public static List<TAttribute> GetAttributes<TAttribute>(this List<TAttribute> obj) where TAttribute : Attribute
+        public static List<object> GetObjectsByAttribute<TAttribute>(this List<TAttribute> obj, ClassTypes section, Type type = null) where TAttribute : Attribute
         {
-            try
-            {
-                List<TAttribute> result = new List<TAttribute>();
+            List<object> result = new List<object>();
 
-                foreach (var item in AttributeScanner<TAttribute>.ScanAssembliesForAttributes()) { result.Add(item.Item1); }
+            foreach (var item in AttributeScanner<TAttribute>.ScanAssembliesForAttributes(section, type)) { result.Add(item.Item2); }
 
-                return result;
-            }
-            catch (ReflectionTypeLoadException ex)
-            {
-                throw new Exception(ex.CatchReflectionTypeLoadException());
-            }
+            return result;
         }
 
-        public static List<object> GetObjectsWithAttribute<TAttribute>(this List<object> obj) where TAttribute : Attribute
+        public static List<object> GetObjectsByAttribute<TAttribute>(this List<object> obj, ClassTypes section, Type type = null) where TAttribute : Attribute
         {
-            try
-            {
-                List<object> result = new List<object>();
+            List<object> result = new List<object>();
 
-                foreach (var item in AttributeScanner<TAttribute>.ScanAssembliesForAttributes()) { result.Add(item.Item2); }
+            foreach (var item in AttributeScanner<TAttribute>.ScanAssembliesForAttributes(section, type)) { result.Add(item.Item2); }
 
-                return result;
-            }
-            catch (ReflectionTypeLoadException ex)
-            {
-                throw new Exception(ex.CatchReflectionTypeLoadException());
-            }
+            return result;
+        }
+
+        public static List<MethodInfo> GetMethodsByAttribute<TAttribute>(this List<TAttribute> obj, Type type = null) where TAttribute : Attribute
+        {
+            List<MethodInfo> result = new List<MethodInfo>();
+
+            foreach (var item in AttributeScanner<TAttribute>.ScanAssembliesForAttributes(ClassTypes.Methods, type)) { result.Add((MethodInfo)item.Item2); }
+
+            return result;
+        }
+
+        public static List<MethodInfo> GetMethodsByAttribute<TAttribute>(this List<MethodInfo> obj, Type type = null) where TAttribute : Attribute
+        {
+            List<MethodInfo> result = new List<MethodInfo>();
+
+            foreach (var item in AttributeScanner<TAttribute>.ScanAssembliesForAttributes(ClassTypes.Methods, type)) { result.Add((MethodInfo)item.Item2); }
+
+            return result;
+        }
+
+        public static List<Type> GetTypesByAttribute<TAttribute>(this List<TAttribute> obj, Type type = null) where TAttribute : Attribute
+        {
+            List<Type> result = new List<Type>();
+
+            foreach (var item in AttributeScanner<TAttribute>.ScanAssembliesForAttributes(ClassTypes.Type, type)) { result.Add((Type)item.Item2); }
+
+            return result;
+        }
+
+        public static List<Type> GetTypesByAttribute<TAttribute>(this List<Type> obj, Type type = null) where TAttribute : Attribute
+        {
+            List<Type> result = new List<Type>();
+
+            foreach (var item in AttributeScanner<TAttribute>.ScanAssembliesForAttributes(ClassTypes.Type, type)) { result.Add((Type)item.Item2); }
+
+            return result;
+        }
+
+        public static List<Assembly> GetAssembliesByAttribute<TAttribute>(this List<TAttribute> obj) where TAttribute : Attribute
+        {
+            List<Assembly> result = new List<Assembly>();
+
+            foreach (var item in AttributeScanner<TAttribute>.ScanAssembliesForAttributes(ClassTypes.Assembly)) { result.Add((Assembly)item.Item2); }
+
+            return result;
+        }
+
+        public static List<Assembly> GetAssembliesByAttribute<TAttribute>(this List<Assembly> obj) where TAttribute : Attribute
+        {
+            List<Assembly> result = new List<Assembly>();
+
+            foreach (var item in AttributeScanner<TAttribute>.ScanAssembliesForAttributes(ClassTypes.Assembly)) { result.Add((Assembly)item.Item2); }
+
+            return result;
+        }
+
+        public static List<PropertyInfo> GetPropertiesByAttribute<TAttribute>(this List<TAttribute> obj, Type type = null) where TAttribute : Attribute
+        {
+            List<PropertyInfo> result = new List<PropertyInfo>();
+
+            foreach (var item in AttributeScanner<TAttribute>.ScanAssembliesForAttributes(ClassTypes.Properties, type)) { result.Add((PropertyInfo)item.Item2); }
+
+            return result;
+        }
+
+        public static List<PropertyInfo> GetPropertiesByAttribute<TAttribute>(this List<PropertyInfo> obj, Type type = null) where TAttribute : Attribute
+        {
+            List<PropertyInfo> result = new List<PropertyInfo>();
+
+            foreach (var item in AttributeScanner<TAttribute>.ScanAssembliesForAttributes(ClassTypes.Properties, type)) { result.Add((PropertyInfo)item.Item2); }
+
+            return result;
         }
 
         public static object Instantiate(this Type type)
@@ -707,18 +747,67 @@ namespace NostreetsExtensions
             return containter.Resolve(type);
         }
 
-        public static object ScanAssembliesForObject(this string nameToCheckFor, params string[] assembliesToSkip)
+        public static object ScanAssembliesForObject(this string nameToCheckFor, string assemblyToLookFor)
         {
-            try
-            {
-                object result = AssemblyScanner.ScanAssembliesForObject(nameToCheckFor, assembliesToSkip);
+            object result = AssemblyScanner.ScanAssembliesForObject(nameToCheckFor, new[] { assemblyToLookFor });
+            return result;
+        }
 
-                return result;
-            }
-            catch (ReflectionTypeLoadException ex)
+        public static object ScanAssembliesForObject(this string nameToCheckFor, params string[] assembliesToLookFor)
+        {
+            object result = AssemblyScanner.ScanAssembliesForObject(nameToCheckFor, assembliesToLookFor);
+            return result;
+        }
+
+        public static object ScanAssembliesForObject(this string nameToCheckFor, string[] assembliesToSkip, string[] assembliesToLookFor)
+        {
+            object result = AssemblyScanner.ScanAssembliesForObject(nameToCheckFor, assembliesToLookFor, assembliesToSkip);
+            return result;
+        }
+
+        public static string ExtendPath(this string path, string extension)
+        {
+            return Path.GetFullPath(Path.Combine(path, extension));
+        }
+
+        public static string StepIntoDirectory(this string path, string pathExt, bool recursively = false)
+        {
+
+            do
             {
-                throw new Exception(ex.CatchReflectionTypeLoadException());
+                string[] subDirectories = Directory.GetDirectories(path);
+                foreach (string dir in subDirectories)
+                {
+                    if (dir.Contains(pathExt)) { return dir; }
+                }
+
+                if (recursively && subDirectories.Length > 0)
+                {
+                    foreach (string dir in subDirectories)
+                    {
+                        dir.StepIntoDirectory(pathExt, true);
+                    }
+                }
+                else
+                {
+                    recursively = false;
+                }
             }
+            while (recursively);
+
+            return null;
+        }
+
+        public static string StepOutOfDirectory(this string path, int foldersBack = 1)
+        {
+            string modifiedPath = path;
+
+            for (var i = 0; i < foldersBack; i++)
+            {
+                modifiedPath = Directory.GetParent(modifiedPath).FullName;
+            }
+
+            return modifiedPath;
         }
 
         public static string CatchReflectionTypeLoadException(this ReflectionTypeLoadException ex)
@@ -742,5 +831,79 @@ namespace NostreetsExtensions
             string errorMessage = sb.ToString();
             return errorMessage;
         }
+
+        public static bool Contains(this IEnumerable<string> list, params string[] values)
+        {
+            bool result = false;
+            foreach (string item in list)
+            {
+                result = (values.Any(a => a == item)) ? true : false;
+            }
+
+            return result;
+        }
+
+        public static Assembly GetAssembly(this AppDomain assembly, string assemblyName)
+        {
+            Assembly result = null;
+
+            foreach (Assembly assemble in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                if (assemble.FullName.Contains(assemblyName) || assemble.GetName().Name == assemblyName) { result = assemble; break; }
+            }
+
+            return result;
+        }
+
+        public static void CreateResponse(this HttpApplication app, HttpStatusCode statusCode, object obj, string contentType = "application/json", IContractResolver resolver = null, Encoding encoding = null)
+        {
+            if (encoding == null) { encoding = Encoding.UTF8; }
+            if (resolver == null) { resolver = new CamelCasePropertyNamesContractResolver(); }
+
+            JsonSerializerSettings settings = new JsonSerializerSettings()
+            {
+                ContractResolver = resolver
+            };
+
+            app.Response.TrySkipIisCustomErrors = true;
+
+
+            string jsonObj = JsonConvert.SerializeObject(obj, settings);
+            HttpResponseMessage response = new HttpResponseMessage(statusCode)
+            {
+                Content = new StringContent(jsonObj, encoding, contentType)
+            };
+
+            app.Response.Clear();
+
+            app.Response.ContentType = contentType;
+            app.Response.StatusCode = (int)statusCode;
+            app.Response.Write(jsonObj);
+
+            app.Response.End();
+
+        }
+
+        public static bool DirectoryExists(this string path)
+        {
+            if (path.IndexOfAny(Path.GetInvalidPathChars()) != -1) { return false; }
+
+            DirectoryInfo directoryInfo = new DirectoryInfo(Path.GetFullPath(path));
+            if (!directoryInfo.Exists) { return false; }
+
+
+            return true;
+        }
+
+        public static string Timestamp(this DateTime time)
+        {
+            return time.ToString("hh.mm.ss.tt_MMM-yy");
+        }
+
+        public static string FormatString(this string template, params string[] txt)
+        {
+            return String.Format(template, txt);
+        }
+
     }
 }
