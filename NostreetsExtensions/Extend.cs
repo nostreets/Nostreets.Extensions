@@ -20,9 +20,10 @@ using System.Web;
 using NostreetsExtensions.Utilities;
 using System.Text;
 using Microsoft.Practices.Unity;
-using System.Web.Http;
 using Newtonsoft.Json.Serialization;
 using NostreetsExtensions.Helpers;
+using System.Data.Entity;
+using System.Data.Entity.Infrastructure;
 
 namespace NostreetsExtensions
 {
@@ -905,5 +906,21 @@ namespace NostreetsExtensions
             return String.Format(template, txt);
         }
 
+        public static object GetPropertyValue(this object obj, string propertyName)
+        {
+            return obj.GetType().GetProperties().Single(pi => pi.Name == propertyName).GetValue(obj, null);
+        }
+
+        public static void SetPropertyValue(this object obj, string propertyName, object value)
+        {
+             obj.GetType().GetProperties().Single(pi => pi.Name == propertyName).SetValue(obj, value);
+        }
+
+        public static List<string> GetColumns(this DbContext dbContext, Type type)
+        {
+            string statment = String.Format("SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME like N'{0}s'", type.Name);
+            DbRawSqlQuery<string> result = dbContext.Database.SqlQuery<string>(statment);
+            return result.ToList();
+        }
     }
 }
