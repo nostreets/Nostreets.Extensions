@@ -7,22 +7,15 @@ namespace NostreetsExtensions.Helpers
 {
     internal sealed class SqlDao : IDao
     {
-        #region - Private Members -
         private static SqlDao _instance = null;
         private const string LOG_CAT = "DAO";
-        #endregion
 
-        #region - Ctro's -
         private SqlDao() { }
 
         static SqlDao()
         {
             _instance = new SqlDao();
         }
-
-        #endregion
-
-        #region - Instance -
 
         public static SqlDao Instance
         {
@@ -32,9 +25,6 @@ namespace NostreetsExtensions.Helpers
             }
         }
 
-        #endregion
-
-        #region - IDataProvider Memebers -
 
         public void ExecuteCmd(Func<SqlConnection> dataSouce, string storedProc,
             Action<SqlParameterCollection> inputParamMapper,
@@ -49,7 +39,7 @@ namespace NostreetsExtensions.Helpers
             SqlDataReader reader = null;
             SqlCommand cmd = null;
             SqlConnection conn = null;
-            short result = 0;
+            short resultSet = 0;
             try
             {
 
@@ -76,15 +66,15 @@ namespace NostreetsExtensions.Helpers
                                 while (reader.Read())
                                 {
                                     if (map != null)
-                                        map(reader, result);
+                                        map(reader, resultSet);
                                 }
 
-                                result += 1;
+                                resultSet += 1;
 
                                 if (reader.IsClosed || !reader.NextResult())
                                     break;
 
-                                if (result > 10)
+                                if (resultSet > 10)
                                 {
                                     throw new Exception("Too many result sets returned");
                                 }
@@ -164,12 +154,7 @@ namespace NostreetsExtensions.Helpers
 
         }
 
-
-        #endregion
-
-        #region - Private Methods (Execute, GetCommand) -
-
-        private SqlCommand GetCommand(SqlConnection conn, string cmdText = null, Action<SqlParameterCollection> paramMapper = null)
+        public SqlCommand GetCommand(SqlConnection conn, string cmdText = null, Action<SqlParameterCollection> paramMapper = null)
         {
             SqlCommand cmd = null;
 
@@ -192,7 +177,7 @@ namespace NostreetsExtensions.Helpers
 
         }
 
-        private IDbCommand GetCommand(IDbConnection conn, string cmdText = null, Action<IDataParameterCollection> paramMapper = null)
+        public IDbCommand GetCommand(IDbConnection conn, string cmdText = null, Action<IDataParameterCollection> paramMapper = null)
         {
             IDbCommand cmd = null;
 
@@ -215,12 +200,7 @@ namespace NostreetsExtensions.Helpers
 
         }
 
-        //private void HandleException(Exception ex)
-        //{
-        //    //throw ex;
-        //    //TODO: fix this error
-        //}
 
-        #endregion
+       
     }
 }

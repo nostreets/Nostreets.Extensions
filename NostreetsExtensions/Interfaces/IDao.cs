@@ -29,5 +29,9 @@ namespace NostreetsExtensions.Interfaces
 			Action<System.Data.SqlClient.SqlParameterCollection> inputParamMapper, 
 			Action<System.Data.SqlClient.SqlParameterCollection> returnParameters = null);
 
-	}
+        SqlCommand GetCommand(SqlConnection conn, string cmdText = null, Action<SqlParameterCollection> paramMapper = null);
+
+        IDbCommand GetCommand(IDbConnection conn, string cmdText = null, Action<IDataParameterCollection> paramMapper = null);
+
+    }
 }

@@ -250,94 +250,106 @@ namespace NostreetsExtensions.Utilities
 
     public static class AttributeScanner<TAttribute> where TAttribute : Attribute
     {
+        private static List<Tuple<TAttribute, object>> _targetMap;
+        private static List<string> _skipAssemblies;
+        private static Func<Assembly, bool> _assembliesToSkip;
+
         static AttributeScanner()
         {
-            targetMap = new List<Tuple<TAttribute, object>>();
-
-
-            skipAssemblies = new List<string>(typeof(TAttribute).Assembly.GetReferencedAssemblies().Select(c => c.FullName));
-
-            foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
-            {
-                if (assembly.FullName.Contains("System") || assembly.FullName.Contains("Microsoft")) { skipAssemblies.Add(assembly.FullName); }
-            }
-
-            skipAssemblies.Add("Unity.Mvc5");
-
-            ScanAllAssemblies();
+            _targetMap = new List<Tuple<TAttribute, object>>();
+            _skipAssemblies = new List<string>(typeof(TAttribute).Assembly.GetReferencedAssemblies().Select(c => c.FullName));
+            
         }
 
-        private static List<Tuple<TAttribute, object>> targetMap;
+        public static List<Tuple<TAttribute, object>> ScanAssembliesForAttributes(ClassTypes section = ClassTypes.Any, Type type = null, Func<Assembly, bool> assembliesToSkip = null)
+        {
+            _assembliesToSkip = assembliesToSkip;
 
-        private static List<string> skipAssemblies;
+            if (type == null)
+                ScanAllAssemblies(section);
+            else
+                ScanType(type, section);
+
+            return (_targetMap.Count > 0) ? _targetMap : null;
+        }
+
+
+        private static void ScanType(Type typeToScan, ClassTypes classPart)
+        {
+            const BindingFlags memberInfoBinding = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance;
+
+            if (classPart == ClassTypes.Any || classPart == ClassTypes.Type)
+            {
+                foreach (TAttribute attr in typeToScan.GetCustomAttributes(typeof(TAttribute), false))
+                { Add(attr, typeToScan); }
+            }
+
+            foreach (MemberInfo member in typeToScan.GetMembers(memberInfoBinding))
+            {
+                if (member.MemberType == MemberTypes.Property && (classPart == ClassTypes.Properties | classPart == ClassTypes.Any))
+                {
+                    foreach (TAttribute attr in member.GetCustomAttributes(typeof(TAttribute), false))
+                    { Add(attr, member); }
+                }
+
+                if (member.MemberType == MemberTypes.Method && (classPart == ClassTypes.Methods | classPart == ClassTypes.Any))
+                {
+                    foreach (TAttribute attr in member.GetCustomAttributes(typeof(TAttribute), false))
+                    { Add(attr, member); }
+
+
+                }
+
+                if (member.MemberType == MemberTypes.Method && (classPart == ClassTypes.Parameters | classPart == ClassTypes.Any))
+                {
+                    foreach (ParameterInfo parameter in ((MethodInfo)member).GetParameters())
+                    {
+                        foreach (TAttribute attr in parameter.GetCustomAttributes(typeof(TAttribute), false))
+                        { Add(attr, parameter); }
+                    }
+                }
+
+            }
+        }
+
+        private static void AddSkippedAssemblies()
+        {
+            foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                if (_assembliesToSkip != null && _assembliesToSkip(assembly)) { _skipAssemblies.Add(assembly.FullName); }
+            }
+
+        }
 
         private static void Add(TAttribute attribute, object item)
         {
-            targetMap.Add(new Tuple<TAttribute, object>(attribute, item));
+            _targetMap.Add(new Tuple<TAttribute, object>(attribute, item));
         }
 
-        private static void ScanAllAssemblies()
+        private static void ScanAllAssemblies(ClassTypes classPart = ClassTypes.Any)
         {
+            AddSkippedAssemblies();
+
             foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
             {
-                SearchForAttributes(assembly);
+                SearchForAttributes(assembly, classPart);
             }
         }
 
         private static void SearchForAttributes(Assembly assembly, ClassTypes classPart = ClassTypes.Any, Type typeToCheck = null)
         {
-
-            const BindingFlags memberInfoBinding = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance;
             bool shouldSkip = false;
-
-            Action<Type> _scanType = (typeToScan) =>
-            {
-                if (classPart == ClassTypes.Any || classPart == ClassTypes.Type)
-                {
-                    foreach (TAttribute attr in typeToScan.GetCustomAttributes(typeof(TAttribute), false))
-                    { Add(attr, typeToScan); }
-                }
-
-                foreach (MemberInfo member in typeToScan.GetMembers(memberInfoBinding))
-                {
-                    if (member.MemberType == MemberTypes.Property && (classPart == ClassTypes.Properties | classPart == ClassTypes.Any))
-                    {
-                        foreach (TAttribute attr in member.GetCustomAttributes(typeof(TAttribute), false))
-                        { Add(attr, member); }
-                    }
-
-                    if (member.MemberType == MemberTypes.Method && (classPart == ClassTypes.Methods | classPart == ClassTypes.Any))
-                    {
-                        foreach (TAttribute attr in member.GetCustomAttributes(typeof(TAttribute), false))
-                        { Add(attr, member); }
-
-
-                    }
-
-                    if (member.MemberType == MemberTypes.Method && (classPart == ClassTypes.Parameters | classPart == ClassTypes.Any))
-                    {
-                        foreach (ParameterInfo parameter in ((MethodInfo)member).GetParameters())
-                        {
-                            foreach (TAttribute attr in parameter.GetCustomAttributes(typeof(TAttribute), false))
-                            { Add(attr, parameter); }
-                        }
-                    }
-
-                }
-            };
 
             try
             {
+                foreach (string skippedAssembly in _skipAssemblies) { if (assembly.FullName.Contains(skippedAssembly)) { shouldSkip = true; } }
 
                 if (typeToCheck != null)
                 {
-                    _scanType(typeToCheck);
+                    ScanType(typeToCheck, classPart);
                 }
                 else if (!shouldSkip)
                 {
-                    //skipAssemblies.Add(assembly.FullName);
-                    foreach (string skippedAssembly in skipAssemblies) { if (assembly.FullName.Contains(skippedAssembly)) { shouldSkip = true; } }
-
                     if (classPart == ClassTypes.Any || classPart == ClassTypes.Assembly)
                     {
                         foreach (TAttribute attr in assembly.GetCustomAttributes(typeof(TAttribute), false))
@@ -346,35 +358,7 @@ namespace NostreetsExtensions.Utilities
 
                     foreach (Type type in assembly.GetTypes())
                     {
-
-                        _scanType(type);
-
-                        //if (classPart == ClassTypes.Any || classPart == ClassTypes.Type)
-                        //{
-                        //    foreach (TAttribute attr in type.GetCustomAttributes(typeof(TAttribute), false))
-                        //    { Add(attr, type); }
-                        //}
-                        //foreach (MemberInfo member in type.GetMembers(memberInfoBinding))
-                        //{
-                        //    if (member.MemberType == MemberTypes.Property && (classPart == ClassTypes.Properties | classPart == ClassTypes.Any))
-                        //    {
-                        //        foreach (TAttribute attr in member.GetCustomAttributes(typeof(TAttribute), false))
-                        //        { Add(attr, member); }
-                        //    }
-                        //    if (member.MemberType == MemberTypes.Method && (classPart == ClassTypes.Methods | classPart == ClassTypes.Any))
-                        //    {
-                        //        foreach (TAttribute attr in member.GetCustomAttributes(typeof(TAttribute), false))
-                        //        { Add(attr, member); }
-                        //    }
-                        //    if (member.MemberType == MemberTypes.Method && (classPart == ClassTypes.Parameters | classPart == ClassTypes.Any))
-                        //    {
-                        //        foreach (ParameterInfo parameter in ((MethodInfo)member).GetParameters())
-                        //        {
-                        //            foreach (TAttribute attr in parameter.GetCustomAttributes(typeof(TAttribute), false))
-                        //            { Add(attr, parameter); }
-                        //        }
-                        //    }
-                        //}
+                        ScanType(type, classPart);
                     }
                 }
             }
@@ -384,20 +368,6 @@ namespace NostreetsExtensions.Utilities
             }
 
         }
-
-        public static List<Tuple<TAttribute, object>> ScanAssembliesForAttributes(ClassTypes section = ClassTypes.Any, Type type = null)
-        {
-            StackTrace stackTrace = new StackTrace();           // get call stack
-            StackFrame[] stackFrames = stackTrace.GetFrames();  // get method calls (frames)
-
-            foreach (StackFrame stackFrame in stackFrames)
-            {
-                SearchForAttributes(stackFrame.GetMethod().GetType().Assembly, section, type);
-            }
-
-            return targetMap;
-        }
-
 
     }
 

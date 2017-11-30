@@ -24,12 +24,14 @@ using Newtonsoft.Json.Serialization;
 using NostreetsExtensions.Helpers;
 using System.Data.Entity;
 using System.Data.Entity.Infrastructure;
+using System.Data.SqlClient;
+using NostreetsExtensions.Interfaces;
 
 namespace NostreetsExtensions
 {
     public static class Extend
     {
-        public static DataTable ToDataTable<T>(this List<T> iList)
+        public static DataTable ToDataTable<T>(this IList<T> iList)
         {
             DataTable dataTable = new DataTable();
             //PropertyDescriptorCollection
@@ -353,12 +355,42 @@ namespace NostreetsExtensions
             return value % 2 == 0;
         }
 
-        public static Dictionary<int, string> ToDictionary<T>(this Type @enum) where T : struct, IConvertible
+        public static Dictionary<int, string> ToDictionary<T>(this Type enumType) where T : struct, IConvertible
         {
             if (!typeof(T).IsEnum)
                 throw new ArgumentException("Type must be an enum");
 
             return Enum.GetValues(typeof(T)).Cast<T>().ToDictionary(t => (int)(object)t, t => t.ToString());
+        }
+
+        public static Dictionary<int, string> ToDictionary(this Type enumType)
+        {
+            Dictionary<int, string> result = null;
+            if (!enumType.IsEnum)
+                throw new ArgumentException("Type must be an enum");
+
+            string[] arr = Enum.GetNames(enumType);
+
+            foreach (string enumName in arr)
+            {
+                if (result == null)
+                    result = new Dictionary<int, string>();
+
+                result.Add(enumType.GetEnumValue(enumName), enumName);
+            }
+
+            return result;
+        }
+
+
+        public static int GetEnumValue(this Type enumType, string name)
+        {
+            return (int)Enum.Parse(enumType, name);
+        }
+
+        public static int GetEnumValue<T>(this string name)
+        {
+            return (int)Enum.Parse(typeof(T), name);
         }
 
         public static Dictionary<string, string> GetQueryStrings(this HttpRequestMessage request)
@@ -632,97 +664,102 @@ namespace NostreetsExtensions
             return (MethodInfo)fullMethodName.ScanAssembliesForObject();
         }
 
-        public static List<Tuple<TAttribute, object>> GetObjectsWithAttribute<TAttribute>(this List<Tuple<TAttribute, object>> obj, ClassTypes types) where TAttribute : Attribute
+        public static List<Tuple<TAttribute, object>> GetObjectsWithAttribute<TAttribute>(this IList<Tuple<TAttribute, object>> obj, ClassTypes types, Func<Assembly, bool> assembliesToSkip = null) where TAttribute : Attribute
         {
-            return AttributeScanner<TAttribute>.ScanAssembliesForAttributes(types);
+            return AttributeScanner<TAttribute>.ScanAssembliesForAttributes(types, null, assembliesToSkip);
         }
 
-        public static List<object> GetObjectsByAttribute<TAttribute>(this List<TAttribute> obj, ClassTypes section, Type type = null) where TAttribute : Attribute
+        public static List<object> GetObjectsByAttribute<TAttribute>(this IList<TAttribute> obj, ClassTypes section, Type type = null, Func<Assembly, bool> assembliesToSkip = null) where TAttribute : Attribute
         {
             List<object> result = new List<object>();
 
-            foreach (var item in AttributeScanner<TAttribute>.ScanAssembliesForAttributes(section, type)) { result.Add(item.Item2); }
+            foreach (var item in AttributeScanner<TAttribute>.ScanAssembliesForAttributes(section, type, assembliesToSkip)) { result.Add(item.Item2); }
 
             return result;
         }
 
-        public static List<object> GetObjectsByAttribute<TAttribute>(this List<object> obj, ClassTypes section, Type type = null) where TAttribute : Attribute
+        public static List<object> GetObjectsByAttribute<TAttribute>(this IList<object> obj, ClassTypes section, Type type = null, Func<Assembly, bool> assembliesToSkip = null) where TAttribute : Attribute
         {
             List<object> result = new List<object>();
 
-            foreach (var item in AttributeScanner<TAttribute>.ScanAssembliesForAttributes(section, type)) { result.Add(item.Item2); }
+            foreach (var item in AttributeScanner<TAttribute>.ScanAssembliesForAttributes(section, type, assembliesToSkip)) { result.Add(item.Item2); }
 
             return result;
         }
 
-        public static List<MethodInfo> GetMethodsByAttribute<TAttribute>(this List<TAttribute> obj, Type type = null) where TAttribute : Attribute
+        public static List<MethodInfo> GetMethodsByAttribute<TAttribute>(this IList<TAttribute> obj, Type type = null, Func<Assembly, bool> assembliesToSkip = null) where TAttribute : Attribute
         {
             List<MethodInfo> result = new List<MethodInfo>();
 
-            foreach (var item in AttributeScanner<TAttribute>.ScanAssembliesForAttributes(ClassTypes.Methods, type)) { result.Add((MethodInfo)item.Item2); }
+            foreach (var item in AttributeScanner<TAttribute>.ScanAssembliesForAttributes(ClassTypes.Methods, type, assembliesToSkip)) { result.Add((MethodInfo)item.Item2); }
 
             return result;
         }
 
-        public static List<MethodInfo> GetMethodsByAttribute<TAttribute>(this List<MethodInfo> obj, Type type = null) where TAttribute : Attribute
+        public static List<MethodInfo> GetMethodsByAttribute<TAttribute>(this IList<MethodInfo> obj, Type type = null, Func<Assembly, bool> assembliesToSkip = null) where TAttribute : Attribute
         {
             List<MethodInfo> result = new List<MethodInfo>();
 
-            foreach (var item in AttributeScanner<TAttribute>.ScanAssembliesForAttributes(ClassTypes.Methods, type)) { result.Add((MethodInfo)item.Item2); }
+            foreach (var item in AttributeScanner<TAttribute>.ScanAssembliesForAttributes(ClassTypes.Methods, type, assembliesToSkip)) { result.Add((MethodInfo)item.Item2); }
 
             return result;
         }
 
-        public static List<Type> GetTypesByAttribute<TAttribute>(this List<TAttribute> obj, Type type = null) where TAttribute : Attribute
+        public static List<Type> GetTypesByAttribute<TAttribute>(this IList<TAttribute> obj, Type type = null, Func<Assembly, bool> assembliesToSkip = null) where TAttribute : Attribute
         {
             List<Type> result = new List<Type>();
 
-            foreach (var item in AttributeScanner<TAttribute>.ScanAssembliesForAttributes(ClassTypes.Type, type)) { result.Add((Type)item.Item2); }
+            foreach (var item in AttributeScanner<TAttribute>.ScanAssembliesForAttributes(ClassTypes.Type, type, assembliesToSkip)) { result.Add((Type)item.Item2); }
 
             return result;
         }
 
-        public static List<Type> GetTypesByAttribute<TAttribute>(this List<Type> obj, Type type = null) where TAttribute : Attribute
+        public static List<Type> GetTypesByAttribute<TAttribute>(this IList<Type> obj, Type type = null, Func<Assembly, bool> assembliesToSkip = null) where TAttribute : Attribute
         {
             List<Type> result = new List<Type>();
 
-            foreach (var item in AttributeScanner<TAttribute>.ScanAssembliesForAttributes(ClassTypes.Type, type)) { result.Add((Type)item.Item2); }
+            foreach (var item in AttributeScanner<TAttribute>.ScanAssembliesForAttributes(ClassTypes.Type, type, assembliesToSkip)) { result.Add((Type)item.Item2); }
 
             return result;
         }
 
-        public static List<Assembly> GetAssembliesByAttribute<TAttribute>(this List<TAttribute> obj) where TAttribute : Attribute
+        public static List<Assembly> GetAssembliesByAttribute<TAttribute>(this IList<TAttribute> obj, Func<Assembly, bool> assembliesToSkip = null) where TAttribute : Attribute
         {
             List<Assembly> result = new List<Assembly>();
 
-            foreach (var item in AttributeScanner<TAttribute>.ScanAssembliesForAttributes(ClassTypes.Assembly)) { result.Add((Assembly)item.Item2); }
+            foreach (var item in AttributeScanner<TAttribute>.ScanAssembliesForAttributes(ClassTypes.Assembly, null, assembliesToSkip)) { result.Add((Assembly)item.Item2); }
 
             return result;
         }
 
-        public static List<Assembly> GetAssembliesByAttribute<TAttribute>(this List<Assembly> obj) where TAttribute : Attribute
+        public static List<Assembly> GetAssembliesByAttribute<TAttribute>(this IList<Assembly> obj, Func<Assembly, bool> assembliesToSkip = null) where TAttribute : Attribute
         {
             List<Assembly> result = new List<Assembly>();
 
-            foreach (var item in AttributeScanner<TAttribute>.ScanAssembliesForAttributes(ClassTypes.Assembly)) { result.Add((Assembly)item.Item2); }
+            foreach (var item in AttributeScanner<TAttribute>.ScanAssembliesForAttributes(ClassTypes.Assembly, null, assembliesToSkip)) { result.Add((Assembly)item.Item2); }
 
             return result;
         }
 
-        public static List<PropertyInfo> GetPropertiesByAttribute<TAttribute>(this List<TAttribute> obj, Type type = null) where TAttribute : Attribute
+        public static List<PropertyInfo> GetPropertiesByAttribute<TAttribute>(this IList<TAttribute> obj, Type type = null, Func<Assembly, bool> assembliesToSkip = null) where TAttribute : Attribute
         {
             List<PropertyInfo> result = new List<PropertyInfo>();
 
-            foreach (var item in AttributeScanner<TAttribute>.ScanAssembliesForAttributes(ClassTypes.Properties, type)) { result.Add((PropertyInfo)item.Item2); }
+            foreach (var item in AttributeScanner<TAttribute>.ScanAssembliesForAttributes(ClassTypes.Properties, type, assembliesToSkip)) { result.Add((PropertyInfo)item.Item2); }
 
             return result;
         }
 
-        public static List<PropertyInfo> GetPropertiesByAttribute<TAttribute>(this List<PropertyInfo> obj, Type type = null) where TAttribute : Attribute
+        public static List<PropertyInfo> GetPropertiesByAttribute<TAttribute>(this IList<PropertyInfo> obj, Type type = null, Func<Assembly, bool> assembliesToSkip = null) where TAttribute : Attribute
         {
             List<PropertyInfo> result = new List<PropertyInfo>();
 
-            foreach (var item in AttributeScanner<TAttribute>.ScanAssembliesForAttributes(ClassTypes.Properties, type)) { result.Add((PropertyInfo)item.Item2); }
+            List<Tuple<TAttribute, object>> list = AttributeScanner<TAttribute>.ScanAssembliesForAttributes(ClassTypes.Properties, type, assembliesToSkip);
+
+            if (list != null)
+            {
+                foreach (var item in list) { result.Add((PropertyInfo)item.Item2); }
+            }
 
             return result;
         }
@@ -913,7 +950,7 @@ namespace NostreetsExtensions
 
         public static void SetPropertyValue(this object obj, string propertyName, object value)
         {
-             obj.GetType().GetProperties().Single(pi => pi.Name == propertyName).SetValue(obj, value);
+            obj.GetType().GetProperties().Single(pi => pi.Name == propertyName).SetValue(obj, value);
         }
 
         public static List<string> GetColumns(this DbContext dbContext, Type type)
@@ -937,5 +974,62 @@ namespace NostreetsExtensions
 
             return result;
         }
+
+        public static List<string> GetSchema(this IDao srv, Func<SqlConnection> dataSouce, string tableName)
+        {
+            SqlDataReader reader = null;
+            SqlCommand cmd = null;
+            SqlConnection conn = null;
+            List<string> result = null;
+
+            try
+            {
+                if (dataSouce == null)
+                    throw new Exception("dataSouce param must not be null or return null...");
+
+                using (conn = dataSouce())
+                {
+                    if (conn == null)
+                        throw new Exception("dataSouce param must not be null or return null...");
+
+
+                    if (conn.State != ConnectionState.Open)
+                        conn.Open();
+
+
+                    string query = "SELECT * FROM {0}".FormatString(tableName);
+                    cmd = srv.GetCommand(conn, query);
+                    cmd.CommandType = CommandType.Text;
+
+                    if (cmd != null)
+                    {
+                        reader = cmd.ExecuteReader();
+
+                        result = reader.GetSchemaTable().Rows.Cast<DataRow>().Select(c => c["ColumnName"].ToString()).ToList();
+
+                        reader.Close();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            finally
+            {
+                if (conn != null && conn.State != ConnectionState.Closed)
+                    conn.Close();
+            }
+
+
+            return result;
+
+        }
+
+        public static void Prepend<T>(this IList<T> list, T item)
+        {
+            list.Insert(0, item);
+        }
+
     }
 }
