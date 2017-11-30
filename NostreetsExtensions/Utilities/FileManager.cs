@@ -26,7 +26,7 @@ namespace NostreetsExtensions.Utilities
 
             if (!File.Exists(filePath))
             {
-                using (File.Create(filePath)) ;
+                using (File.Create(filePath)) { };
             }
 
             if (!File.Exists(filePath)) { throw new Exception("File was not created..."); }

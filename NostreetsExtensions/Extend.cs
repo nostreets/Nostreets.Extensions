@@ -922,5 +922,20 @@ namespace NostreetsExtensions
             DbRawSqlQuery<string> result = dbContext.Database.SqlQuery<string>(statment);
             return result.ToList();
         }
+
+        public static List<ContainerRegistration> GetRegistrations(this IUnityContainer theContainer)
+        {
+            List<ContainerRegistration> result = null;
+
+            foreach (ContainerRegistration item in theContainer.Registrations)
+            {
+                if (result == null)
+                    result = new List<ContainerRegistration>();
+
+                result.Add(item);
+            }
+
+            return result;
+        }
     }
 }

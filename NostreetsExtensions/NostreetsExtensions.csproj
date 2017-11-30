@@ -104,7 +104,6 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="App_Start\UnityConfig.cs" />
     <Compile Include="Extend.cs" />
     <Compile Include="Helpers\BaseService.cs" />
     <Compile Include="Helpers\DataHelper.cs" />
