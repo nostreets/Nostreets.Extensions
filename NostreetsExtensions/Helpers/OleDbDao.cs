@@ -1,23 +1,27 @@
 ﻿using NostreetsExtensions.Interfaces;
 using System;
+using System.Collections.Generic;
 using System.Data;
-using System.Data.SqlClient;
+using System.Data.OleDb;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace NostreetsExtensions.Helpers
 {
-    internal sealed class SqlDao : ISqlDao
+    internal sealed class OleDbDao : IOleDbDao
     {
-        private static SqlDao _instance = null;
+        private static OleDbDao _instance = null;
         private const string LOG_CAT = "DAO";
 
-        private SqlDao() { }
+        private OleDbDao() { }
 
-        static SqlDao()
+        static OleDbDao()
         {
-            _instance = new SqlDao();
+            _instance = new OleDbDao();
         }
 
-        public static SqlDao Instance
+        public static OleDbDao Instance
         {
             get
             {
@@ -25,20 +29,17 @@ namespace NostreetsExtensions.Helpers
             }
         }
 
-
-        public void ExecuteCmd(Func<SqlConnection> dataSouce, string storedProc,
-            Action<SqlParameterCollection> inputParamMapper,
+        public void ExecuteCmd(Func<OleDbConnection> dataSouce, string cmdText,
+            Action<OleDbParameterCollection> inputParamMapper,
             Action<IDataReader, short> map,
-            Action<SqlParameterCollection> returnParameters = null,
-            Action<SqlCommand> cmdModifier = null,
-            CommandBehavior cmdBehavior = default(CommandBehavior))
+            Action<OleDbParameterCollection> returnParameters = null)
         {
             if (map == null)
                 throw new NullReferenceException("ObjectMapper is required.");
 
-            SqlDataReader reader = null;
-            SqlCommand cmd = null;
-            SqlConnection conn = null;
+            OleDbDataReader reader = null;
+            OleDbCommand cmd = null;
+            OleDbConnection conn = null;
             short resultSet = 0;
             try
             {
@@ -51,14 +52,11 @@ namespace NostreetsExtensions.Helpers
                         if (conn.State != ConnectionState.Open)
                             conn.Open();
 
-                        cmd = GetCommand(conn, storedProc, inputParamMapper);
+                        cmd = GetCommand(conn, cmdText, inputParamMapper);
+
                         if (cmd != null)
                         {
-                            if (cmdModifier != null)
-                                cmdModifier(cmd);
-
-                            if (cmdBehavior == default(CommandBehavior)) { cmdBehavior = CommandBehavior.CloseConnection;  }
-                            reader = cmd.ExecuteReader(cmdBehavior);
+                            reader = cmd.ExecuteReader();
 
                             while (true)
                             {
@@ -108,11 +106,11 @@ namespace NostreetsExtensions.Helpers
         }
 
 
-        public int ExecuteNonQuery(Func<SqlConnection> dataSouce, string storedProc,
-            Action<SqlParameterCollection> paramMapper, Action<SqlParameterCollection> returnParameters = null)
+        public int ExecuteNonQuery(Func<OleDbConnection> dataSouce, string cmdText,
+            Action<OleDbParameterCollection> paramMapper, Action<OleDbParameterCollection> returnParameters = null)
         {
-            SqlCommand cmd = null;
-            SqlConnection conn = null;
+            OleDbCommand cmd = null;
+            OleDbConnection conn = null;
             try
             {
 
@@ -123,7 +121,7 @@ namespace NostreetsExtensions.Helpers
                         if (conn.State != ConnectionState.Open)
                             conn.Open();
 
-                        cmd = GetCommand(conn, storedProc, paramMapper);
+                        cmd = GetCommand(conn, cmdText, paramMapper);
 
                         if (cmd != null)
                         {
@@ -154,9 +152,9 @@ namespace NostreetsExtensions.Helpers
 
         }
 
-        public SqlCommand GetCommand(SqlConnection conn, string cmdText = null, Action<SqlParameterCollection> paramMapper = null)
+        public OleDbCommand GetCommand(OleDbConnection conn, string cmdText = null, Action<OleDbParameterCollection> paramMapper = null)
         {
-            SqlCommand cmd = null;
+            OleDbCommand cmd = null;
 
             if (conn != null)
                 cmd = conn.CreateCommand();
@@ -173,36 +171,12 @@ namespace NostreetsExtensions.Helpers
                     paramMapper(cmd.Parameters);
             }
 
-            return cmd;
-
-        }
-
-        public IDbCommand GetCommand(IDbConnection conn, string cmdText = null, Action<IDataParameterCollection> paramMapper = null)
-        {
-            IDbCommand cmd = null;
-
-            if (conn != null)
-                cmd = conn.CreateCommand();
-
-            if (cmd != null)
-            {
-                if (!String.IsNullOrEmpty(cmdText))
-                {
-                    cmd.CommandText = cmdText;
-                    cmd.CommandType = CommandType.StoredProcedure;
-                }
-
-                if (paramMapper != null)
-                    paramMapper(cmd.Parameters);
-            }
+            cmd.CommandType = CommandType.Text;
 
             return cmd;
 
         }
 
 
-       
     }
-
-   
 }

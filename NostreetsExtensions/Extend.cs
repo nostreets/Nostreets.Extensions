@@ -95,7 +95,7 @@ namespace NostreetsExtensions
             return start.AddDays(6);
         }
 
-        public static object HitEndpoint(this BaseService obj, string url, string method = "GET", object data = null, string contentType = "application/json", Dictionary<string, string> headers = null)
+        public static object HitEndpoint(this SqlService obj, string url, string method = "GET", object data = null, string contentType = "application/json", Dictionary<string, string> headers = null)
         {
             HttpWebRequest requestStream = (HttpWebRequest)WebRequest.Create(url);
             HttpWebResponse responseStream = null;
@@ -175,7 +175,7 @@ namespace NostreetsExtensions
             }
         }
 
-        public static T HitEndpoint<T>(this BaseService obj, string url, string method = "GET", object data = null, string contentType = "application/json", Dictionary<string, string> headers = null)
+        public static T HitEndpoint<T>(this SqlService obj, string url, string method = "GET", object data = null, string contentType = "application/json", Dictionary<string, string> headers = null)
         {
             HttpWebRequest requestStream = (HttpWebRequest)WebRequest.Create(url);
             HttpWebResponse responseStream = null;
@@ -975,7 +975,7 @@ namespace NostreetsExtensions
             return result;
         }
 
-        public static List<string> GetSchema(this IDao srv, Func<SqlConnection> dataSouce, string tableName)
+        public static List<string> GetSchema(this ISqlDao srv, Func<SqlConnection> dataSouce, string tableName)
         {
             SqlDataReader reader = null;
             SqlCommand cmd = null;

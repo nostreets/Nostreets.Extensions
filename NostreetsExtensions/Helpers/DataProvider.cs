@@ -6,11 +6,19 @@ namespace NostreetsExtensions.Helpers
     {
         private DataProvider() { }
 
-        public static IDao SqlInstance
+        public static ISqlDao SqlInstance
         {
             get
             {
                 return SqlDao.Instance;
+            }
+        }
+
+        public static IOleDbDao OleDbInstance
+        {
+            get
+            {
+                return OleDbDao.Instance;
             }
         }
 

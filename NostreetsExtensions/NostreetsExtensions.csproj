@@ -105,10 +105,12 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Extend.cs" />
-    <Compile Include="Helpers\BaseService.cs" />
+    <Compile Include="Helpers\OleDbDao.cs" />
+    <Compile Include="Helpers\BaseServices.cs" />
     <Compile Include="Helpers\DataHelper.cs" />
     <Compile Include="Helpers\DataMapper.cs" />
     <Compile Include="Helpers\DataProvider.cs" />
+    <Compile Include="Utilities\ExcelService.cs" />
     <Compile Include="Helpers\SqlDao.cs" />
     <Compile Include="Interfaces\IDao.cs" />
     <Compile Include="Interfaces\IDataReaderExt.cs" />
