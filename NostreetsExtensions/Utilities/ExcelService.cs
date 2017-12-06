@@ -12,22 +12,44 @@ namespace NostreetsExtensions.Utilities
     {
         public ExcelService(string filePath) : base(filePath) { }
 
-        public List<string> GetAllInColumn(string sheetName, int column)
+        public List<object> GetAll(string sheetName)
         {
-            List<string> result = null;
+            List<object> result = null;
+            ClassBuilder builder = new ClassBuilder("DynamicModel");
+            string[] excelSchema = null;
+            Type[] schemaTypes = null;
+            Type dynamicType = null;
 
-            DataProvider.ExecuteCmd(() => Connection, "Select F{0} From [{1}$]", null, 
-                (reader, set) => result = DataMapper<List<string>>.Instance.MapToObject(reader));
+            DataProvider.ExecuteCmd(() => Connection, string.Format("Select * From [{0}$]", sheetName), null,
+                (reader, set) =>
+                {
+                    if (result == null)
+                        result = new List<object>();
+
+                    if (excelSchema == null)
+                        excelSchema = reader.GetSchema();
+
+                    if (schemaTypes == null)
+                        schemaTypes = reader.GetSchemaTypes();
+
+                    if (dynamicType == null)
+                        dynamicType = builder.CreateType(excelSchema, schemaTypes);
+
+
+                    object stat = DataMapper.MapToObject(reader, dynamicType);
+
+
+                    result.Add(stat);
+                });
 
             return result;
         }
 
-
-        public List<string> GetAll(string sheetName)
+        public List<string> GetAllInColumn(string sheetName, string columnName)
         {
             List<string> result = null;
 
-            DataProvider.ExecuteCmd(() => Connection, "Select * From [{1}$]", null,
+            DataProvider.ExecuteCmd(() => Connection, string.Format("SELECT `{0}$`.{1} FROM [{0}$]", sheetName, columnName), null,
                 (reader, set) =>
                 {
                     if (result == null)
@@ -38,5 +60,6 @@ namespace NostreetsExtensions.Utilities
 
             return result;
         }
+
     }
 }

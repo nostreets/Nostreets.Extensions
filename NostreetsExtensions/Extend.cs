@@ -975,6 +975,28 @@ namespace NostreetsExtensions
             return result;
         }
 
+        public static void Prepend<T>(this IList<T> list, T item)
+        {
+            list.Insert(0, item);
+        }
+
+        public static string[] GetSchema(this IDataReader reader)
+        {
+            return reader.GetSchemaTable().Rows.Cast<DataRow>().Select(c => c["ColumnName"].ToString()).ToArray();
+        }
+
+        public static Type[] GetSchemaTypes(this IDataReader reader)
+        {
+            List<Type> result = new List<Type>();
+            string[] columns = reader.GetSchema();
+            for (int i = 0; i < columns.Length; i++)
+            {
+                result.Add(reader.GetValue(i).GetType());
+            }
+
+            return result.ToArray();
+        }
+
         public static List<string> GetSchema(this ISqlDao srv, Func<SqlConnection> dataSouce, string tableName)
         {
             SqlDataReader reader = null;
@@ -1024,11 +1046,6 @@ namespace NostreetsExtensions
 
             return result;
 
-        }
-
-        public static void Prepend<T>(this IList<T> list, T item)
-        {
-            list.Insert(0, item);
         }
 
     }

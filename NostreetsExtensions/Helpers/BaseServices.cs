@@ -49,9 +49,9 @@ namespace NostreetsExtensions.Helpers
 
             if (splitPath[splitPath.Length - 1].Contains("xlsx"))
 
-                _connectionString = "Provider=Microsoft.ACE.OLEDB.12.0; Data Source='{0}'; Extended Properties=\"Excel 12.0;HDR=YES;\"";
+                _connectionString = string.Format("Provider=Microsoft.ACE.OLEDB.12.0; Data Source='{0}'; Extended Properties=\"Excel 12.0;HDR=YES;\"", filePath);
             else
-                _connectionString = "Provider=Microsoft.Jet.OLEDB.4.0; Data Source = '{0}'; Extended Properties=\"Excel 8.0;HDR=YES;\"";
+                _connectionString = string.Format("Provider=Microsoft.Jet.OLEDB.4.0; Data Source = '{0}'; Extended Properties=\"Excel 8.0;HDR=YES;\"", filePath);
         }
 
         private string _connectionString;

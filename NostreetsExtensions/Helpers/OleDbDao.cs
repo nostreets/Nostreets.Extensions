@@ -29,10 +29,12 @@ namespace NostreetsExtensions.Helpers
             }
         }
 
-        public void ExecuteCmd(Func<OleDbConnection> dataSouce, string cmdText,
+        public void ExecuteCmd(Func<OleDbConnection> dataSouce,
+            string cmdText,
             Action<OleDbParameterCollection> inputParamMapper,
             Action<IDataReader, short> map,
-            Action<OleDbParameterCollection> returnParameters = null)
+            Action<OleDbParameterCollection> returnParameters = null,
+            int? timeOutSpan = null)
         {
             if (map == null)
                 throw new NullReferenceException("ObjectMapper is required.");
@@ -106,8 +108,11 @@ namespace NostreetsExtensions.Helpers
         }
 
 
-        public int ExecuteNonQuery(Func<OleDbConnection> dataSouce, string cmdText,
-            Action<OleDbParameterCollection> paramMapper, Action<OleDbParameterCollection> returnParameters = null)
+        public int ExecuteNonQuery(Func<OleDbConnection> dataSouce, 
+            string cmdText,
+            Action<OleDbParameterCollection> inputParamMapper, 
+            Action<OleDbParameterCollection> returnParameters = null,
+            int? timeOutSpan = null)
         {
             OleDbCommand cmd = null;
             OleDbConnection conn = null;
@@ -121,7 +126,7 @@ namespace NostreetsExtensions.Helpers
                         if (conn.State != ConnectionState.Open)
                             conn.Open();
 
-                        cmd = GetCommand(conn, cmdText, paramMapper);
+                        cmd = GetCommand(conn, cmdText, inputParamMapper);
 
                         if (cmd != null)
                         {
@@ -176,7 +181,6 @@ namespace NostreetsExtensions.Helpers
             return cmd;
 
         }
-
 
     }
 }

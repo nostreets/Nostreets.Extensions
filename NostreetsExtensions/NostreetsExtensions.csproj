@@ -110,6 +110,7 @@
     <Compile Include="Helpers\DataHelper.cs" />
     <Compile Include="Helpers\DataMapper.cs" />
     <Compile Include="Helpers\DataProvider.cs" />
+    <Compile Include="Utilities\ClassBuilder.cs" />
     <Compile Include="Utilities\ExcelService.cs" />
     <Compile Include="Helpers\SqlDao.cs" />
     <Compile Include="Interfaces\IDao.cs" />
