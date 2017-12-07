@@ -31,45 +31,89 @@ namespace NostreetsExtensions
 {
     public static class Extend
     {
-        public static DataTable ToDataTable<T>(this IList<T> iList)
+        public static DataTable ToDataTable<T>(this List<T> iList)
         {
             DataTable dataTable = new DataTable();
-            //PropertyDescriptorCollection
-            List<PropertyDescriptor> propertyDescriptorCollection = TypeDescriptor.GetProperties(typeof(T)).Cast<PropertyDescriptor>()
-              .Where((a) => a.Name != "sCarrier_Method_Desc" && a.Name != "dtFulfilled_DT").ToList();
-            foreach (PropertyDescriptor item in propertyDescriptorCollection)
-            {
+            List<PropertyDescriptor> propertyDescriptorCollection = TypeDescriptor.GetProperties(typeof(T)).Cast<PropertyDescriptor>().ToList();
 
-                PropertyDescriptor propertyDescriptor = item;
-                Type type = propertyDescriptor.PropertyType;
+            for (int i = 0; i < propertyDescriptorCollection.Count; i++)
+            {
+                PropertyDescriptor propertyDescriptor = propertyDescriptorCollection[i];
+
+
+                Type type = propertyDescriptor.PropertyType ?? typeof(int);
 
                 if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
                     type = Nullable.GetUnderlyingType(type);
 
-                dataTable.Columns.Add(propertyDescriptor.Name, type);
-
+                dataTable.Columns.Add(propertyDescriptor.Name);
+                dataTable.Columns[i].AllowDBNull = true;
             }
 
-            //new object[propertyDescriptorCollection.Count];
             int id = 0;
-            foreach (T iListItem in iList)
+            foreach (object iListItem in iList)
             {
                 ArrayList values = new ArrayList();
                 for (int i = 0; i < propertyDescriptorCollection.Count; i++)
                 {
-                    values.Add(propertyDescriptorCollection[i].GetValue(iListItem) == null
-                        && propertyDescriptorCollection[i].PropertyType == typeof(string)
+                    values.Add(
+                        propertyDescriptorCollection[i].GetValue(iListItem) == null && propertyDescriptorCollection[i].PropertyType == typeof(string)
                         ? String.Empty
-                        : (i == 0)
+                        : (i == 0 && propertyDescriptorCollection[i].Name.Contains("Id") && propertyDescriptorCollection[i].PropertyType == typeof(int))
                         ? id += 1
+                        : propertyDescriptorCollection[i].GetValue(iListItem) == null
+                        ? DBNull.Value
                         : propertyDescriptorCollection[i].GetValue(iListItem));
 
-                    //values[i] = (propertyDescriptorCollection[i].GetValue(iListItem).GetType() != typeof(string)) ? propertyDescriptorCollection[i].GetValue(iListItem) : DBNull.Value; 
                 }
                 dataTable.Rows.Add(values.ToArray());
 
                 values = null;
             }
+
+            return dataTable;
+        }
+
+        public static DataTable ToDataTable(this List<object> iList, Type objType)
+        {
+            DataTable dataTable = new DataTable();
+            List<PropertyDescriptor> propertyDescriptorCollection = TypeDescriptor.GetProperties(objType).Cast<PropertyDescriptor>().ToList();
+
+            for (int i = 0; i < propertyDescriptorCollection.Count; i++)
+            {
+                PropertyDescriptor propertyDescriptor = propertyDescriptorCollection[i];
+
+
+                Type type = propertyDescriptor.PropertyType ?? typeof(int);
+
+                if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
+                    type = Nullable.GetUnderlyingType(type);
+
+                dataTable.Columns.Add(propertyDescriptor.Name);
+                dataTable.Columns[i].AllowDBNull = true;
+            }
+
+            int id = 0;
+            foreach (object iListItem in iList)
+            {
+                ArrayList values = new ArrayList();
+                for (int i = 0; i < propertyDescriptorCollection.Count; i++)
+                {
+                    values.Add(
+                        propertyDescriptorCollection[i].GetValue(iListItem) == null && propertyDescriptorCollection[i].PropertyType == typeof(string)
+                        ? String.Empty
+                        : (i == 0 && propertyDescriptorCollection[i].Name.Contains("Id") && propertyDescriptorCollection[i].PropertyType == typeof(int))
+                        ? id += 1
+                        : propertyDescriptorCollection[i].GetValue(iListItem) == null
+                        ? DBNull.Value
+                        : propertyDescriptorCollection[i].GetValue(iListItem));
+
+                }
+                dataTable.Rows.Add(values.ToArray());
+
+                values = null;
+            }
+
             return dataTable;
         }
 
@@ -381,7 +425,6 @@ namespace NostreetsExtensions
 
             return result;
         }
-
 
         public static int GetEnumValue(this Type enumType, string name)
         {
@@ -980,23 +1023,6 @@ namespace NostreetsExtensions
             list.Insert(0, item);
         }
 
-        public static string[] GetSchema(this IDataReader reader)
-        {
-            return reader.GetSchemaTable().Rows.Cast<DataRow>().Select(c => c["ColumnName"].ToString()).ToArray();
-        }
-
-        public static Type[] GetSchemaTypes(this IDataReader reader)
-        {
-            List<Type> result = new List<Type>();
-            string[] columns = reader.GetSchema();
-            for (int i = 0; i < columns.Length; i++)
-            {
-                result.Add(reader.GetValue(i).GetType());
-            }
-
-            return result.ToArray();
-        }
-
         public static List<string> GetSchema(this ISqlDao srv, Func<SqlConnection> dataSouce, string tableName)
         {
             SqlDataReader reader = null;
@@ -1047,6 +1073,24 @@ namespace NostreetsExtensions
             return result;
 
         }
+
+        public static string[] GetSchema(this IDataReader reader)
+        {
+            return reader.GetSchemaTable().Rows.Cast<DataRow>().Select(c => c["ColumnName"].ToString()).ToArray();
+        }
+
+        public static Type[] GetSchemaTypes(this IDataReader reader)
+        {
+            List<Type> result = new List<Type>();
+            string[] columns = reader.GetSchema();
+            for (int i = 0; i < columns.Length; i++)
+            {
+                result.Add(reader.GetValue(i).GetType());
+            }
+
+            return result.ToArray();
+        }
+
 
     }
 }

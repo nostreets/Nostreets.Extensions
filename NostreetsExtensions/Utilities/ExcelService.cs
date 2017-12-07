@@ -10,7 +10,13 @@ namespace NostreetsExtensions.Utilities
 {
     public class ExcelService : OleDbService
     {
-        public ExcelService(string filePath) : base(filePath) { }
+        public ExcelService(string filePath) : base(filePath)
+        {
+            string[] splitPath = filePath.Split('\\', '.');
+            _fileName = splitPath[splitPath.Length - 2];
+        }
+
+        private string _fileName = null;
 
         public List<object> GetAll(string sheetName)
         {
@@ -27,10 +33,10 @@ namespace NostreetsExtensions.Utilities
                         result = new List<object>();
 
                     if (excelSchema == null)
-                        excelSchema = reader.GetSchema();
+                        excelSchema = reader.GetSchema().ToArray();
 
                     if (schemaTypes == null)
-                        schemaTypes = reader.GetSchemaTypes();
+                        schemaTypes = reader.GetSchemaTypes().ToArray();
 
                     if (dynamicType == null)
                         dynamicType = builder.CreateType(excelSchema, schemaTypes);

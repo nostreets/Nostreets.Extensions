@@ -26,12 +26,15 @@ namespace NostreetsExtensions.Helpers
         }
 
 
-        public void ExecuteCmd(Func<SqlConnection> dataSouce, string storedProc,
+       public void ExecuteCmd(Func<SqlConnection> dataSouce,
+            string storedProc,
             Action<SqlParameterCollection> inputParamMapper,
-            Action<IDataReader, short> map,
+             Action<IDataReader, short> map,
+
             Action<SqlParameterCollection> returnParameters = null,
             Action<SqlCommand> cmdModifier = null,
-            CommandBehavior cmdBehavior = default(CommandBehavior))
+            CommandBehavior cmdBehavior = default(CommandBehavior),
+            int? timeOutSpan = null)
         {
             if (map == null)
                 throw new NullReferenceException("ObjectMapper is required.");
@@ -109,10 +112,14 @@ namespace NostreetsExtensions.Helpers
 
 
         public int ExecuteNonQuery(Func<SqlConnection> dataSouce, string storedProc,
-            Action<SqlParameterCollection> paramMapper, Action<SqlParameterCollection> returnParameters = null)
+            Action<SqlParameterCollection> inputParamMapper,
+            Action<SqlParameterCollection> returnParameters = null,
+            Action<SqlCommand> cmdModifier = null,
+            int? timeOutSpan = null)
         {
             SqlCommand cmd = null;
             SqlConnection conn = null;
+            SqlDataAdapter adapter = null;
             try
             {
 
@@ -120,10 +127,19 @@ namespace NostreetsExtensions.Helpers
                 {
                     if (conn != null)
                     {
+
                         if (conn.State != ConnectionState.Open)
                             conn.Open();
 
-                        cmd = GetCommand(conn, storedProc, paramMapper);
+                        cmd = GetCommand(conn, storedProc, inputParamMapper);
+                        cmdModifier?.Invoke(cmd);
+
+                        if (timeOutSpan != null)
+                        {
+
+                            adapter = new SqlDataAdapter(cmd);
+                            adapter.SelectCommand.CommandTimeout = timeOutSpan.Value;
+                        }
 
                         if (cmd != null)
                         {
@@ -200,9 +216,6 @@ namespace NostreetsExtensions.Helpers
 
         }
 
-
-       
     }
 
-   
 }

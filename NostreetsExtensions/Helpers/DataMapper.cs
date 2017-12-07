@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Reflection;
 using System.Web;
 
 namespace NostreetsExtensions.Helpers
@@ -35,7 +36,7 @@ namespace NostreetsExtensions.Helpers
                     {
                         Type type = Nullable.GetUnderlyingType(prop.PropertyType) ?? prop.PropertyType;
 
-                        if (type.Name != "String" && type.Name != "Char" && type.BaseType.Name != "Enum" && type.IsClass)
+                        if (type != typeof(String) && type != typeof(Char) && type.BaseType != typeof(Enum) && type.IsClass)
                         {
                             object property = JsonConvert.DeserializeObject(reader.GetString(reader.GetOrdinal(prop.Name)) ?? "", type);
                             if (property == null) { property = Activator.CreateInstance(type); }
@@ -48,8 +49,10 @@ namespace NostreetsExtensions.Helpers
                             else { prop.SetValue(obj, (reader.GetValue(reader.GetOrdinal(prop.Name)) ?? null), null); }
                         }
                     }
-                    else if (prop.PropertyType.BaseType.Name == "Enum") {
-                        if (reader[prop.Name + "Id"] != DBNull.Value) {
+                    else if (prop.PropertyType.BaseType == typeof(Enum))
+                    {
+                        if (reader[prop.Name + "Id"] != DBNull.Value)
+                        {
                             prop.SetValue(obj, (reader.GetValue(reader.GetOrdinal(prop.Name + "Id")) ?? null), null);
                         }
                     }
@@ -59,6 +62,54 @@ namespace NostreetsExtensions.Helpers
             {
                 var item = reader.GetValue(reader.GetSchemaTable().Columns[0].Ordinal);
                 if (item != null) { obj = (T)item; }
+            }
+
+            return obj;
+        }
+    }
+
+    public class DataMapper
+    {
+        public static object MapToObject(IDataReader reader, Type classType)
+        {
+            PropertyInfo[] _props = classType.GetProperties();
+            IEnumerable<string> colname = reader.GetSchemaTable().Rows.Cast<DataRow>().Select(c => c["ColumnName"].ToString().ToLower()).ToList();
+            var obj = Activator.CreateInstance(classType);
+
+            if (_props.Length > 1)
+            {
+                foreach (var prop in _props)
+                {
+                    if (colname.Contains(prop.Name.ToLower()))
+                    {
+                        Type type = Nullable.GetUnderlyingType(prop.PropertyType) ?? prop.PropertyType;
+
+                        if (type != typeof(String) && type != typeof(Char) && type.BaseType != typeof(Enum) && type != typeof(DBNull) && type.IsClass)
+                        {
+                            object property = JsonConvert.DeserializeObject(reader.GetString(reader.GetOrdinal(prop.Name)) ?? "", type);
+                            if (property == null) { property = Activator.CreateInstance(type); }
+                            if (property.GetType() != type) { throw new Exception("Property " + type.Name + " Does Not Equal Type in DB"); }
+                            prop.SetValue(obj, property, null);
+                        }
+                        else if (reader[prop.Name] != DBNull.Value)
+                        {
+                            if (reader[prop.Name].GetType() == typeof(decimal)) { prop.SetValue(obj, (reader.GetDouble(prop.Name)), null); }
+                            else { prop.SetValue(obj, (reader.GetValue(reader.GetOrdinal(prop.Name)) ?? null), null); }
+                        }
+                    }
+                    else if (prop.PropertyType.BaseType == typeof(Enum))
+                    {
+                        if (reader[prop.Name + "Id"] != DBNull.Value)
+                        {
+                            prop.SetValue(obj, (reader.GetValue(reader.GetOrdinal(prop.Name + "Id")) ?? null), null);
+                        }
+                    }
+                }
+            }
+            else
+            {
+                var item = reader.GetValue(reader.GetSchemaTable().Columns[0].Ordinal);
+                if (item != null) { obj = item; }
             }
 
             return obj;
