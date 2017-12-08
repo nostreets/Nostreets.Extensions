@@ -19,15 +19,17 @@ namespace NostreetsExtensions.Utilities
 
         public Type CreateType(string[] propertyNames, Type[] types)
         {
-            return CreateObject(propertyNames, types).GetType();
+            if (propertyNames.Length != types.Length)
+                throw new Exception("The number of property names should match their corresopnding types number");
+
+            else
+                return CreateObject(propertyNames, types).GetType();
         }
 
         public object CreateObject(string[] propertyNames, Type[] types)
         {
             if (propertyNames.Length != types.Length)
-            {
-                Console.WriteLine("The number of property names should match their corresopnding types number");
-            }
+                throw new Exception("The number of property names should match their corresopnding types number");
 
             TypeBuilder dynamicClass = this.CreateClass();
 

@@ -26,9 +26,14 @@ namespace NostreetsExtensions.Helpers
         public T MapToObject(IDataReader reader)
         {
             IEnumerable<string> colname = reader.GetSchemaTable().Rows.Cast<DataRow>().Select(c => c["ColumnName"].ToString().ToLower()).ToList();
-            var obj = Activator.CreateInstance<T>();
+            T obj = default(T).Instantiate(); //Activator.CreateInstance<T>();
 
-            if (props.Length > 1)
+            if (obj.GetType() == typeof(string))
+            {
+                var item = reader.GetValue(reader.GetSchemaTable().Columns[0].Ordinal);
+                if (item != null) { obj = (T)item; }
+            }
+            else if (props.Length > 1)
             {
                 foreach (var prop in props)
                 {

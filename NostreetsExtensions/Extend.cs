@@ -809,13 +809,22 @@ namespace NostreetsExtensions
 
         public static object Instantiate(this Type type)
         {
+            if (type == typeof(string))
+                return Activator.CreateInstance(typeof(string), Char.MinValue, 0);
 
-            return Activator.CreateInstance(type);
+            else
+                return Activator.CreateInstance(type);
+
         }
 
         public static T Instantiate<T>(this T type)
         {
-            return Activator.CreateInstance<T>();
+
+            if (typeof(T) == typeof(string))
+                return (T)Activator.CreateInstance(typeof(string), Char.MinValue, 0);
+
+            else
+                return Activator.CreateInstance<T>();
         }
 
         public static T UnityInstantiate<T>(this T type, UnityContainer containter)
@@ -1091,6 +1100,39 @@ namespace NostreetsExtensions
             return result.ToArray();
         }
 
+        public static Type AddProperty(this Type objType, Type propType, string propName, int index = 0)
+        {
+            List<string> propNames = new List<string>();
+            List<Type> propTypes = new List<Type>();
+            PropertyInfo[] props = objType.GetProperties();
+            bool addedProp = false;
+
+            for (int i = 0; i < props.Length; i++)
+            {
+                if (i == index)
+                {
+                    propNames.Add(propName);
+                    propTypes.Add(propType);
+                    addedProp = true;
+                }
+                else
+                {
+                    propNames.Add(props[(addedProp) ? i - 1 : i].Name);
+                    propTypes.Add(props[(addedProp) ? i - 1 : i].PropertyType);
+                }
+            }
+
+
+            ClassBuilder builder = new ClassBuilder(objType.Name);
+            return builder.CreateType(propNames.ToArray(), propTypes.ToArray());
+
+        }
+
+        public static Type AddProperty(this object obj, Type propType, string propName, int index = 0)
+        {
+            Type objType = obj.GetType();
+            return objType.AddProperty(propType, propName, index);
+        }
 
     }
 }
