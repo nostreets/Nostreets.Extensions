@@ -1134,5 +1134,69 @@ namespace NostreetsExtensions
             return objType.AddProperty(propType, propName, index);
         }
 
+        public static bool HasInterface<T>(this Type type)
+        {
+            if (!typeof(T).IsInterface)
+                throw new Exception("T has to be an interface");
+
+            if (type.IsInterface)
+                return false;
+
+            if (typeof(T).IsAssignableFrom(type))
+                return true;
+
+            if (type.GetInterfaces().Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(T)))
+                return true;
+
+            return false;
+        }
+
+        public static bool HasInterface(this Type type, Type inter)
+        {
+            if (!inter.IsInterface)
+                throw new Exception("T has to be an interface");
+
+            if (type.IsInterface)
+                return false;
+
+            if (inter.IsAssignableFrom(type))
+                return true;
+
+            if (type.GetInterfaces().Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == inter))
+                return true;
+
+            return false;
+        }
+
+        public static Type GetTypeOfT(this Type type)
+        {
+            if (type == null)
+                throw new ArgumentNullException("type");
+
+            if (!type.HasInterface<IEnumerable>() || !type.HasInterface<ICollection>() || !type.HasInterface<IList>())
+                throw new InvalidDataException("type does not implements IEnumerable");
+
+            return type.GetGenericArguments()[0];
+        }
+
+        public static Type GetTypeOfT(this object obj)
+        {
+
+            if (obj == null)
+                throw new ArgumentNullException("obj");
+
+            Type type = obj.GetType();
+
+            if (!type.HasInterface<IEnumerable>() || !type.HasInterface<ICollection>() || !type.HasInterface<IList>())
+                throw new InvalidDataException("obj's Type does not implements IEnumerable");
+
+            return type.GetGenericArguments()[0];
+        }
+
+        public static bool IsCollection(this Type item)
+        {
+            return (item.HasInterface<IEnumerable>() || item.HasInterface<ICollection>() || item.HasInterface<IList>());
+        }
+
     }
 }
