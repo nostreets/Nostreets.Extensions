@@ -1104,22 +1104,21 @@ namespace NostreetsExtensions
         {
             List<string> propNames = new List<string>();
             List<Type> propTypes = new List<Type>();
-            PropertyInfo[] props = objType.GetProperties();
-            bool addedProp = false;
+            PropertyInfo[] props = objType.GetProperties().Where(a => a.Name != propName).ToArray();
+            int i = 0;
 
-            for (int i = 0; i < props.Length; i++)
+            foreach (PropertyInfo prop in props)
             {
                 if (i == index)
                 {
                     propNames.Add(propName);
                     propTypes.Add(propType);
-                    addedProp = true;
                 }
-                else
-                {
-                    propNames.Add(props[(addedProp) ? i - 1 : i].Name);
-                    propTypes.Add(props[(addedProp) ? i - 1 : i].PropertyType);
-                }
+
+                propNames.Add(prop.Name);//s[(addedProp) ? i - 1 : i].Name);
+                propTypes.Add(prop.PropertyType);//s[(addedProp) ? i - 1 : i].PropertyType);
+
+                i++;
             }
 
 
@@ -1198,5 +1197,9 @@ namespace NostreetsExtensions
             return (item.HasInterface<IEnumerable>() || item.HasInterface<ICollection>() || item.HasInterface<IList>());
         }
 
+        public static bool IsSystemType(this Type type)
+        {
+            return type.Assembly == typeof(object).Assembly;
+        }
     }
 }
