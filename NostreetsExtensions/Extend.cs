@@ -1201,5 +1201,10 @@ namespace NostreetsExtensions
         {
             return type.Assembly == typeof(object).Assembly;
         }
+
+        public static bool IsPlural(this string txt)
+        {
+            return ((txt[txt.Length - 1] == 's') ? true : false);
+        }
     }
 }
