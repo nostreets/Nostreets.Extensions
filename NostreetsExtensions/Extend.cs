@@ -1192,9 +1192,13 @@ namespace NostreetsExtensions
             return type.GetGenericArguments()[0];
         }
 
-        public static bool IsCollection(this Type item)
+        public static bool IsCollection(this Type item, bool excludeStrings = true)
         {
-            return (item.HasInterface<IEnumerable>() || item.HasInterface<ICollection>() || item.HasInterface<IList>());
+            return (!excludeStrings) 
+                        ? (item.HasInterface<IEnumerable>() || item.HasInterface<ICollection>() || item.HasInterface<IList>()) 
+                        : (item == typeof(string)) 
+                        ? false 
+                        : (item.HasInterface<IEnumerable>() || item.HasInterface<ICollection>() || item.HasInterface<IList>());
         }
 
         public static bool IsSystemType(this Type type)

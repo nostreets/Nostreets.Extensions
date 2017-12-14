@@ -29,8 +29,7 @@ namespace NostreetsExtensions.Helpers
        public void ExecuteCmd(Func<SqlConnection> dataSouce,
             string storedProc,
             Action<SqlParameterCollection> inputParamMapper,
-             Action<IDataReader, short> map,
-
+            Action<IDataReader, short> map,
             Action<SqlParameterCollection> returnParameters = null,
             Action<SqlCommand> cmdModifier = null,
             CommandBehavior cmdBehavior = default(CommandBehavior),

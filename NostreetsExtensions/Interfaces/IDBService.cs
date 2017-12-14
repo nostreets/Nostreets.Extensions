@@ -3,15 +3,15 @@ using System.Collections.Generic;
 
 namespace NostreetsExtensions.Interfaces
 {
-    public interface IDBService<Type, IdType, AddType, UpdateType>
+    public interface IDBService
     {
-
-        List<Type> GetAll();
-        Type Get(IdType id);
-        IdType Insert(AddType model);
-        void Delete(IdType id);
-        void Update(UpdateType model);
+        List<object> GetAll();
+        object Get(object id);
+        object Insert(object model);
+        void Delete(object id);
+        void Update(object model);
     }
+
 
     public interface IDBService<T>
     {
@@ -33,5 +33,13 @@ namespace NostreetsExtensions.Interfaces
         void Update(Type model);
     }
 
-    
+    public interface IDBService<Type, IdType, AddType, UpdateType>
+    {
+
+        List<Type> GetAll();
+        Type Get(IdType id);
+        IdType Insert(AddType model);
+        void Delete(IdType id);
+        void Update(UpdateType model);
+    }
 }
