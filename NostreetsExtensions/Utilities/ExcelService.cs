@@ -21,7 +21,6 @@ namespace NostreetsExtensions.Utilities
         public List<object> GetAll(string sheetName)
         {
             List<object> result = null;
-            ClassBuilder builder = new ClassBuilder("DynamicModel");
             string[] excelSchema = null;
             Type[] schemaTypes = null;
             Type dynamicType = null;
@@ -39,7 +38,7 @@ namespace NostreetsExtensions.Utilities
                         schemaTypes = reader.GetSchemaTypes().ToArray();
 
                     if (dynamicType == null)
-                        dynamicType = builder.CreateType(excelSchema, schemaTypes);
+                        dynamicType = ClassBuilder.CreateType("DynamicModel", excelSchema, schemaTypes);
 
 
                     object stat = DataMapper.MapToObject(reader, dynamicType);

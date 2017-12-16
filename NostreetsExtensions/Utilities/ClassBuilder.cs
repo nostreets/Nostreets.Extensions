@@ -8,16 +8,28 @@ using System.Threading.Tasks;
 
 namespace NostreetsExtensions.Utilities
 {
-    class ClassBuilder
+    public class ClassBuilder
     {
         AssemblyName _asemblyName = null;
 
-        public ClassBuilder(string className)
+        ClassBuilder(string className)
         {
-            this._asemblyName = new AssemblyName(className);
+            _asemblyName = new AssemblyName(className);
         }
 
-        public Type CreateType(string[] propertyNames, Type[] types)
+        public static Type CreateType(string className, string[] propertyNames, Type[] types)
+        {
+            ClassBuilder builder = new ClassBuilder(className);
+            return builder.CreateType(propertyNames, types);
+        }
+
+        public static object CreateObject(string className, string[] propertyNames, Type[] types)
+        {
+            ClassBuilder builder = new ClassBuilder(className);
+            return builder.CreateObject(propertyNames, types);
+        }
+
+        private Type CreateType(string[] propertyNames, Type[] types)
         {
             if (propertyNames.Length != types.Length)
                 throw new Exception("The number of property names should match their corresopnding types number");
@@ -26,7 +38,7 @@ namespace NostreetsExtensions.Utilities
                 return CreateObject(propertyNames, types).GetType();
         }
 
-        public object CreateObject(string[] propertyNames, Type[] types)
+        private object CreateObject(string[] propertyNames, Type[] types)
         {
             if (propertyNames.Length != types.Length)
                 throw new Exception("The number of property names should match their corresopnding types number");
@@ -45,9 +57,9 @@ namespace NostreetsExtensions.Utilities
 
         private TypeBuilder CreateClass()
         {
-            AssemblyBuilder assemblyBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(this._asemblyName, AssemblyBuilderAccess.Run);
+            AssemblyBuilder assemblyBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(_asemblyName, AssemblyBuilderAccess.Run);
             ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule("MainModule");
-            TypeBuilder typeBuilder = moduleBuilder.DefineType(this._asemblyName.FullName
+            TypeBuilder typeBuilder = moduleBuilder.DefineType(_asemblyName.FullName
                                 , TypeAttributes.Public |
                                 TypeAttributes.Class |
                                 TypeAttributes.AutoClass |

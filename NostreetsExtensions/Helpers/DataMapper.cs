@@ -87,22 +87,29 @@ namespace NostreetsExtensions.Helpers
                 {
                     if (colname.Contains(prop.Name.ToLower()))
                     {
-                        Type type = Nullable.GetUnderlyingType(prop.PropertyType) ?? prop.PropertyType;
+                        Type propType = Nullable.GetUnderlyingType(prop.PropertyType) ?? prop.PropertyType;
 
-                        if (type != typeof(String) && type != typeof(Char) && type.BaseType != typeof(Enum) && type != typeof(DBNull) && type.IsClass)
+                        if (propType == typeof(string) && propType == typeof(char) && !propType.IsEnum && propType.IsClass)
                         {
-                            object property = JsonConvert.DeserializeObject(reader.GetString(reader.GetOrdinal(prop.Name)) ?? "", type);
-                            if (property == null) { property = Activator.CreateInstance(type); }
-                            if (property.GetType() != type) { throw new Exception("Property " + type.Name + " Does Not Equal Type in DB"); }
+                            object property = JsonConvert.DeserializeObject(reader.GetString(reader.GetOrdinal(prop.Name)) ?? "", propType);
+                            if (property == null) { property = Activator.CreateInstance(propType); }
+                            if (property.GetType() != propType) { throw new Exception("Property " + propType.Name + " Does Not Equal Type in DB"); }
                             prop.SetValue(obj, property, null);
                         }
                         else if (reader[prop.Name] != DBNull.Value)
                         {
-                            if (reader[prop.Name].GetType() == typeof(decimal)) { prop.SetValue(obj, (reader.GetDouble(prop.Name)), null); }
-                            else { prop.SetValue(obj, (reader.GetValue(reader.GetOrdinal(prop.Name)) ?? null), null); }
+                            if (reader[prop.Name].GetType() == typeof(decimal))
+                                prop.SetValue(obj, (reader.GetDouble(prop.Name)), null);
+
+                            else
+                            {
+                                object cell = reader.GetValue(reader.GetOrdinal(prop.Name));
+                                Type cellType = cell.GetType();
+                                prop.SetValue(obj, cellType == propType ? cell : null);
+                            }
                         }
                     }
-                    else if (prop.PropertyType.BaseType == typeof(Enum))
+                    else if (prop.PropertyType.IsEnum)
                     {
                         if (reader[prop.Name + "Id"] != DBNull.Value)
                         {
@@ -123,53 +130,8 @@ namespace NostreetsExtensions.Helpers
             return obj;
         }
 
-        public T MapToObject<T>(IDataReader reader)
+        public static T MapToObject<T>(IDataReader reader)
         {
-            //PropertyInfo[] props = typeof(T).GetProperties();
-            //IEnumerable<string> colname = reader.GetSchemaTable().Rows.Cast<DataRow>().Select(c => c["ColumnName"].ToString().ToLower()).ToList();
-            //T obj = default(T).Instantiate(); //Activator.CreateInstance<T>();
-
-            //if (obj.GetType() == typeof(string))
-            //{
-            //    var item = reader.GetValue(reader.GetSchemaTable().Columns[0].Ordinal);
-            //    if (item != null) { obj = (T)item; }
-            //}
-            //else if (props.Length > 1)
-            //{
-            //    foreach (PropertyInfo prop in props)
-            //    {
-            //        if (colname.Contains(prop.Name.ToLower()))
-            //        {
-            //            Type type = Nullable.GetUnderlyingType(prop.PropertyType) ?? prop.PropertyType;
-
-            //            if (type != typeof(String) && type != typeof(Char) && type.BaseType != typeof(Enum) && type.IsClass)
-            //            {
-            //                object property = JsonConvert.DeserializeObject(reader.GetString(reader.GetOrdinal(prop.Name)) ?? "", type);
-            //                if (property == null) { property = Activator.CreateInstance(type); }
-            //                if (property.GetType() != type) { throw new Exception("Property " + type.Name + " Does Not Equal Type in DB"); }
-            //                prop.SetValue(obj, property, null);
-            //            }
-            //            else if (reader[prop.Name] != DBNull.Value)
-            //            {
-            //                if (reader[prop.Name].GetType() == typeof(decimal)) { prop.SetValue(obj, (reader.GetDouble(prop.Name)), null); }
-            //                else { prop.SetValue(obj, (reader.GetValue(reader.GetOrdinal(prop.Name)) ?? null), null); }
-            //            }
-            //        }
-            //        else if (prop.PropertyType.BaseType == typeof(Enum))
-            //        {
-            //            if (reader[prop.Name + "Id"] != DBNull.Value)
-            //            {
-            //                prop.SetValue(obj, (reader.GetValue(reader.GetOrdinal(prop.Name + "Id")) ?? null), null);
-            //            }
-            //        }
-            //    }
-            //}
-            //else
-            //{
-            //    var item = reader.GetValue(reader.GetSchemaTable().Columns[0].Ordinal);
-            //    if (item != null) { obj = (T)item; }
-            //}
-
             Type type = typeof(T);
             T obj = (T)MapToObject(reader, type);
             return obj;

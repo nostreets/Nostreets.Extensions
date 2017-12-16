@@ -26,11 +26,29 @@ using System.Data.Entity;
 using System.Data.Entity.Infrastructure;
 using System.Data.SqlClient;
 using NostreetsExtensions.Interfaces;
+using System.Configuration;
 
 namespace NostreetsExtensions
 {
+
     public static class Extend
     {
+        #region Static Methods
+
+        public static IPAddress[] GetLocalIPAddresses()
+        {
+            string hostName = Dns.GetHostName();
+            IPHostEntry ipEntry = Dns.GetHostEntry(hostName);
+
+            IPAddress[] addr = ipEntry.AddressList;
+
+            return addr;
+        } 
+
+        #endregion
+
+        #region Extension Methods
+
         public static DataTable ToDataTable<T>(this List<T> iList)
         {
             DataTable dataTable = new DataTable();
@@ -1122,8 +1140,7 @@ namespace NostreetsExtensions
             }
 
 
-            ClassBuilder builder = new ClassBuilder(objType.Name);
-            return builder.CreateType(propNames.ToArray(), propTypes.ToArray());
+            return ClassBuilder.CreateType(objType.Name, propNames.ToArray(), propTypes.ToArray());
 
         }
 
@@ -1194,10 +1211,10 @@ namespace NostreetsExtensions
 
         public static bool IsCollection(this Type item, bool excludeStrings = true)
         {
-            return (!excludeStrings) 
-                        ? (item.HasInterface<IEnumerable>() || item.HasInterface<ICollection>() || item.HasInterface<IList>()) 
-                        : (item == typeof(string)) 
-                        ? false 
+            return (!excludeStrings)
+                        ? (item.HasInterface<IEnumerable>() || item.HasInterface<ICollection>() || item.HasInterface<IList>())
+                        : (item == typeof(string))
+                        ? false
                         : (item.HasInterface<IEnumerable>() || item.HasInterface<ICollection>() || item.HasInterface<IList>());
         }
 
@@ -1210,5 +1227,35 @@ namespace NostreetsExtensions
         {
             return ((txt[txt.Length - 1] == 's') ? true : false);
         }
+
+        public static IEnumerable<TSource> DistinctBy<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector)
+        {
+            HashSet<TKey> seenKeys = new HashSet<TKey>();
+            foreach (TSource element in source)
+            {
+                if (seenKeys.Add(keySelector(element)))
+                {
+                    yield return element;
+                }
+            }
+        }
+
+        public static string GetRequestIPAddress(this HttpContext context)
+        {
+            string ipAddress = context.Request.ServerVariables["HTTP_X_FORWARDED_FOR"];
+
+            if (!string.IsNullOrEmpty(ipAddress))
+            {
+                string[] addresses = ipAddress.Split(',');
+                if (addresses.Length != 0)
+                {
+                    return addresses[0];
+                }
+            }
+
+            return context.Request.ServerVariables["REMOTE_ADDR"];
+        } 
+
+        #endregion
     }
 }
