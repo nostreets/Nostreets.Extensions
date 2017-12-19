@@ -85,7 +85,7 @@ namespace NostreetsExtensions.Helpers
             {
                 foreach (PropertyInfo prop in props)
                 {
-                    if (colname.Contains(prop.Name.ToLower()))
+                    if (colname.Any(a => a == prop.Name.ToLower()))
                     {
                         Type propType = Nullable.GetUnderlyingType(prop.PropertyType) ?? prop.PropertyType;
 

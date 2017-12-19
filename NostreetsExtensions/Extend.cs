@@ -43,7 +43,7 @@ namespace NostreetsExtensions
             IPAddress[] addr = ipEntry.AddressList;
 
             return addr;
-        } 
+        }
 
         #endregion
 
@@ -440,6 +440,17 @@ namespace NostreetsExtensions
 
                 result.Add(enumType.GetEnumValue(enumName), enumName);
             }
+
+            return result;
+        }
+
+        public static Dictionary<TKey, TValue> ToDictionary<TKey, TValue>(this IEnumerable<KeyValuePair<TKey, TValue>> coll)
+        {
+            Dictionary<TKey, TValue> result = new Dictionary<TKey, TValue>();
+
+            if (coll != null && coll.ToArray().Length > 0)
+                foreach (KeyValuePair<TKey, TValue> pair in coll.ToArray())
+                    result.Add(pair.Key, pair.Value);
 
             return result;
         }
@@ -1050,6 +1061,13 @@ namespace NostreetsExtensions
             list.Insert(0, item);
         }
 
+        public static Dictionary<TKey, TValue> Prepend<TKey, TValue>(this IDictionary<TKey, TValue> dic, TKey key, TValue item)
+        {
+            var list = dic.ToList();
+            list.Insert(0, new KeyValuePair<TKey, TValue>(key, item));
+            return list.ToDictionary();
+        }
+
         public static List<string> GetSchema(this ISqlDao srv, Func<SqlConnection> dataSouce, string tableName)
         {
             SqlDataReader reader = null;
@@ -1254,7 +1272,7 @@ namespace NostreetsExtensions
             }
 
             return context.Request.ServerVariables["REMOTE_ADDR"];
-        } 
+        }
 
         #endregion
     }
