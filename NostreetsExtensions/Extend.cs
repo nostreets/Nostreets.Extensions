@@ -1274,6 +1274,37 @@ namespace NostreetsExtensions
             return context.Request.ServerVariables["REMOTE_ADDR"];
         }
 
+        public static int ParseInt(this string obj)
+        {
+            return int.Parse(obj);
+        }
+
+        public static uint ParseUInt(this string obj)
+        {
+            return uint.Parse(obj);
+        }
+
+        public static short ParseShort(this string obj)
+        {
+            return short.Parse(obj);
+        }
+
+        public static ushort ParseUShort(this string obj)
+        {
+            return ushort.Parse(obj);
+        }
+
+        public static long ParseLong(this string obj)
+        {
+            return long.Parse(obj);
+        }
+
+        public static ulong ParseULong(this string obj)
+        {
+            return ulong.Parse(obj);
+        }
+
+        
         #endregion
     }
 }
