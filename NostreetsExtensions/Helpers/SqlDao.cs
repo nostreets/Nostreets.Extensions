@@ -9,6 +9,7 @@ namespace NostreetsExtensions.Helpers
     {
         private static SqlDao _instance = null;
         private const string LOG_CAT = "DAO";
+        private int _numOfCalls = 0;
 
         private SqlDao() { }
 
@@ -25,6 +26,7 @@ namespace NostreetsExtensions.Helpers
             }
         }
 
+        public int NumberOfSqlCalls { get { return _numOfCalls; } }
 
        public void ExecuteCmd(Func<SqlConnection> dataSouce,
             string storedProc,
@@ -59,8 +61,11 @@ namespace NostreetsExtensions.Helpers
                             if (cmdModifier != null)
                                 cmdModifier(cmd);
 
+
                             if (cmdBehavior == default(CommandBehavior)) { cmdBehavior = CommandBehavior.CloseConnection;  }
                             reader = cmd.ExecuteReader(cmdBehavior);
+                            ++_numOfCalls;
+
 
                             while (true)
                             {
@@ -143,6 +148,8 @@ namespace NostreetsExtensions.Helpers
                         if (cmd != null)
                         {
                             int returnValue = cmd.ExecuteNonQuery();
+                            ++_numOfCalls;
+
 
                             if (conn.State != ConnectionState.Closed)
                                 conn.Close();
