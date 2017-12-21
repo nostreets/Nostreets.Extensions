@@ -26,7 +26,6 @@ using System.Data.Entity;
 using System.Data.Entity.Infrastructure;
 using System.Data.SqlClient;
 using NostreetsExtensions.Interfaces;
-using System.Configuration;
 
 namespace NostreetsExtensions
 {
@@ -1056,9 +1055,29 @@ namespace NostreetsExtensions
             return result;
         }
 
-        public static void Prepend<T>(this IList<T> list, T item)
+        public static IEnumerable Add(this IEnumerable collection, params object[] values)
         {
-            list.Insert(0, item);
+            return collection.OfType<object>().Concat(values);
+        }
+
+        public static IEnumerable<T> Add<T>(this IEnumerable<T> collection, params T[] values)
+        {
+            return collection.Concat(values);
+        }
+
+        public static IEnumerable Prepend(this IEnumerable collection, params object[] values)
+        {
+            return values.Concat(collection.OfType<object>());
+        }
+
+        public static IEnumerable<T> Prepend<T>(this IEnumerable<T> collection, params T[] values)
+        {
+            return values.Concat(collection);
+        }
+
+        public static void Prepend<T>(this IList<T> collection, T item)
+        {
+            collection.Insert(0, item);
         }
 
         public static Dictionary<TKey, TValue> Prepend<TKey, TValue>(this IDictionary<TKey, TValue> dic, TKey key, TValue item)
