@@ -605,21 +605,18 @@ namespace NostreetsExtensions
         public static bool HasDuplicates<T>(this IEnumerable<T> enumerable, string propertyName) where T : class
         {
 
-            var dict = new Dictionary<string, int>();
+            List<object> dict = new List<object>();
             foreach (var item in enumerable)
             {
-                if (!dict.ContainsKey((string)typeof(T).GetProperty(propertyName).GetValue(item)))
-                {
-                    dict.Add((string)typeof(T).GetProperty(propertyName).GetValue(item), 0);
-                }
-                if (dict[(string)typeof(T).GetProperty(propertyName).GetValue(item)] > 0)
-                {
-                    dict = null;
+                object key = item.GetPropertyValue(propertyName);
+
+                if (!dict.Contains(key))
+                    dict.Add(key);
+
+                else
                     return true;
-                }
-                dict[(string)typeof(T).GetProperty(propertyName).GetValue(item)]++;
             }
-            dict = null;
+
             return false;
         }
 
@@ -645,29 +642,34 @@ namespace NostreetsExtensions
             return result;
         }
 
-        public static List<string> GetDuplicates<T>(this IEnumerable<T> enumerable, string propertyName) where T : class
+        public static Dictionary<object, T[]> GetDuplicates<T>(this IEnumerable<T> enumerable, string propertyName) where T : class
         {
 
-            var dict = new Dictionary<string, int>();
-            foreach (var item in enumerable)
+            Dictionary<object, List<T>> dict = new Dictionary<object, List<T>>();
+
+            foreach (T item in enumerable)
             {
-                if (!dict.ContainsKey((string)typeof(T).GetProperty(propertyName).GetValue(item)))
+                object key = item.GetPropertyValue(propertyName);
+                if (!dict.ContainsKey(key))
                 {
-                    dict.Add((string)typeof(T).GetProperty(propertyName).GetValue(item), 0);
+                    dict.Add(key, new List<T> { item });
                 }
                 else
                 {
-                    dict[(string)typeof(T).GetProperty(propertyName).GetValue(item)]++;
+                    dict[item.GetPropertyValue(propertyName)].Add(item);
                 }
             }
-            var duplicates = new List<string>();
+
+            Dictionary<object, T[]> duplicates = new Dictionary<object, T[]>();
+
             foreach (var value in dict)
             {
-                if (value.Value > 0)
+                if (value.Value.Count > 1)
                 {
-                    duplicates.Add(value.Key);
+                    duplicates.Add(value.Key, value.Value.ToArray());
                 }
             }
+
             return duplicates;
         }
 

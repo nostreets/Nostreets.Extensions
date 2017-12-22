@@ -75,7 +75,7 @@ namespace NostreetsExtensions.Helpers
 
     public class DataMapper
     {
-        public static object MapToObject(IDataReader reader, Type classType, Dictionary<string, string> replacePropNames = null  )
+        public static object MapToObject(IDataReader reader, Type classType)
         {
             PropertyInfo[] props = classType.GetProperties();
             IEnumerable<string> colname = reader.GetSchemaTable().Rows.Cast<DataRow>().Select(c => c["ColumnName"].ToString().ToLower()).ToList();
