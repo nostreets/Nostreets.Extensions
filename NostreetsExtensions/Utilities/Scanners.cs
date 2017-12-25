@@ -265,7 +265,7 @@ namespace NostreetsExtensions.Utilities
         {
             _assembliesToSkip = assembliesToSkip;
 
-            if (_targetMap.Count < 0)
+            if (_targetMap.Count < 1)
                 if (type == null)
                     ScanAllAssemblies(section);
 
