@@ -9,16 +9,23 @@ namespace NostreetsExtensions.Utilities
 {
     public class FileManager
     {
+
+
         public FileManager(string directory)
         {
             if (!directory.DirectoryExists()) { throw new Exception("Directory Path is not valid..."); }
 
             TargetedDirectory = directory;
+            _latestInstance = this;
         }
+
+        
 
         public string TargetedDirectory { get; set; }
         public string LastFileAccessed { get; internal set; }
+        public static FileManager LatestInstance { get => _latestInstance; }
 
+        static FileManager _latestInstance = null;
 
         public void CreateFile(string fileName)
         {
