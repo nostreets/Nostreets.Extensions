@@ -9,8 +9,6 @@ namespace NostreetsExtensions.Utilities
 {
     public class FileManager
     {
-
-
         public FileManager(string directory)
         {
             if (!directory.DirectoryExists()) { throw new Exception("Directory Path is not valid..."); }
@@ -19,13 +17,22 @@ namespace NostreetsExtensions.Utilities
             _latestInstance = this;
         }
 
-        
-
         public string TargetedDirectory { get; set; }
-        public string LastFileAccessed { get; internal set; }
+        public string LastFileAccessed { get; private set; }
         public static FileManager LatestInstance { get => _latestInstance; }
 
         static FileManager _latestInstance = null;
+
+        private void NewLog(string[] args = null)
+        {
+            LatestInstance.WriteToFile("LOG START AT " + DateTime.Now.Timestamp() + "\n");
+
+            if (args != null && args.Length > 0)
+                for (int i = 0; i < args.Length; i++)
+                {
+                    LatestInstance.WriteToFile("{0} ARGUEMENT IS: {1}\n", i, args[i]);
+                }
+        }
 
         public void CreateFile(string fileName)
         {
@@ -37,8 +44,10 @@ namespace NostreetsExtensions.Utilities
             }
 
             if (!File.Exists(filePath)) { throw new Exception("File was not created..."); }
-
             LastFileAccessed = fileName;
+            NewLog();
+
+
         }
 
         public void WriteToFile(string textToWrite, params object[] args)
