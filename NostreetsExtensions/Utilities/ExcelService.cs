@@ -66,5 +66,56 @@ namespace NostreetsExtensions.Utilities
             return result;
         }
 
+
+        //EXAMPLE ACCESS
+        private List<object> GetShippingStatsFromExcel(string sheetName, string carrierColumn)
+        {
+            List<object> result = null;
+            ClassBuilder builder = new ClassBuilder(_fileName);//"DynamicModel");
+            string[] excelSchema = null;
+            Type[] schemaTypes = null;
+            Type dynamicType = null;
+
+            DataProvider.ExecuteCmd(() => Connection, string.Format("Select * From [{0}$]", sheetName), null,
+                (reader, set) =>
+                {
+                    if (result == null)
+                        result = new List<object>();
+
+                    if (excelSchema == null)
+                    {
+                        List<string> schema = reader.GetSchema().Where(a => a[0] != 'F' && !int.TryParse(a.Substring(1), out int ordinal)).ToList();
+
+                        schema.AddRange(new[] { "StatusText", "StatusDate", "ScheduledDelivery", "StatusLocation" });
+                        if (!schema.Contains(carrierColumn))
+                            schema.Add(carrierColumn);
+
+                        excelSchema = schema.ToArray();
+                    }
+
+                    if (schemaTypes == null)
+                    {
+                        List<Type> types = reader.GetSchemaTypes().Where(a => a != typeof(DBNull)).ToList();
+                        types.AddRange(new[] { typeof(string), typeof(string), typeof(string) });
+
+                        if (excelSchema.Contains(carrierColumn))
+                            types.Add(typeof(string));
+
+                        schemaTypes = types.ToArray();
+                    }
+
+                    if (dynamicType == null)
+                        dynamicType = builder.CreateType(excelSchema, schemaTypes);
+
+
+                    object stat = DataMapper.MapToObject(reader, dynamicType);
+
+
+                    result.Add(stat);
+                });
+
+            return result;
+        }
+
     }
 }

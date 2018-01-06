@@ -160,7 +160,8 @@ namespace NostreetsExtensions
         {
             HttpWebRequest requestStream = (HttpWebRequest)WebRequest.Create(url);
             HttpWebResponse responseStream = null;
-            string responseString, requestString;
+            string responseString = null,
+                   requestString = null;
 
             requestStream.ContentType = contentType;
             requestStream.Method = method;
@@ -232,6 +233,9 @@ namespace NostreetsExtensions
             }
             catch (Exception ex)
             {
+                if (FileManager.LatestInstance != null)
+                    FileManager.LatestInstance.WriteToFile("\n----------------------   Error Details    ---------------------\nRequest: \n{0}\n\n Response: \n {1}\n", requestString, responseString);
+
                 return ex;
             }
         }
@@ -321,6 +325,9 @@ namespace NostreetsExtensions
             }
             catch (Exception ex)
             {
+                if (FileManager.LatestInstance != null)
+                    FileManager.LatestInstance.WriteToFile("\n----------------------   Error Details    ---------------------\nRequest: \n{0}\n\n Response: \n {1}\n", requestString, responseString);
+
                 throw ex;
             }
 
@@ -1325,7 +1332,16 @@ namespace NostreetsExtensions
             return ulong.Parse(obj);
         }
 
-        
+        public static string RemoveChar(this string txt, params char[] charsToRemove)
+        {
+            foreach (var c in charsToRemove)
+            {
+                txt = txt.Replace("" + c, "");
+            }
+
+            return txt;
+        }
+
         #endregion
     }
 }
