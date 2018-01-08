@@ -71,7 +71,6 @@ namespace NostreetsExtensions.Utilities
         private List<object> GetShippingStatsFromExcel(string sheetName, string carrierColumn)
         {
             List<object> result = null;
-            ClassBuilder builder = new ClassBuilder(_fileName);//"DynamicModel");
             string[] excelSchema = null;
             Type[] schemaTypes = null;
             Type dynamicType = null;
@@ -105,7 +104,7 @@ namespace NostreetsExtensions.Utilities
                     }
 
                     if (dynamicType == null)
-                        dynamicType = builder.CreateType(excelSchema, schemaTypes);
+                        dynamicType = ClassBuilder.CreateType(_fileName, excelSchema, schemaTypes);
 
 
                     object stat = DataMapper.MapToObject(reader, dynamicType);

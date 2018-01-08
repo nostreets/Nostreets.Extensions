@@ -26,6 +26,7 @@ using System.Data.Entity;
 using System.Data.Entity.Infrastructure;
 using System.Data.SqlClient;
 using NostreetsExtensions.Interfaces;
+using System.Diagnostics;
 
 namespace NostreetsExtensions
 {
@@ -729,12 +730,12 @@ namespace NostreetsExtensions
             throw new ArgumentException("Expression is not a method", "expression");
         }
 
-        public static MethodInfo GetMethodInfo<T>(this T obj, string methodName, BindingFlags searchSettings = BindingFlags.NonPublic | BindingFlags.Instance) where T : new()
+        public static MethodInfo GetMethodInfo<T>(this T obj, string methodName, BindingFlags searchSettings = BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public | BindingFlags.Static) where T : new()
         {
             return typeof(T).GetMethod(methodName, searchSettings);
         }
 
-        public static MethodInfo GetMethodInfo(this Type type, string methodName, BindingFlags searchSettings = BindingFlags.NonPublic | BindingFlags.Instance)
+        public static MethodInfo GetMethodInfo(this Type type, string methodName, BindingFlags searchSettings = BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public | BindingFlags.Static)
         {
             return type.GetMethod(methodName, searchSettings);
         }
@@ -844,13 +845,13 @@ namespace NostreetsExtensions
             return result;
         }
 
-        public static object Instantiate(this Type type)
+        public static object Instantiate(this Type type, params object[] parameters)
         {
             if (type == typeof(string))
                 return Activator.CreateInstance(typeof(string), Char.MinValue, 0);
 
             else
-                return Activator.CreateInstance(type);
+                return Activator.CreateInstance(type, parameters);
 
         }
 
@@ -1064,14 +1065,14 @@ namespace NostreetsExtensions
             return result;
         }
 
-        public static IEnumerable Add(this IEnumerable collection, params object[] values)
+        public static void Add(this IEnumerable collection, params object[] values)
         {
-            return collection.OfType<object>().Concat(values);
+            collection.OfType<object>().ToList().AddRange(values);
         }
 
-        public static IEnumerable<T> Add<T>(this IEnumerable<T> collection, params T[] values)
+        public static void Add<T>(this IEnumerable<T> collection, params T[] value)
         {
-            return collection.Concat(values);
+            collection.Add(value);
         }
 
         public static IEnumerable Prepend(this IEnumerable collection, params object[] values)
@@ -1091,7 +1092,7 @@ namespace NostreetsExtensions
 
         public static Dictionary<TKey, TValue> Prepend<TKey, TValue>(this IDictionary<TKey, TValue> dic, TKey key, TValue item)
         {
-            var list = dic.ToList();
+            List<KeyValuePair<TKey, TValue>> list = dic.ToList();
             list.Insert(0, new KeyValuePair<TKey, TValue>(key, item));
             return list.ToDictionary();
         }
@@ -1340,6 +1341,46 @@ namespace NostreetsExtensions
             }
 
             return txt;
+        }
+
+        public static Expression<Func<T, TResult>> ToExpression<T, TResult>(this Func<T, TResult> method)
+        {
+            return x => method(x);
+        }
+
+        public static void Log(this string txt)
+        {
+            Debug.Write(txt);
+        }
+
+        public static IEnumerable Cast<T>(this IEnumerable<T> col, Type type)
+        {
+            IEnumerable result = null;
+            Type generic = (col == null) ? null : typeof(List<>).MakeGenericType(type);
+
+
+            if (generic != null && generic.HasInterface<IEnumerable>())
+            {
+                dynamic list = generic.Instantiate();
+
+                foreach (T item in col)
+                    list.Add(item);
+            }
+
+            return result;
+        }
+
+        public static object IntoGenericMethod(this Type methodHolder, string methodName, Type type, params object[] parameters)
+        {
+            object result = null;
+            MethodInfo method = methodHolder.GetMethodInfo(methodName)?.MakeGenericMethod(new Type[] { type });
+            result = method?.Invoke(methodHolder, parameters);
+            return result;
+        }
+
+        public static Type MakeGenericType(this Type type, Type genericType)
+        {
+            return type.MakeGenericType(new Type[] { genericType });
         }
 
         #endregion

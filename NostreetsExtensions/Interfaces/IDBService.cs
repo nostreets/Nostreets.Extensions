@@ -10,6 +10,7 @@ namespace NostreetsExtensions.Interfaces
         object Insert(object model);
         void Delete(object id);
         void Update(object model);
+        IEnumerable<object> Where(Func<object, bool> predicate);
     }
 
 
@@ -21,6 +22,7 @@ namespace NostreetsExtensions.Interfaces
         object Insert(T model);
         void Delete(object id);
         void Update(T model);
+        IEnumerable<T> Where(Func<T, bool> predicate);
     }
 
     public interface IDBService<Type, IdType>
@@ -31,6 +33,7 @@ namespace NostreetsExtensions.Interfaces
         IdType Insert(Type model);
         void Delete(IdType id);
         void Update(Type model);
+        IEnumerable<Type> Where(Func<Type, bool> predicate);
     }
 
     public interface IDBService<Type, IdType, AddType, UpdateType>
@@ -41,5 +44,6 @@ namespace NostreetsExtensions.Interfaces
         IdType Insert(AddType model);
         void Delete(IdType id);
         void Update(UpdateType model);
+        IEnumerable<Type> Where(Func<Type, bool> predicate);
     }
 }
