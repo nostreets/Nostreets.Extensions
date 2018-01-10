@@ -27,6 +27,7 @@ using System.Data.Entity.Infrastructure;
 using System.Data.SqlClient;
 using NostreetsExtensions.Interfaces;
 using System.Diagnostics;
+using System.Diagnostics.Contracts;
 
 namespace NostreetsExtensions
 {
@@ -730,9 +731,9 @@ namespace NostreetsExtensions
             throw new ArgumentException("Expression is not a method", "expression");
         }
 
-        public static MethodInfo GetMethodInfo<T>(this T obj, string methodName, BindingFlags searchSettings = BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public | BindingFlags.Static) where T : new()
+        public static MethodInfo GetMethodInfo(this object obj, string methodName, BindingFlags searchSettings = BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public | BindingFlags.Static)
         {
-            return typeof(T).GetMethod(methodName, searchSettings);
+            return obj.GetType().GetMethod(methodName, searchSettings);
         }
 
         public static MethodInfo GetMethodInfo(this Type type, string methodName, BindingFlags searchSettings = BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public | BindingFlags.Static)
@@ -851,7 +852,11 @@ namespace NostreetsExtensions
                 return Activator.CreateInstance(typeof(string), Char.MinValue, 0);
 
             else
+                if (parameters.Length > 0 && parameters[0] != null)
                 return Activator.CreateInstance(type, parameters);
+
+            else
+                return Activator.CreateInstance(type);
 
         }
 
@@ -1065,14 +1070,18 @@ namespace NostreetsExtensions
             return result;
         }
 
-        public static void Add(this IEnumerable collection, params object[] values)
+        public static IEnumerable Add(this IEnumerable collection, params object[] values)
         {
-            collection.OfType<object>().ToList().AddRange(values);
-        }
+            IEnumerable result = null;
+            List<object> list = collection.OfType<object>().ToList();
+            list.AddRange(values);
 
-        public static void Add<T>(this IEnumerable<T> collection, params T[] value)
-        {
-            collection.Add(value);
+            if (collection.GetType().IsArray)
+                result = list.ToArray();
+            else
+                result = list;
+
+            return result;
         }
 
         public static IEnumerable Prepend(this IEnumerable collection, params object[] values)
@@ -1353,33 +1362,59 @@ namespace NostreetsExtensions
             Debug.Write(txt);
         }
 
-        public static IEnumerable Cast<T>(this IEnumerable<T> collection, Type type)
+        public static object Cast(this Type type, object value = null)
         {
-            IEnumerable result = null;
-            Type generic = (collection == null) ? null : typeof(List<>).MakeGenericType(type);
-
-
-            if (generic != null && generic.HasInterface<IEnumerable>())
-            {
-                dynamic list = generic.Instantiate();
-                var converter = typeof(Converter<,>).MakeGenericType(typeof(object), type).Instantiate();
-
-                list.ConvertAll(converter);
-
-                list.AddRange(collection);
-
-                //foreach (T item in collection)
-                //    list.Add(Convert.ChangeType(item, type));
-            }
-
-            return result;
+            object obj = null;
+            obj = Convert.ChangeType(value, type);
+            return obj;
         }
 
-        public static object IntoGenericMethod(this Type methodHolder, string methodName, Type type, params object[] parameters)
+        public static IEnumerable Cast<T>(this IEnumerable<T> collection, Type type)
+        {
+            if (collection.All(a => a.GetType() != type))
+                throw new Exception("All Types hav");
+
+            List<object> result = null;
+            dynamic genericList = (collection == null) ? null : typeof(List<>).MakeGenericType(type).Instantiate();
+            //IEnumerable convertedList = (IEnumerable)collection?.IntoGenericMethod(typeof(Enumerable), "OfType", type, true);
+            //convertedList.to
+            if (genericList != null)
+            {
+                if (result == null)
+                    result = new List<object>();
+                foreach (var item in collection)
+                    genericList.Add(item);
+            }
+
+
+
+            //List<T> li = new List<T>(); li.ConvertAll<int>((a) => a);
+
+            //if (generic != null && generic.HasInterface<IEnumerable>())
+            //{
+            //    dynamic list = generic.Instantiate();
+
+            //    object converter = typeof(Func<,>).MakeGenericType(typeof(object), type).Instantiate();
+            //    (a) => { return type.Cast(a); };
+            //    list.ConvertAll(converter);
+
+            //    // list.AddRange(collection);
+
+            //    //foreach (T item in collection)
+            //    //    list.Add(Convert.ChangeType(item, type));
+            //}
+
+            return genericList;
+        }
+
+        public static object IntoGenericMethod(this object obj, Type methodHolder, string methodName, Type type, bool isExtension = false, params object[] parameters)
         {
             object result = null;
+            if (isExtension)
+                parameters = (object[])parameters.Add(obj);
+
             MethodInfo method = methodHolder.GetMethodInfo(methodName)?.MakeGenericMethod(new Type[] { type });
-            result = method?.Invoke(methodHolder, parameters);
+            result = method?.Invoke(obj, parameters);
             return result;
         }
 
@@ -1387,9 +1422,19 @@ namespace NostreetsExtensions
         {
             Type result = null;
             if (type.IsGenericTypeDefinition)
-                result = type.MakeGenericType( genericTypes );
+                result = type.MakeGenericType(genericTypes);
 
             return result;
+        }
+
+        public static Array ToArray(this IEnumerable source, Type type)
+        {
+            var param = Expression.Parameter(typeof(IEnumerable), "source");
+            var cast = Expression.Call(typeof(Enumerable), "Cast", new[] { type }, param);
+            var toArray = Expression.Call(typeof(Enumerable), "ToArray", new[] { type }, cast);
+            var lambda = Expression.Lambda<Func<IEnumerable, Array>>(toArray, param).Compile();
+
+            return lambda(source);
         }
 
         #endregion

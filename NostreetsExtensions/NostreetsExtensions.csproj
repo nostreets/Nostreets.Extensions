@@ -110,6 +110,7 @@
     <Compile Include="Helpers\DataHelper.cs" />
     <Compile Include="Helpers\DataMapper.cs" />
     <Compile Include="Helpers\DataProvider.cs" />
+    <Compile Include="Utilities\Class1.cs" />
     <Compile Include="Utilities\ClassBuilder.cs" />
     <Compile Include="Utilities\ExcelService.cs" />
     <Compile Include="Helpers\SqlDao.cs" />
@@ -119,6 +120,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Utilities\CacheManager.cs" />
     <Compile Include="Utilities\CustomSerializer.cs" />
+    <Compile Include="Utilities\ExpressionBuilder.cs" />
     <Compile Include="Utilities\FileManager.cs" />
     <Compile Include="Utilities\Scanners.cs" />
     <Compile Include="Utilities\TimeOut.cs" />
