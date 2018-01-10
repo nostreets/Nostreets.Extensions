@@ -1353,18 +1353,23 @@ namespace NostreetsExtensions
             Debug.Write(txt);
         }
 
-        public static IEnumerable Cast<T>(this IEnumerable<T> col, Type type)
+        public static IEnumerable Cast<T>(this IEnumerable<T> collection, Type type)
         {
             IEnumerable result = null;
-            Type generic = (col == null) ? null : typeof(List<>).MakeGenericType(type);
+            Type generic = (collection == null) ? null : typeof(List<>).MakeGenericType(type);
 
 
             if (generic != null && generic.HasInterface<IEnumerable>())
             {
                 dynamic list = generic.Instantiate();
+                var converter = typeof(Converter<,>).MakeGenericType(typeof(object), type).Instantiate();
 
-                foreach (T item in col)
-                    list.Add(item);
+                list.ConvertAll(converter);
+
+                list.AddRange(collection);
+
+                //foreach (T item in collection)
+                //    list.Add(Convert.ChangeType(item, type));
             }
 
             return result;
@@ -1378,9 +1383,13 @@ namespace NostreetsExtensions
             return result;
         }
 
-        public static Type MakeGenericType(this Type type, Type genericType)
+        public static Type MakeGenericType(this Type type, params Type[] genericTypes)
         {
-            return type.MakeGenericType(new Type[] { genericType });
+            Type result = null;
+            if (type.IsGenericTypeDefinition)
+                result = type.MakeGenericType( genericTypes );
+
+            return result;
         }
 
         #endregion
