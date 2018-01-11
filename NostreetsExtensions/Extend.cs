@@ -158,8 +158,11 @@ namespace NostreetsExtensions
             return start.AddDays(6);
         }
 
-        public static object HitEndpoint(this SqlService obj, string url, string method = "GET", object data = null, string contentType = "application/json", Dictionary<string, string> headers = null)
+        public static object HitEndpoint(this string url, string method = "GET", object data = null, string contentType = "application/json", Dictionary<string, string> headers = null)
         {
+            if (!url.IsValidUrl())
+                throw new Exception("url to has to be valid url string to be able to HitEndpoint...");
+
             HttpWebRequest requestStream = (HttpWebRequest)WebRequest.Create(url);
             HttpWebResponse responseStream = null;
             string responseString = null,
@@ -242,8 +245,11 @@ namespace NostreetsExtensions
             }
         }
 
-        public static T HitEndpoint<T>(this SqlService obj, string url, string method = "GET", object data = null, string contentType = "application/json", Dictionary<string, string> headers = null)
+        public static T HitEndpoint<T>(this string url, string method = "GET", object data = null, string contentType = "application/json", Dictionary<string, string> headers = null)
         {
+            if (!url.IsValidUrl())
+                throw new Exception("url to has to be valid url string to be able to HitEndpoint...");
+
             HttpWebRequest requestStream = (HttpWebRequest)WebRequest.Create(url);
             HttpWebResponse responseStream = null;
             string responseString = null,
@@ -1371,40 +1377,44 @@ namespace NostreetsExtensions
 
         public static IEnumerable Cast<T>(this IEnumerable<T> collection, Type type)
         {
-            if (collection.All(a => a.GetType() != type))
-                throw new Exception("All Types hav");
+            IEnumerable result = null;
+            if (type == null)
+                throw new Exception("type cannot be null to be able to Cast");
 
-            List<object> result = null;
-            dynamic genericList = (collection == null) ? null : typeof(List<>).MakeGenericType(type).Instantiate();
-            //IEnumerable convertedList = (IEnumerable)collection?.IntoGenericMethod(typeof(Enumerable), "OfType", type, true);
-            //convertedList.to
-            if (genericList != null)
+            if (collection != null)
             {
-                if (result == null)
-                    result = new List<object>();
-                foreach (var item in collection)
-                    genericList.Add(item);
+                bool entitiesMatch = collection.All(a => a.GetType() == type);
+                if (!entitiesMatch)
+                    throw new Exception("All entities Type in the collection have to match to type to be able to Cast");
+
+
+                dynamic genericList = typeof(List<>).MakeGenericType(type).Instantiate();
+                Type genericListType = (Type)genericList.GetType();
+
+                if (genericList != null)// && convertedList != null)
+                {
+                    if (result == null)
+                        result = new List<object>();
+
+                    foreach (var item in collection)
+                        ((object)genericList).IntoMethod(genericListType, "Add", false, item);//Add(type.Cast(item));
+
+                    result = genericList;
+                }
             }
 
+            return result;
+        }
 
+        public static object IntoMethod(this object obj, Type methodHolder, string methodName, bool isExtension = false, params object[] parameters)
+        {
+            object result = null;
+            if (isExtension)
+                parameters = (object[])parameters.Add(obj);
 
-            //List<T> li = new List<T>(); li.ConvertAll<int>((a) => a);
-
-            //if (generic != null && generic.HasInterface<IEnumerable>())
-            //{
-            //    dynamic list = generic.Instantiate();
-
-            //    object converter = typeof(Func<,>).MakeGenericType(typeof(object), type).Instantiate();
-            //    (a) => { return type.Cast(a); };
-            //    list.ConvertAll(converter);
-
-            //    // list.AddRange(collection);
-
-            //    //foreach (T item in collection)
-            //    //    list.Add(Convert.ChangeType(item, type));
-            //}
-
-            return genericList;
+            MethodInfo method = methodHolder.GetMethodInfo(methodName);
+            result = method?.Invoke(obj, parameters);
+            return result;
         }
 
         public static object IntoGenericMethod(this object obj, Type methodHolder, string methodName, Type type, bool isExtension = false, params object[] parameters)
@@ -1418,15 +1428,6 @@ namespace NostreetsExtensions
             return result;
         }
 
-        public static Type MakeGenericType(this Type type, params Type[] genericTypes)
-        {
-            Type result = null;
-            if (type.IsGenericTypeDefinition)
-                result = type.MakeGenericType(genericTypes);
-
-            return result;
-        }
-
         public static Array ToArray(this IEnumerable source, Type type)
         {
             var param = Expression.Parameter(typeof(IEnumerable), "source");
@@ -1436,6 +1437,22 @@ namespace NostreetsExtensions
 
             return lambda(source);
         }
+
+        public static bool IsValidUrl(this string url)
+        {
+            return Uri.TryCreate(url, UriKind.Absolute, out Uri uriResult) && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
+        }
+
+        public static string EncodeUrl(this string url)
+        {
+            return (url.IsValidUrl()) ? HttpUtility.UrlEncode(url) : null;
+        }
+
+        public static string DecodeUrl(this string url)
+        {
+            return HttpUtility.UrlDecode(url);
+        }
+
 
         #endregion
     }
