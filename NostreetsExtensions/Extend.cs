@@ -1391,13 +1391,13 @@ namespace NostreetsExtensions
                 dynamic genericList = typeof(List<>).MakeGenericType(type).Instantiate();
                 Type genericListType = (Type)genericList.GetType();
 
-                if (genericList != null)// && convertedList != null)
+                if (genericList != null)
                 {
                     if (result == null)
                         result = new List<object>();
 
                     foreach (var item in collection)
-                        ((object)genericList).IntoMethod(genericListType, "Add", false, item);//Add(type.Cast(item));
+                        ((object)genericList).IntoMethod(genericListType, "Add", false, item);
 
                     result = genericList;
                 }

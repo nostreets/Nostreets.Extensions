@@ -25,25 +25,27 @@ namespace NostreetsExtensions.Interfaces
         IEnumerable<T> Where(Func<T, bool> predicate);
     }
 
-    public interface IDBService<Type, IdType>
+    public interface IDBService<T, IdType>
     {
 
-        List<Type> GetAll();
-        Type Get(IdType id);
-        IdType Insert(Type model);
+        List<T> GetAll();
+        T Get(IdType id);
+        IdType Insert(T model);
         void Delete(IdType id);
-        void Update(Type model);
-        IEnumerable<Type> Where(Func<Type, bool> predicate);
+        void Update(T model);
+        IEnumerable<T> Where(Func<T, bool> predicate);
     }
 
-    public interface IDBService<Type, IdType, AddType, UpdateType>
+    public interface IDBService<T, IdType, AddType, UpdateType>
     {
 
-        List<Type> GetAll();
-        Type Get(IdType id);
-        IdType Insert(AddType model);
+        List<T> GetAll();
+        T Get(IdType id);
+        IdType Insert(T model);
+        IdType Insert(AddType model, Converter<AddType, T> converter);
         void Delete(IdType id);
-        void Update(UpdateType model);
-        IEnumerable<Type> Where(Func<Type, bool> predicate);
+        void Update(UpdateType model, Converter<UpdateType, T> converter);
+        void Update(T model);
+        IEnumerable<T> Where(Func<T, bool> predicate);
     }
 }
