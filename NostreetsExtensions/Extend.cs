@@ -32,10 +32,17 @@ using System.Diagnostics.Contracts;
 namespace NostreetsExtensions
 {
 
+    /// <summary>
+    /// 
+    /// </summary>
     public static class Extend
     {
         #region Static Methods
 
+        /// <summary>
+        /// Gets the local ip addresses.
+        /// </summary>
+        /// <returns></returns>
         public static IPAddress[] GetLocalIPAddresses()
         {
             string hostName = Dns.GetHostName();
@@ -50,6 +57,12 @@ namespace NostreetsExtensions
 
         #region Extension Methods
 
+        /// <summary>
+        /// To the data table.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="iList">The i list.</param>
+        /// <returns></returns>
         public static DataTable ToDataTable<T>(this List<T> iList)
         {
             DataTable dataTable = new DataTable();
@@ -93,6 +106,12 @@ namespace NostreetsExtensions
             return dataTable;
         }
 
+        /// <summary>
+        /// To the data table.
+        /// </summary>
+        /// <param name="iList">The i list.</param>
+        /// <param name="objType">Type of the object.</param>
+        /// <returns></returns>
         public static DataTable ToDataTable(this List<object> iList, Type objType)
         {
             DataTable dataTable = new DataTable();
@@ -136,12 +155,23 @@ namespace NostreetsExtensions
             return dataTable;
         }
 
+        /// <summary>
+        /// To the date time.
+        /// </summary>
+        /// <param name="obj">The object.</param>
+        /// <param name="format">The format.</param>
+        /// <returns></returns>
         public static DateTime ToDateTime(this string obj, string format = null)
         {
             if (format != null) { return DateTime.ParseExact(obj, format, CultureInfo.InvariantCulture); }
             else { return Convert.ToDateTime(obj); }
         }
 
+        /// <summary>
+        /// Starts the of week.
+        /// </summary>
+        /// <param name="dt">The dt.</param>
+        /// <returns></returns>
         public static DateTime StartOfWeek(this DateTime dt)
         {
             DayOfWeek firstDay = CultureInfo.CurrentCulture.DateTimeFormat.FirstDayOfWeek;
@@ -152,12 +182,27 @@ namespace NostreetsExtensions
             return firstDayInWeek;
         }
 
+        /// <summary>
+        /// Ends the of week.
+        /// </summary>
+        /// <param name="dt">The dt.</param>
+        /// <returns></returns>
         public static DateTime EndOfWeek(this DateTime dt)
         {
             DateTime start = StartOfWeek(dt);
             return start.AddDays(6);
         }
 
+        /// <summary>
+        /// Hits the endpoint.
+        /// </summary>
+        /// <param name="url">The URL.</param>
+        /// <param name="method">The method.</param>
+        /// <param name="data">The data.</param>
+        /// <param name="contentType">Type of the content.</param>
+        /// <param name="headers">The headers.</param>
+        /// <returns></returns>
+        /// <exception cref="Exception">url to has to be valid url string to be able to HitEndpoint...</exception>
         public static object HitEndpoint(this string url, string method = "GET", object data = null, string contentType = "application/json", Dictionary<string, string> headers = null)
         {
             if (!url.IsValidUrl())
@@ -245,6 +290,18 @@ namespace NostreetsExtensions
             }
         }
 
+        /// <summary>
+        /// Hits the endpoint.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="url">The URL.</param>
+        /// <param name="method">The method.</param>
+        /// <param name="data">The data.</param>
+        /// <param name="contentType">Type of the content.</param>
+        /// <param name="headers">The headers.</param>
+        /// <returns></returns>
+        /// <exception cref="Exception">url to has to be valid url string to be able to HitEndpoint...
+        /// or</exception>
         public static T HitEndpoint<T>(this string url, string method = "GET", object data = null, string contentType = "application/json", Dictionary<string, string> headers = null)
         {
             if (!url.IsValidUrl())
@@ -341,18 +398,36 @@ namespace NostreetsExtensions
 
         }
 
+        /// <summary>
+        /// Gets the week of month.
+        /// </summary>
+        /// <param name="time">The time.</param>
+        /// <returns></returns>
         public static int GetWeekOfMonth(this DateTime time)
         {
             DateTime first = new DateTime(time.Year, time.Month, 1);
             return time.GetWeekOfYear() - first.GetWeekOfYear() + 1;
         }
 
+        /// <summary>
+        /// Gets the week of year.
+        /// </summary>
+        /// <param name="time">The time.</param>
+        /// <returns></returns>
         public static int GetWeekOfYear(this DateTime time)
         {
             GregorianCalendar _gc = new GregorianCalendar();
             return _gc.GetWeekOfYear(time, CalendarWeekRule.FirstDay, DayOfWeek.Sunday);
         }
 
+        /// <summary>
+        /// Determines whether [is week of month] [the specified pay day].
+        /// </summary>
+        /// <param name="week">The week.</param>
+        /// <param name="payDay">The pay day.</param>
+        /// <returns>
+        ///   <c>true</c> if [is week of month] [the specified pay day]; otherwise, <c>false</c>.
+        /// </returns>
         public static bool IsWeekOfMonth(this int week, DateTime payDay)
         {
             bool result = false;
@@ -368,6 +443,11 @@ namespace NostreetsExtensions
 
         }
 
+        /// <summary>
+        /// Runs the power shell command.
+        /// </summary>
+        /// <param name="command">The command.</param>
+        /// <param name="parameters">The parameters.</param>
         public static void RunPowerShellCommand(this string command, params string[] parameters)
         {
             string script = "Set-ExecutionPolicy -Scope Process -ExecutionPolicy Unrestricted; Get-ExecutionPolicy"; // the second command to know the ExecutionPolicy level
@@ -384,6 +464,14 @@ namespace NostreetsExtensions
             }
         }
 
+        /// <summary>
+        /// Adds the attribute.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="obj">The object.</param>
+        /// <param name="affectBaseObj">if set to <c>true</c> [affect base object].</param>
+        /// <param name="attributeParams">The attribute parameters.</param>
+        /// <param name="affectedFields">The affected fields.</param>
         public static void AddAttribute<T>(this object obj, bool affectBaseObj = true, Dictionary<object, Type> attributeParams = null, FieldInfo[] affectedFields = null) where T : Attribute
         {
             Type type = obj.GetType();
@@ -421,16 +509,37 @@ namespace NostreetsExtensions
 
         }
 
+        /// <summary>
+        /// Determines whether this instance is odd.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <returns>
+        ///   <c>true</c> if the specified value is odd; otherwise, <c>false</c>.
+        /// </returns>
         public static bool IsOdd(this int value)
         {
             return value % 2 != 0;
         }
 
+        /// <summary>
+        /// Determines whether this instance is even.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <returns>
+        ///   <c>true</c> if the specified value is even; otherwise, <c>false</c>.
+        /// </returns>
         public static bool IsEven(this int value)
         {
             return value % 2 == 0;
         }
 
+        /// <summary>
+        /// To the dictionary.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="enumType">Type of the enum.</param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentException">Type must be an enum</exception>
         public static Dictionary<int, string> ToDictionary<T>(this Type enumType) where T : struct, IConvertible
         {
             if (!typeof(T).IsEnum)
@@ -439,6 +548,12 @@ namespace NostreetsExtensions
             return Enum.GetValues(typeof(T)).Cast<T>().ToDictionary(t => (int)(object)t, t => t.ToString());
         }
 
+        /// <summary>
+        /// To the dictionary.
+        /// </summary>
+        /// <param name="enumType">Type of the enum.</param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentException">Type must be an enum</exception>
         public static Dictionary<int, string> ToDictionary(this Type enumType)
         {
             Dictionary<int, string> result = null;
@@ -458,6 +573,13 @@ namespace NostreetsExtensions
             return result;
         }
 
+        /// <summary>
+        /// To the dictionary.
+        /// </summary>
+        /// <typeparam name="TKey">The type of the key.</typeparam>
+        /// <typeparam name="TValue">The type of the value.</typeparam>
+        /// <param name="coll">The coll.</param>
+        /// <returns></returns>
         public static Dictionary<TKey, TValue> ToDictionary<TKey, TValue>(this IEnumerable<KeyValuePair<TKey, TValue>> coll)
         {
             Dictionary<TKey, TValue> result = new Dictionary<TKey, TValue>();
@@ -469,22 +591,45 @@ namespace NostreetsExtensions
             return result;
         }
 
+        /// <summary>
+        /// Gets the enum value.
+        /// </summary>
+        /// <param name="enumType">Type of the enum.</param>
+        /// <param name="name">The name.</param>
+        /// <returns></returns>
         public static int GetEnumValue(this Type enumType, string name)
         {
             return (int)Enum.Parse(enumType, name);
         }
 
+        /// <summary>
+        /// Gets the enum value.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="name">The name.</param>
+        /// <returns></returns>
         public static int GetEnumValue<T>(this string name)
         {
             return (int)Enum.Parse(typeof(T), name);
         }
 
+        /// <summary>
+        /// Gets the query strings.
+        /// </summary>
+        /// <param name="request">The request.</param>
+        /// <returns></returns>
         public static Dictionary<string, string> GetQueryStrings(this HttpRequestMessage request)
         {
             return request.GetQueryNameValuePairs()
                           .ToDictionary(kv => kv.Key, kv => kv.Value, StringComparer.OrdinalIgnoreCase);
         }
 
+        /// <summary>
+        /// Gets the query string.
+        /// </summary>
+        /// <param name="request">The request.</param>
+        /// <param name="key">The key.</param>
+        /// <returns></returns>
         public static string GetQueryString(this HttpRequestMessage request, string key)
         {
             // IEnumerable<KeyValuePair<string,string>> - right!
@@ -499,6 +644,12 @@ namespace NostreetsExtensions
             return match.Value;
         }
 
+        /// <summary>
+        /// Gets the header.
+        /// </summary>
+        /// <param name="request">The request.</param>
+        /// <param name="key">The key.</param>
+        /// <returns></returns>
         public static string GetHeader(this HttpRequestMessage request, string key)
         {
             IEnumerable<string> keys = null;
@@ -508,6 +659,12 @@ namespace NostreetsExtensions
             return keys.First();
         }
 
+        /// <summary>
+        /// Gets the cookie.
+        /// </summary>
+        /// <param name="request">The request.</param>
+        /// <param name="cookieName">Name of the cookie.</param>
+        /// <returns></returns>
         public static string GetCookie(this HttpRequestMessage request, string cookieName)
         {
             CookieHeaderValue cookie = request.Headers.GetCookies(cookieName).FirstOrDefault() ?? default(CookieHeaderValue);
@@ -515,6 +672,12 @@ namespace NostreetsExtensions
             return cookie[cookieName].Value;
         }
 
+        /// <summary>
+        /// Gets the cookie.
+        /// </summary>
+        /// <param name="request">The request.</param>
+        /// <param name="cookieName">Name of the cookie.</param>
+        /// <returns></returns>
         public static string GetCookie(this HttpRequest request, string cookieName)
         {
             string result = null;
@@ -527,6 +690,13 @@ namespace NostreetsExtensions
             return result;
         }
 
+        /// <summary>
+        /// Sets the cookie.
+        /// </summary>
+        /// <param name="context">The context.</param>
+        /// <param name="cookieName">Name of the cookie.</param>
+        /// <param name="value">The value.</param>
+        /// <param name="expires">The expires.</param>
         public static void SetCookie(this HttpContext context, string cookieName, string value, DateTime? expires = null)
         {
             try
@@ -544,6 +714,13 @@ namespace NostreetsExtensions
 
         }
 
+        /// <summary>
+        /// Sets the cookie.
+        /// </summary>
+        /// <param name="context">The context.</param>
+        /// <param name="cookieName">Name of the cookie.</param>
+        /// <param name="values">The values.</param>
+        /// <param name="expires">The expires.</param>
         public static void SetCookie(this HttpContext context, string cookieName, Dictionary<string, string> values, DateTime? expires = null)
         {
             try
@@ -572,6 +749,12 @@ namespace NostreetsExtensions
 
         }
 
+        /// <summary>
+        /// To the delegate.
+        /// </summary>
+        /// <param name="obj">The object.</param>
+        /// <param name="target">The target.</param>
+        /// <returns></returns>
         public static Delegate ToDelegate(this MethodInfo obj, object target = null)
         {
 
@@ -601,6 +784,13 @@ namespace NostreetsExtensions
             return result;
         }
 
+        /// <summary>
+        /// To the name value collection.
+        /// </summary>
+        /// <typeparam name="TKey">The type of the key.</typeparam>
+        /// <typeparam name="TValue">The type of the value.</typeparam>
+        /// <param name="dict">The dictionary.</param>
+        /// <returns></returns>
         public static NameValueCollection ToNameValueCollection<TKey, TValue>(this IDictionary<TKey, TValue> dict)
         {
             var nameValueCollection = new NameValueCollection();
@@ -617,6 +807,15 @@ namespace NostreetsExtensions
             return nameValueCollection;
         }
 
+        /// <summary>
+        /// Determines whether the specified property name has duplicates.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="enumerable">The enumerable.</param>
+        /// <param name="propertyName">Name of the property.</param>
+        /// <returns>
+        ///   <c>true</c> if the specified property name has duplicates; otherwise, <c>false</c>.
+        /// </returns>
         public static bool HasDuplicates<T>(this IEnumerable<T> enumerable, string propertyName) where T : class
         {
 
@@ -635,6 +834,13 @@ namespace NostreetsExtensions
             return false;
         }
 
+        /// <summary>
+        /// Gets the types with.
+        /// </summary>
+        /// <typeparam name="TAttribute">The type of the attribute.</typeparam>
+        /// <param name="app">The application.</param>
+        /// <param name="searchDervied">if set to <c>true</c> [search dervied].</param>
+        /// <returns></returns>
         public static List<Type> GetTypesWith<TAttribute>(this AppDomain app, bool searchDervied) where TAttribute : Attribute
         {
             //return from a in AppDomain.CurrentDomain.GetAssemblies()
@@ -657,6 +863,13 @@ namespace NostreetsExtensions
             return result;
         }
 
+        /// <summary>
+        /// Gets the duplicates.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="enumerable">The enumerable.</param>
+        /// <param name="propertyName">Name of the property.</param>
+        /// <returns></returns>
         public static Dictionary<object, T[]> GetDuplicates<T>(this IEnumerable<T> enumerable, string propertyName) where T : class
         {
 
@@ -688,11 +901,28 @@ namespace NostreetsExtensions
             return duplicates;
         }
 
+        /// <summary>
+        /// Determines whether [is action delegate].
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="source">The source.</param>
+        /// <returns>
+        ///   <c>true</c> if [is action delegate] [the specified source]; otherwise, <c>false</c>.
+        /// </returns>
         public static bool IsActionDelegate<T>(this T source)
         {
             return typeof(T).FullName.StartsWith("System.Action");
         }
 
+        /// <summary>
+        /// Determines whether the specified output is type.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="obj">The object.</param>
+        /// <param name="output">The output.</param>
+        /// <returns>
+        ///   <c>true</c> if the specified output is type; otherwise, <c>false</c>.
+        /// </returns>
         public static bool IsType<T>(this object obj, out T output) where T : class
         {
             bool result = false;
@@ -706,6 +936,14 @@ namespace NostreetsExtensions
             return result;
         }
 
+        /// <summary>
+        /// Determines whether the specified type is type.
+        /// </summary>
+        /// <param name="obj">The object.</param>
+        /// <param name="type">The type.</param>
+        /// <returns>
+        ///   <c>true</c> if the specified type is type; otherwise, <c>false</c>.
+        /// </returns>
         public static bool IsType(this object obj, Type type)
         {
             bool result = false;
@@ -717,6 +955,14 @@ namespace NostreetsExtensions
             return result;
         }
 
+        /// <summary>
+        /// Gets the method information.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="T2">The type of the 2.</typeparam>
+        /// <param name="expression">The expression.</param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentException">Expression is not a method - expression</exception>
         public static MethodInfo GetMethodInfo<T, T2>(this Expression<Func<T, T2>> expression)
         {
             var member = expression.Body as MethodCallExpression;
@@ -727,6 +973,13 @@ namespace NostreetsExtensions
             throw new ArgumentException("Expression is not a method", "expression");
         }
 
+        /// <summary>
+        /// Gets the method information.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="expression">The expression.</param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentException">Expression is not a method - expression</exception>
         public static MethodInfo GetMethodInfo<T>(this Expression<Action<T>> expression)
         {
             var member = expression.Body as MethodCallExpression;
@@ -737,26 +990,62 @@ namespace NostreetsExtensions
             throw new ArgumentException("Expression is not a method", "expression");
         }
 
+        /// <summary>
+        /// Gets the method information.
+        /// </summary>
+        /// <param name="obj">The object.</param>
+        /// <param name="methodName">Name of the method.</param>
+        /// <param name="searchSettings">The search settings.</param>
+        /// <returns></returns>
         public static MethodInfo GetMethodInfo(this object obj, string methodName, BindingFlags searchSettings = BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public | BindingFlags.Static)
         {
             return obj.GetType().GetMethod(methodName, searchSettings);
         }
 
+        /// <summary>
+        /// Gets the method information.
+        /// </summary>
+        /// <param name="type">The type.</param>
+        /// <param name="methodName">Name of the method.</param>
+        /// <param name="searchSettings">The search settings.</param>
+        /// <returns></returns>
         public static MethodInfo GetMethodInfo(this Type type, string methodName, BindingFlags searchSettings = BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public | BindingFlags.Static)
         {
             return type.GetMethod(methodName, searchSettings);
         }
 
+        /// <summary>
+        /// Gets the method information.
+        /// </summary>
+        /// <param name="fullMethodName">Full name of the method.</param>
+        /// <returns></returns>
         public static MethodInfo GetMethodInfo(this string fullMethodName)
         {
             return (MethodInfo)fullMethodName.ScanAssembliesForObject();
         }
 
+        /// <summary>
+        /// Gets the objects with attribute.
+        /// </summary>
+        /// <typeparam name="TAttribute">The type of the attribute.</typeparam>
+        /// <param name="obj">The object.</param>
+        /// <param name="types">The types.</param>
+        /// <param name="assembliesToSkip">The assemblies to skip.</param>
+        /// <returns></returns>
         public static List<Tuple<TAttribute, object>> GetObjectsWithAttribute<TAttribute>(this IList<Tuple<TAttribute, object>> obj, ClassTypes types, Func<Assembly, bool> assembliesToSkip = null) where TAttribute : Attribute
         {
             return AttributeScanner<TAttribute>.ScanAssembliesForAttributes(types, null, assembliesToSkip);
         }
 
+        /// <summary>
+        /// Gets the objects by attribute.
+        /// </summary>
+        /// <typeparam name="TAttribute">The type of the attribute.</typeparam>
+        /// <param name="obj">The object.</param>
+        /// <param name="section">The section.</param>
+        /// <param name="type">The type.</param>
+        /// <param name="assembliesToSkip">The assemblies to skip.</param>
+        /// <returns></returns>
         public static List<object> GetObjectsByAttribute<TAttribute>(this IList<TAttribute> obj, ClassTypes section, Type type = null, Func<Assembly, bool> assembliesToSkip = null) where TAttribute : Attribute
         {
             List<object> result = new List<object>();
@@ -766,6 +1055,15 @@ namespace NostreetsExtensions
             return result;
         }
 
+        /// <summary>
+        /// Gets the objects by attribute.
+        /// </summary>
+        /// <typeparam name="TAttribute">The type of the attribute.</typeparam>
+        /// <param name="obj">The object.</param>
+        /// <param name="section">The section.</param>
+        /// <param name="type">The type.</param>
+        /// <param name="assembliesToSkip">The assemblies to skip.</param>
+        /// <returns></returns>
         public static List<object> GetObjectsByAttribute<TAttribute>(this IList<object> obj, ClassTypes section, Type type = null, Func<Assembly, bool> assembliesToSkip = null) where TAttribute : Attribute
         {
             List<object> result = new List<object>();
@@ -775,6 +1073,14 @@ namespace NostreetsExtensions
             return result;
         }
 
+        /// <summary>
+        /// Gets the methods by attribute.
+        /// </summary>
+        /// <typeparam name="TAttribute">The type of the attribute.</typeparam>
+        /// <param name="obj">The object.</param>
+        /// <param name="type">The type.</param>
+        /// <param name="assembliesToSkip">The assemblies to skip.</param>
+        /// <returns></returns>
         public static List<MethodInfo> GetMethodsByAttribute<TAttribute>(this IList<TAttribute> obj, Type type = null, Func<Assembly, bool> assembliesToSkip = null) where TAttribute : Attribute
         {
             List<MethodInfo> result = new List<MethodInfo>();
@@ -784,6 +1090,14 @@ namespace NostreetsExtensions
             return result;
         }
 
+        /// <summary>
+        /// Gets the methods by attribute.
+        /// </summary>
+        /// <typeparam name="TAttribute">The type of the attribute.</typeparam>
+        /// <param name="obj">The object.</param>
+        /// <param name="type">The type.</param>
+        /// <param name="assembliesToSkip">The assemblies to skip.</param>
+        /// <returns></returns>
         public static List<MethodInfo> GetMethodsByAttribute<TAttribute>(this IList<MethodInfo> obj, Type type = null, Func<Assembly, bool> assembliesToSkip = null) where TAttribute : Attribute
         {
             List<MethodInfo> result = new List<MethodInfo>();
@@ -793,6 +1107,14 @@ namespace NostreetsExtensions
             return result;
         }
 
+        /// <summary>
+        /// Gets the types by attribute.
+        /// </summary>
+        /// <typeparam name="TAttribute">The type of the attribute.</typeparam>
+        /// <param name="obj">The object.</param>
+        /// <param name="type">The type.</param>
+        /// <param name="assembliesToSkip">The assemblies to skip.</param>
+        /// <returns></returns>
         public static List<Type> GetTypesByAttribute<TAttribute>(this IList<TAttribute> obj, Type type = null, Func<Assembly, bool> assembliesToSkip = null) where TAttribute : Attribute
         {
             List<Type> result = new List<Type>();
@@ -802,6 +1124,14 @@ namespace NostreetsExtensions
             return result;
         }
 
+        /// <summary>
+        /// Gets the types by attribute.
+        /// </summary>
+        /// <typeparam name="TAttribute">The type of the attribute.</typeparam>
+        /// <param name="obj">The object.</param>
+        /// <param name="type">The type.</param>
+        /// <param name="assembliesToSkip">The assemblies to skip.</param>
+        /// <returns></returns>
         public static List<Type> GetTypesByAttribute<TAttribute>(this IList<Type> obj, Type type = null, Func<Assembly, bool> assembliesToSkip = null) where TAttribute : Attribute
         {
             List<Type> result = new List<Type>();
@@ -811,6 +1141,13 @@ namespace NostreetsExtensions
             return result;
         }
 
+        /// <summary>
+        /// Gets the assemblies by attribute.
+        /// </summary>
+        /// <typeparam name="TAttribute">The type of the attribute.</typeparam>
+        /// <param name="obj">The object.</param>
+        /// <param name="assembliesToSkip">The assemblies to skip.</param>
+        /// <returns></returns>
         public static List<Assembly> GetAssembliesByAttribute<TAttribute>(this IList<TAttribute> obj, Func<Assembly, bool> assembliesToSkip = null) where TAttribute : Attribute
         {
             List<Assembly> result = new List<Assembly>();
@@ -820,6 +1157,13 @@ namespace NostreetsExtensions
             return result;
         }
 
+        /// <summary>
+        /// Gets the assemblies by attribute.
+        /// </summary>
+        /// <typeparam name="TAttribute">The type of the attribute.</typeparam>
+        /// <param name="obj">The object.</param>
+        /// <param name="assembliesToSkip">The assemblies to skip.</param>
+        /// <returns></returns>
         public static List<Assembly> GetAssembliesByAttribute<TAttribute>(this IList<Assembly> obj, Func<Assembly, bool> assembliesToSkip = null) where TAttribute : Attribute
         {
             List<Assembly> result = new List<Assembly>();
@@ -829,6 +1173,14 @@ namespace NostreetsExtensions
             return result;
         }
 
+        /// <summary>
+        /// Gets the properties by attribute.
+        /// </summary>
+        /// <typeparam name="TAttribute">The type of the attribute.</typeparam>
+        /// <param name="obj">The object.</param>
+        /// <param name="type">The type.</param>
+        /// <param name="assembliesToSkip">The assemblies to skip.</param>
+        /// <returns></returns>
         public static List<PropertyInfo> GetPropertiesByAttribute<TAttribute>(this IList<TAttribute> obj, Type type = null, Func<Assembly, bool> assembliesToSkip = null) where TAttribute : Attribute
         {
             List<PropertyInfo> result = new List<PropertyInfo>();
@@ -838,6 +1190,14 @@ namespace NostreetsExtensions
             return result;
         }
 
+        /// <summary>
+        /// Gets the properties by attribute.
+        /// </summary>
+        /// <typeparam name="TAttribute">The type of the attribute.</typeparam>
+        /// <param name="obj">The object.</param>
+        /// <param name="type">The type.</param>
+        /// <param name="assembliesToSkip">The assemblies to skip.</param>
+        /// <returns></returns>
         public static List<PropertyInfo> GetPropertiesByAttribute<TAttribute>(this IList<PropertyInfo> obj, Type type = null, Func<Assembly, bool> assembliesToSkip = null) where TAttribute : Attribute
         {
             List<PropertyInfo> result = new List<PropertyInfo>();
@@ -852,6 +1212,12 @@ namespace NostreetsExtensions
             return result;
         }
 
+        /// <summary>
+        /// Instantiates the specified parameters.
+        /// </summary>
+        /// <param name="type">The type.</param>
+        /// <param name="parameters">The parameters.</param>
+        /// <returns></returns>
         public static object Instantiate(this Type type, params object[] parameters)
         {
             if (type == typeof(string))
@@ -866,6 +1232,12 @@ namespace NostreetsExtensions
 
         }
 
+        /// <summary>
+        /// Instantiates the specified type.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="type">The type.</param>
+        /// <returns></returns>
         public static T Instantiate<T>(this T type)
         {
 
@@ -876,39 +1248,84 @@ namespace NostreetsExtensions
                 return Activator.CreateInstance<T>();
         }
 
+        /// <summary>
+        /// Unities the instantiate.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="type">The type.</param>
+        /// <param name="containter">The containter.</param>
+        /// <returns></returns>
         public static T UnityInstantiate<T>(this T type, UnityContainer containter)
         {
             return containter.Resolve<T>();
         }
 
+        /// <summary>
+        /// Unities the instantiate.
+        /// </summary>
+        /// <param name="type">The type.</param>
+        /// <param name="containter">The containter.</param>
+        /// <returns></returns>
         public static object UnityInstantiate(this Type type, UnityContainer containter)
         {
             return containter.Resolve(type);
         }
 
+        /// <summary>
+        /// Scans the assemblies for object.
+        /// </summary>
+        /// <param name="nameToCheckFor">The name to check for.</param>
+        /// <param name="assemblyToLookFor">The assembly to look for.</param>
+        /// <returns></returns>
         public static object ScanAssembliesForObject(this string nameToCheckFor, string assemblyToLookFor)
         {
             object result = AssemblyScanner.ScanAssembliesForObject(nameToCheckFor, new[] { assemblyToLookFor });
             return result;
         }
 
+        /// <summary>
+        /// Scans the assemblies for object.
+        /// </summary>
+        /// <param name="nameToCheckFor">The name to check for.</param>
+        /// <param name="assembliesToLookFor">The assemblies to look for.</param>
+        /// <returns></returns>
         public static object ScanAssembliesForObject(this string nameToCheckFor, params string[] assembliesToLookFor)
         {
             object result = AssemblyScanner.ScanAssembliesForObject(nameToCheckFor, assembliesToLookFor);
             return result;
         }
 
+        /// <summary>
+        /// Scans the assemblies for object.
+        /// </summary>
+        /// <param name="nameToCheckFor">The name to check for.</param>
+        /// <param name="assembliesToSkip">The assemblies to skip.</param>
+        /// <param name="assembliesToLookFor">The assemblies to look for.</param>
+        /// <returns></returns>
         public static object ScanAssembliesForObject(this string nameToCheckFor, string[] assembliesToSkip, string[] assembliesToLookFor)
         {
             object result = AssemblyScanner.ScanAssembliesForObject(nameToCheckFor, assembliesToLookFor, assembliesToSkip);
             return result;
         }
 
+        /// <summary>
+        /// Extends the path.
+        /// </summary>
+        /// <param name="path">The path.</param>
+        /// <param name="extension">The extension.</param>
+        /// <returns></returns>
         public static string ExtendPath(this string path, string extension)
         {
             return Path.GetFullPath(Path.Combine(path, extension));
         }
 
+        /// <summary>
+        /// Steps the into directory.
+        /// </summary>
+        /// <param name="path">The path.</param>
+        /// <param name="pathExt">The path ext.</param>
+        /// <param name="recursively">if set to <c>true</c> [recursively].</param>
+        /// <returns></returns>
         public static string StepIntoDirectory(this string path, string pathExt, bool recursively = false)
         {
 
@@ -937,6 +1354,12 @@ namespace NostreetsExtensions
             return null;
         }
 
+        /// <summary>
+        /// Steps the out of directory.
+        /// </summary>
+        /// <param name="path">The path.</param>
+        /// <param name="foldersBack">The folders back.</param>
+        /// <returns></returns>
         public static string StepOutOfDirectory(this string path, int foldersBack = 1)
         {
             string modifiedPath = path;
@@ -949,6 +1372,11 @@ namespace NostreetsExtensions
             return modifiedPath;
         }
 
+        /// <summary>
+        /// Catches the reflection type load exception.
+        /// </summary>
+        /// <param name="ex">The ex.</param>
+        /// <returns></returns>
         public static string CatchReflectionTypeLoadException(this ReflectionTypeLoadException ex)
         {
             StringBuilder sb = new StringBuilder();
@@ -971,6 +1399,14 @@ namespace NostreetsExtensions
             return errorMessage;
         }
 
+        /// <summary>
+        /// Determines whether [contains] [the specified values].
+        /// </summary>
+        /// <param name="list">The list.</param>
+        /// <param name="values">The values.</param>
+        /// <returns>
+        ///   <c>true</c> if [contains] [the specified values]; otherwise, <c>false</c>.
+        /// </returns>
         public static bool Contains(this IEnumerable<string> list, params string[] values)
         {
             bool result = false;
@@ -982,6 +1418,12 @@ namespace NostreetsExtensions
             return result;
         }
 
+        /// <summary>
+        /// Gets the assembly.
+        /// </summary>
+        /// <param name="assembly">The assembly.</param>
+        /// <param name="assemblyName">Name of the assembly.</param>
+        /// <returns></returns>
         public static Assembly GetAssembly(this AppDomain assembly, string assemblyName)
         {
             Assembly result = null;
@@ -994,6 +1436,15 @@ namespace NostreetsExtensions
             return result;
         }
 
+        /// <summary>
+        /// Creates the response.
+        /// </summary>
+        /// <param name="app">The application.</param>
+        /// <param name="statusCode">The status code.</param>
+        /// <param name="obj">The object.</param>
+        /// <param name="contentType">Type of the content.</param>
+        /// <param name="resolver">The resolver.</param>
+        /// <param name="encoding">The encoding.</param>
         public static void CreateResponse(this HttpApplication app, HttpStatusCode statusCode, object obj, string contentType = "application/json", IContractResolver resolver = null, Encoding encoding = null)
         {
             if (encoding == null) { encoding = Encoding.UTF8; }
@@ -1023,6 +1474,11 @@ namespace NostreetsExtensions
 
         }
 
+        /// <summary>
+        /// Directories the exists.
+        /// </summary>
+        /// <param name="path">The path.</param>
+        /// <returns></returns>
         public static bool DirectoryExists(this string path)
         {
             if (path.IndexOfAny(Path.GetInvalidPathChars()) != -1) { return false; }
@@ -1034,26 +1490,55 @@ namespace NostreetsExtensions
             return true;
         }
 
+        /// <summary>
+        /// Timestamps the specified time.
+        /// </summary>
+        /// <param name="time">The time.</param>
+        /// <returns></returns>
         public static string Timestamp(this DateTime time)
         {
             return time.ToString("hh.mm.ss.tt_MMM-yy");
         }
 
+        /// <summary>
+        /// Formats the string.
+        /// </summary>
+        /// <param name="template">The template.</param>
+        /// <param name="txt">The text.</param>
+        /// <returns></returns>
         public static string FormatString(this string template, params string[] txt)
         {
             return String.Format(template, txt);
         }
 
+        /// <summary>
+        /// Gets the property value.
+        /// </summary>
+        /// <param name="obj">The object.</param>
+        /// <param name="propertyName">Name of the property.</param>
+        /// <returns></returns>
         public static object GetPropertyValue(this object obj, string propertyName)
         {
             return obj.GetType().GetProperties().Single(pi => pi.Name == propertyName).GetValue(obj, null);
         }
 
+        /// <summary>
+        /// Sets the property value.
+        /// </summary>
+        /// <param name="obj">The object.</param>
+        /// <param name="propertyName">Name of the property.</param>
+        /// <param name="value">The value.</param>
         public static void SetPropertyValue(this object obj, string propertyName, object value)
         {
             obj.GetType().GetProperties().Single(pi => pi.Name == propertyName).SetValue(obj, value);
         }
 
+        /// <summary>
+        /// Gets the columns.
+        /// </summary>
+        /// <param name="dbContext">The database context.</param>
+        /// <param name="type">The type.</param>
+        /// <returns></returns>
         public static List<string> GetColumns(this DbContext dbContext, Type type)
         {
             string statment = String.Format("SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME like N'{0}s'", type.Name);
@@ -1061,6 +1546,11 @@ namespace NostreetsExtensions
             return result.ToList();
         }
 
+        /// <summary>
+        /// Gets the registrations.
+        /// </summary>
+        /// <param name="theContainer">The container.</param>
+        /// <returns></returns>
         public static List<ContainerRegistration> GetRegistrations(this IUnityContainer theContainer)
         {
             List<ContainerRegistration> result = null;
@@ -1076,35 +1566,72 @@ namespace NostreetsExtensions
             return result;
         }
 
+        /// <summary>
+        /// Adds the specified values.
+        /// </summary>
+        /// <param name="collection">The collection.</param>
+        /// <param name="values">The values.</param>
+        /// <returns></returns>
         public static IEnumerable Add(this IEnumerable collection, params object[] values)
         {
             IEnumerable result = null;
-            List<object> list = collection.OfType<object>().ToList();
-            list.AddRange(values);
+            if (values.Length > 0)
+            {
+                List<object> list = collection.OfType<object>().ToList();
+                list.AddRange(values);
 
-            if (collection.GetType().IsArray)
-                result = list.ToArray();
-            else
-                result = list;
+                if (collection.GetType().IsArray)
+                    result = list.ToArray();
+                else
+                    result = list; 
+            }
 
             return result;
         }
 
+        /// <summary>
+        /// Prepends the specified values.
+        /// </summary>
+        /// <param name="collection">The collection.</param>
+        /// <param name="values">The values.</param>
+        /// <returns></returns>
         public static IEnumerable Prepend(this IEnumerable collection, params object[] values)
         {
             return values.Concat(collection.OfType<object>());
         }
 
+        /// <summary>
+        /// Prepends the specified values.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="collection">The collection.</param>
+        /// <param name="values">The values.</param>
+        /// <returns></returns>
         public static IEnumerable<T> Prepend<T>(this IEnumerable<T> collection, params T[] values)
         {
             return values.Concat(collection);
         }
 
+        /// <summary>
+        /// Prepends the specified item.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="collection">The collection.</param>
+        /// <param name="item">The item.</param>
         public static void Prepend<T>(this IList<T> collection, T item)
         {
             collection.Insert(0, item);
         }
 
+        /// <summary>
+        /// Prepends the specified key.
+        /// </summary>
+        /// <typeparam name="TKey">The type of the key.</typeparam>
+        /// <typeparam name="TValue">The type of the value.</typeparam>
+        /// <param name="dic">The dic.</param>
+        /// <param name="key">The key.</param>
+        /// <param name="item">The item.</param>
+        /// <returns></returns>
         public static Dictionary<TKey, TValue> Prepend<TKey, TValue>(this IDictionary<TKey, TValue> dic, TKey key, TValue item)
         {
             List<KeyValuePair<TKey, TValue>> list = dic.ToList();
@@ -1112,6 +1639,16 @@ namespace NostreetsExtensions
             return list.ToDictionary();
         }
 
+        /// <summary>
+        /// Gets the schema.
+        /// </summary>
+        /// <param name="srv">The SRV.</param>
+        /// <param name="dataSouce">The data souce.</param>
+        /// <param name="tableName">Name of the table.</param>
+        /// <returns></returns>
+        /// <exception cref="Exception">dataSouce param must not be null or return null...
+        /// or
+        /// dataSouce param must not be null or return null...</exception>
         public static List<string> GetSchema(this ISqlDao srv, Func<SqlConnection> dataSouce, string tableName)
         {
             SqlDataReader reader = null;
@@ -1163,11 +1700,21 @@ namespace NostreetsExtensions
 
         }
 
+        /// <summary>
+        /// Gets the schema.
+        /// </summary>
+        /// <param name="reader">The reader.</param>
+        /// <returns></returns>
         public static string[] GetSchema(this IDataReader reader)
         {
             return reader.GetSchemaTable().Rows.Cast<DataRow>().Select(c => c["ColumnName"].ToString()).ToArray();
         }
 
+        /// <summary>
+        /// Gets the schema types.
+        /// </summary>
+        /// <param name="reader">The reader.</param>
+        /// <returns></returns>
         public static Type[] GetSchemaTypes(this IDataReader reader)
         {
             List<Type> result = new List<Type>();
@@ -1180,6 +1727,14 @@ namespace NostreetsExtensions
             return result.ToArray();
         }
 
+        /// <summary>
+        /// Adds the property.
+        /// </summary>
+        /// <param name="objType">Type of the object.</param>
+        /// <param name="propType">Type of the property.</param>
+        /// <param name="propName">Name of the property.</param>
+        /// <param name="index">The index.</param>
+        /// <returns></returns>
         public static Type AddProperty(this Type objType, Type propType, string propName, int index = 0)
         {
             List<string> propNames = new List<string>();
@@ -1206,12 +1761,29 @@ namespace NostreetsExtensions
 
         }
 
+        /// <summary>
+        /// Adds the property.
+        /// </summary>
+        /// <param name="obj">The object.</param>
+        /// <param name="propType">Type of the property.</param>
+        /// <param name="propName">Name of the property.</param>
+        /// <param name="index">The index.</param>
+        /// <returns></returns>
         public static Type AddProperty(this object obj, Type propType, string propName, int index = 0)
         {
             Type objType = obj.GetType();
             return objType.AddProperty(propType, propName, index);
         }
 
+        /// <summary>
+        /// Determines whether this instance has interface.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="type">The type.</param>
+        /// <returns>
+        ///   <c>true</c> if the specified type has interface; otherwise, <c>false</c>.
+        /// </returns>
+        /// <exception cref="Exception">T has to be an interface</exception>
         public static bool HasInterface<T>(this Type type)
         {
             if (!typeof(T).IsInterface)
@@ -1229,6 +1801,15 @@ namespace NostreetsExtensions
             return false;
         }
 
+        /// <summary>
+        /// Determines whether the specified inter has interface.
+        /// </summary>
+        /// <param name="type">The type.</param>
+        /// <param name="inter">The inter.</param>
+        /// <returns>
+        ///   <c>true</c> if the specified inter has interface; otherwise, <c>false</c>.
+        /// </returns>
+        /// <exception cref="Exception">T has to be an interface</exception>
         public static bool HasInterface(this Type type, Type inter)
         {
             if (!inter.IsInterface)
@@ -1246,6 +1827,13 @@ namespace NostreetsExtensions
             return false;
         }
 
+        /// <summary>
+        /// Gets the type of t.
+        /// </summary>
+        /// <param name="type">The type.</param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentNullException">type</exception>
+        /// <exception cref="InvalidDataException">type does not implements IEnumerable</exception>
         public static Type GetTypeOfT(this Type type)
         {
             if (type == null)
@@ -1257,6 +1845,13 @@ namespace NostreetsExtensions
             return type.GetGenericArguments()[0];
         }
 
+        /// <summary>
+        /// Gets the type of t.
+        /// </summary>
+        /// <param name="obj">The object.</param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentNullException">obj</exception>
+        /// <exception cref="InvalidDataException">obj's Type does not implements IEnumerable</exception>
         public static Type GetTypeOfT(this object obj)
         {
 
@@ -1271,6 +1866,14 @@ namespace NostreetsExtensions
             return type.GetGenericArguments()[0];
         }
 
+        /// <summary>
+        /// Determines whether the specified exclude strings is collection.
+        /// </summary>
+        /// <param name="item">The item.</param>
+        /// <param name="excludeStrings">if set to <c>true</c> [exclude strings].</param>
+        /// <returns>
+        ///   <c>true</c> if the specified exclude strings is collection; otherwise, <c>false</c>.
+        /// </returns>
         public static bool IsCollection(this Type item, bool excludeStrings = true)
         {
             return (!excludeStrings)
@@ -1280,16 +1883,38 @@ namespace NostreetsExtensions
                         : (item.HasInterface<IEnumerable>() || item.HasInterface<ICollection>() || item.HasInterface<IList>());
         }
 
+        /// <summary>
+        /// Determines whether [is system type].
+        /// </summary>
+        /// <param name="type">The type.</param>
+        /// <returns>
+        ///   <c>true</c> if [is system type] [the specified type]; otherwise, <c>false</c>.
+        /// </returns>
         public static bool IsSystemType(this Type type)
         {
             return type.Assembly == typeof(object).Assembly;
         }
 
+        /// <summary>
+        /// Determines whether this instance is plural.
+        /// </summary>
+        /// <param name="txt">The text.</param>
+        /// <returns>
+        ///   <c>true</c> if the specified text is plural; otherwise, <c>false</c>.
+        /// </returns>
         public static bool IsPlural(this string txt)
         {
             return ((txt[txt.Length - 1] == 's') ? true : false);
         }
 
+        /// <summary>
+        /// Distincts the by.
+        /// </summary>
+        /// <typeparam name="TSource">The type of the source.</typeparam>
+        /// <typeparam name="TKey">The type of the key.</typeparam>
+        /// <param name="source">The source.</param>
+        /// <param name="keySelector">The key selector.</param>
+        /// <returns></returns>
         public static IEnumerable<TSource> DistinctBy<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector)
         {
             HashSet<TKey> seenKeys = new HashSet<TKey>();
@@ -1302,6 +1927,11 @@ namespace NostreetsExtensions
             }
         }
 
+        /// <summary>
+        /// Gets the request ip address.
+        /// </summary>
+        /// <param name="context">The context.</param>
+        /// <returns></returns>
         public static string GetRequestIPAddress(this HttpContext context)
         {
             string ipAddress = context.Request.ServerVariables["HTTP_X_FORWARDED_FOR"];
@@ -1318,39 +1948,75 @@ namespace NostreetsExtensions
             return context.Request.ServerVariables["REMOTE_ADDR"];
         }
 
+        /// <summary>
+        /// Parses the int.
+        /// </summary>
+        /// <param name="obj">The object.</param>
+        /// <returns></returns>
         public static int ParseInt(this string obj)
         {
             return int.Parse(obj);
         }
 
+        /// <summary>
+        /// Parses the u int.
+        /// </summary>
+        /// <param name="obj">The object.</param>
+        /// <returns></returns>
         public static uint ParseUInt(this string obj)
         {
             return uint.Parse(obj);
         }
 
+        /// <summary>
+        /// Parses the short.
+        /// </summary>
+        /// <param name="obj">The object.</param>
+        /// <returns></returns>
         public static short ParseShort(this string obj)
         {
             return short.Parse(obj);
         }
 
+        /// <summary>
+        /// Parses the u short.
+        /// </summary>
+        /// <param name="obj">The object.</param>
+        /// <returns></returns>
         public static ushort ParseUShort(this string obj)
         {
             return ushort.Parse(obj);
         }
 
+        /// <summary>
+        /// Parses the long.
+        /// </summary>
+        /// <param name="obj">The object.</param>
+        /// <returns></returns>
         public static long ParseLong(this string obj)
         {
             return long.Parse(obj);
         }
 
+        /// <summary>
+        /// Parses the u long.
+        /// </summary>
+        /// <param name="obj">The object.</param>
+        /// <returns></returns>
         public static ulong ParseULong(this string obj)
         {
             return ulong.Parse(obj);
         }
 
+        /// <summary>
+        /// Removes the character.
+        /// </summary>
+        /// <param name="txt">The text.</param>
+        /// <param name="charsToRemove">The chars to remove.</param>
+        /// <returns></returns>
         public static string RemoveChar(this string txt, params char[] charsToRemove)
         {
-            foreach (var c in charsToRemove)
+            foreach (char c in charsToRemove)
             {
                 txt = txt.Replace("" + c, "");
             }
@@ -1358,16 +2024,49 @@ namespace NostreetsExtensions
             return txt;
         }
 
+        /// <summary>
+        /// Removes the specified strings to remove.
+        /// </summary>
+        /// <param name="txt">The text.</param>
+        /// <param name="stringsToRemove">The strings to remove.</param>
+        /// <returns></returns>
+        public static string Remove(this string txt, params string[] stringsToRemove)
+        {
+            foreach (string s in stringsToRemove)
+            {
+                txt = txt.Replace(s, "");
+            }
+
+            return txt;
+        }
+
+        /// <summary>
+        /// To the expression.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="TResult">The type of the result.</typeparam>
+        /// <param name="method">The method.</param>
+        /// <returns></returns>
         public static Expression<Func<T, TResult>> ToExpression<T, TResult>(this Func<T, TResult> method)
         {
             return x => method(x);
         }
 
+        /// <summary>
+        /// Logs the specified text.
+        /// </summary>
+        /// <param name="txt">The text.</param>
         public static void Log(this string txt)
         {
             Debug.Write(txt);
         }
 
+        /// <summary>
+        /// Casts the specified value.
+        /// </summary>
+        /// <param name="type">The type.</param>
+        /// <param name="value">The value.</param>
+        /// <returns></returns>
         public static object Cast(this Type type, object value = null)
         {
             object obj = null;
@@ -1375,6 +2074,16 @@ namespace NostreetsExtensions
             return obj;
         }
 
+        /// <summary>
+        /// Casts the specified type.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="collection">The collection.</param>
+        /// <param name="type">The type.</param>
+        /// <returns></returns>
+        /// <exception cref="Exception">type cannot be null to be able to Cast
+        /// or
+        /// All entities Type in the collection have to match to type to be able to Cast</exception>
         public static IEnumerable Cast<T>(this IEnumerable<T> collection, Type type)
         {
             IEnumerable result = null;
@@ -1406,6 +2115,15 @@ namespace NostreetsExtensions
             return result;
         }
 
+        /// <summary>
+        /// Intoes the method.
+        /// </summary>
+        /// <param name="obj">The object.</param>
+        /// <param name="methodHolder">The method holder.</param>
+        /// <param name="methodName">Name of the method.</param>
+        /// <param name="isExtension">if set to <c>true</c> [is extension].</param>
+        /// <param name="parameters">The parameters.</param>
+        /// <returns></returns>
         public static object IntoMethod(this object obj, Type methodHolder, string methodName, bool isExtension = false, params object[] parameters)
         {
             object result = null;
@@ -1417,6 +2135,16 @@ namespace NostreetsExtensions
             return result;
         }
 
+        /// <summary>
+        /// Intoes the generic method.
+        /// </summary>
+        /// <param name="obj">The object.</param>
+        /// <param name="methodHolder">The method holder.</param>
+        /// <param name="methodName">Name of the method.</param>
+        /// <param name="type">The type.</param>
+        /// <param name="isExtension">if set to <c>true</c> [is extension].</param>
+        /// <param name="parameters">The parameters.</param>
+        /// <returns></returns>
         public static object IntoGenericMethod(this object obj, Type methodHolder, string methodName, Type type, bool isExtension = false, params object[] parameters)
         {
             object result = null;
@@ -1428,6 +2156,12 @@ namespace NostreetsExtensions
             return result;
         }
 
+        /// <summary>
+        /// To the array.
+        /// </summary>
+        /// <param name="source">The source.</param>
+        /// <param name="type">The type.</param>
+        /// <returns></returns>
         public static Array ToArray(this IEnumerable source, Type type)
         {
             var param = Expression.Parameter(typeof(IEnumerable), "source");
@@ -1438,21 +2172,52 @@ namespace NostreetsExtensions
             return lambda(source);
         }
 
+        /// <summary>
+        /// Determines whether [is valid URL].
+        /// </summary>
+        /// <param name="url">The URL.</param>
+        /// <returns>
+        ///   <c>true</c> if [is valid URL] [the specified URL]; otherwise, <c>false</c>.
+        /// </returns>
         public static bool IsValidUrl(this string url)
         {
             return Uri.TryCreate(url, UriKind.Absolute, out Uri uriResult) && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
         }
 
+        /// <summary>
+        /// Encodes the URL.
+        /// </summary>
+        /// <param name="url">The URL.</param>
+        /// <returns></returns>
         public static string EncodeUrl(this string url)
         {
             return (url.IsValidUrl()) ? HttpUtility.UrlEncode(url) : null;
         }
 
+        /// <summary>
+        /// Decodes the URL.
+        /// </summary>
+        /// <param name="url">The URL.</param>
+        /// <returns></returns>
         public static string DecodeUrl(this string url)
         {
             return HttpUtility.UrlDecode(url);
         }
 
+        /// <summary>
+        /// Safes the name.
+        /// </summary>
+        /// <param name="txt">The text.</param>
+        /// <returns></returns>
+        public static string SafeName(this string txt)
+        {
+            return txt?.Remove("`1")?.RemoveChar('<', '>', '@', '.', '{', '}', '[', ']');
+        }
+
+        public static string[] Split(this string txt, string seperator)
+        {
+           return txt.Split(new string[] { seperator }, StringSplitOptions.None);
+        }
 
         #endregion
     }
