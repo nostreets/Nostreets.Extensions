@@ -1200,12 +1200,40 @@ namespace NostreetsExtensions
         /// <returns></returns>
         public static List<PropertyInfo> GetPropertiesByAttribute<TAttribute>(this IList<PropertyInfo> obj, Type type = null, Func<Assembly, bool> assembliesToSkip = null) where TAttribute : Attribute
         {
-            List<PropertyInfo> result = new List<PropertyInfo>();
+            List<PropertyInfo> result = null;
 
             List<Tuple<TAttribute, object>> list = AttributeScanner<TAttribute>.ScanAssembliesForAttributes(ClassTypes.Properties, type, assembliesToSkip);
 
             if (list != null)
             {
+                if (result == null)
+                    result = new List<PropertyInfo>();
+
+                foreach (var item in list) { result.Add((PropertyInfo)item.Item2); }
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Gets the properties by attribute.
+        /// </summary>
+        /// <typeparam name="TAttribute">The type of the attribute.</typeparam>
+        /// <param name="obj">The object.</param>
+        /// <param name="type">The type.</param>
+        /// <param name="assembliesToSkip">The assemblies to skip.</param>
+        /// <returns></returns>
+        public static List<PropertyInfo> GetPropertiesByAttribute<TAttribute>(this Type type, Func<Assembly, bool> assembliesToSkip = null) where TAttribute : Attribute
+        {
+            List<PropertyInfo> result = null;
+
+            List<Tuple<TAttribute, object>> list = AttributeScanner<TAttribute>.ScanAssembliesForAttributes(ClassTypes.Properties, type, assembliesToSkip);
+
+            if (list != null)
+            {
+                if (result == null)
+                    result = new List<PropertyInfo>();
+
                 foreach (var item in list) { result.Add((PropertyInfo)item.Item2); }
             }
 
@@ -1583,7 +1611,7 @@ namespace NostreetsExtensions
                 if (collection.GetType().IsArray)
                     result = list.ToArray();
                 else
-                    result = list; 
+                    result = list;
             }
 
             return result;
@@ -2090,9 +2118,57 @@ namespace NostreetsExtensions
             if (type == null)
                 throw new Exception("type cannot be null to be able to Cast");
 
+
             if (collection != null)
             {
                 bool entitiesMatch = collection.All(a => a.GetType() == type);
+                if (type != typeof(object) && !entitiesMatch)
+                    throw new Exception("All entities Type in the collection have to match to type to be able to Cast");
+
+
+                dynamic genericList = typeof(List<>).MakeGenericType(type).Instantiate();
+                Type genericListType = (Type)genericList.GetType();
+
+                if (genericList != null)
+                {
+                    if (result == null)
+                        result = new List<object>();
+
+                    foreach (var item in collection)
+                        ((object)genericList).IntoMethod(genericListType, "Add", false, item);
+
+                    result = genericList;
+                }
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Casts the specified type.
+        /// </summary>
+        /// <param name="collection">The collection.</param>
+        /// <param name="type">The type.</param>
+        /// <returns></returns>
+        /// <exception cref="Exception">
+        /// type cannot be null to be able to Cast
+        /// or
+        /// All entities Type in the collection have to match to type to be able to Cast
+        /// </exception>
+        public static IEnumerable Cast(this IEnumerable collection, Type type)
+        {
+            IEnumerable result = null;
+            if (type == null)
+                throw new Exception("type cannot be null to be able to Cast");
+
+
+
+            if (collection != null)
+            {
+                bool entitiesMatch = true;
+                foreach (var item in collection)
+                    entitiesMatch = (item.GetType() == type) ? true : false;
+
                 if (!entitiesMatch)
                     throw new Exception("All entities Type in the collection have to match to type to be able to Cast");
 
@@ -2216,7 +2292,7 @@ namespace NostreetsExtensions
 
         public static string[] Split(this string txt, string seperator)
         {
-           return txt.Split(new string[] { seperator }, StringSplitOptions.None);
+            return txt.Split(new string[] { seperator }, StringSplitOptions.None);
         }
 
         #endregion

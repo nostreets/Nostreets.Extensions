@@ -247,7 +247,6 @@ namespace NostreetsExtensions.Utilities
 
     }
 
-
     public static class AttributeScanner<TAttribute> where TAttribute : Attribute
     {
         private static List<Tuple<TAttribute, object>> _targetMap;
