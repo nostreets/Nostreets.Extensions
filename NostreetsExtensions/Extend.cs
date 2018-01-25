@@ -1558,7 +1558,8 @@ namespace NostreetsExtensions
         /// <param name="value">The value.</param>
         public static void SetPropertyValue(this object obj, string propertyName, object value)
         {
-            obj.GetType().GetProperties().Single(pi => pi.Name == propertyName).SetValue(obj, value);
+            if (obj.GetType().GetProperties().First(pi => pi.Name == propertyName).GetSetMethod() != null)
+                obj.GetType().GetProperties().First(pi => pi.Name == propertyName).SetValue(obj, value);
         }
 
         /// <summary>
