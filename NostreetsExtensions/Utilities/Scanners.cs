@@ -249,34 +249,49 @@ namespace NostreetsExtensions.Utilities
 
     public static class AttributeScanner<TAttribute> where TAttribute : Attribute
     {
-        private static List<Tuple<TAttribute, object>> _targetMap;
+        private static List<Tuple<TAttribute, object, Type>> _targetMap;
         private static List<string> _skipAssemblies;
         private static Func<Assembly, bool> _assembliesToSkip;
 
         static AttributeScanner()
         {
-            _targetMap = new List<Tuple<TAttribute, object>>();
+            _targetMap = new List<Tuple<TAttribute, object, Type>>();
             _skipAssemblies = new List<string>(typeof(TAttribute).Assembly.GetReferencedAssemblies().Select(c => c.FullName));
 
         }
 
-        public static List<Tuple<TAttribute, object>> ScanAssembliesForAttributes(ClassTypes section = ClassTypes.Any, Type type = null, Func<Assembly, bool> assembliesToSkip = null)
+        public static IEnumerable<Tuple<TAttribute, object>> ScanAssembliesForAttributes(ClassTypes section = ClassTypes.Any, Type type = null, Func<Assembly, bool> assembliesToSkip = null)
         {
+            List<Tuple<TAttribute, object>> result = new List<Tuple<TAttribute, object>>();
+            var props = _targetMap.Where(a => type != null && a.Item3 == type);
             _assembliesToSkip = assembliesToSkip;
 
-            if (_targetMap.Count < 1)
+            if (props.Count() == 0)
                 if (type == null)
                     ScanAllAssemblies(section);
 
                 else
                     ScanType(type, section);
 
-            return (_targetMap.Count > 0) ? _targetMap : null;
+            foreach (Tuple<TAttribute, object, Type> item in _targetMap)
+            {
+
+                if (type != null)
+                {
+                    if (item.Item3 == type)
+                        result.Add(new Tuple<TAttribute, object>(item.Item1, item.Item2));
+                }
+                else
+                    result.Add(new Tuple<TAttribute, object>(item.Item1, item.Item2));
+            }
+
+
+            return (result.Count == 0) ? null : result;
         }
 
-        private static void Add(TAttribute attribute, object item)
+        private static void Add(TAttribute attribute, object item, Type type)
         {
-            _targetMap.Add(new Tuple<TAttribute, object>(attribute, item));
+            _targetMap.Add(new Tuple<TAttribute, object, Type>(attribute, item, type));
         }
 
         private static void AddSkippedAssemblies()
@@ -295,25 +310,25 @@ namespace NostreetsExtensions.Utilities
 
             if (classPart == ClassTypes.Any || classPart == ClassTypes.Type)
                 foreach (TAttribute attr in typeToScan.GetCustomAttributes(typeof(TAttribute), false))
-                    Add(attr, typeToScan);
+                    Add(attr, typeToScan, typeToScan);
 
 
             foreach (MemberInfo member in typeToScan.GetMembers(memberInfoBinding))
             {
                 if (member.MemberType == MemberTypes.Property && (classPart == ClassTypes.Properties | classPart == ClassTypes.Any))
                     foreach (TAttribute attr in member.GetCustomAttributes(typeof(TAttribute), false))
-                        Add(attr, member);
+                        Add(attr, member, typeToScan);
 
 
                 if (member.MemberType == MemberTypes.Method && (classPart == ClassTypes.Methods | classPart == ClassTypes.Any))
                     foreach (TAttribute attr in member.GetCustomAttributes(typeof(TAttribute), false))
-                        Add(attr, member);
+                        Add(attr, member, typeToScan);
 
 
                 if (member.MemberType == MemberTypes.Method && (classPart == ClassTypes.Parameters | classPart == ClassTypes.Any))
                     foreach (ParameterInfo parameter in ((MethodInfo)member).GetParameters())
                         foreach (TAttribute attr in parameter.GetCustomAttributes(typeof(TAttribute), false))
-                            Add(attr, parameter);
+                            Add(attr, parameter, typeToScan);
 
             }
         }
@@ -345,7 +360,7 @@ namespace NostreetsExtensions.Utilities
                     if (classPart == ClassTypes.Any || classPart == ClassTypes.Assembly)
                     {
                         foreach (TAttribute attr in assembly.GetCustomAttributes(typeof(TAttribute), false))
-                        { Add(attr, assembly); }
+                        { Add(attr, assembly, typeof(Assembly)); }
                     }
 
                     foreach (Type type in assembly.GetTypes())

@@ -20,32 +20,32 @@ namespace NostreetsExtensions.Utilities
         private static readonly int MinPasswordLength = 12;
 
 
-        public static string SimpleEncryptWithPassword(string secret, string password, byte[] nonSecretPayload = null)
+        public static string SimpleEncryptWithPassword(string secret, string key, byte[] nonSecretPayload = null)
         {
             if (string.IsNullOrEmpty(secret))
                 throw new ArgumentException("Secret Message Required!", "secretMessage");
 
             byte[] encodedText = Encoding.UTF8.GetBytes(secret);
-            byte[] cipherText = SimpleEncryptWithPassword(encodedText, password, nonSecretPayload);
+            byte[] cipherText = SimpleEncryptWithPassword(encodedText, key, nonSecretPayload);
             return Convert.ToBase64String(cipherText);
         }
 
-        public static string SimpleDecryptWithPassword(string encryptedMessage, string password, int nonSecretPayloadLength = 0)
+        public static string SimpleDecryptWithPassword(string encryptedMessage, string key, int nonSecretPayloadLength = 0)
         {
             if (string.IsNullOrWhiteSpace(encryptedMessage))
                 throw new ArgumentException("Encrypted Message Required!", "encryptedMessage");
 
             var cipherText = Convert.FromBase64String(encryptedMessage);
-            var plainText = SimpleDecryptWithPassword(cipherText, password, nonSecretPayloadLength);
+            var plainText = SimpleDecryptWithPassword(cipherText, key, nonSecretPayloadLength);
             return plainText == null ? null : Encoding.UTF8.GetString(plainText);
         }
 
-        public static byte[] SimpleEncryptWithPassword(byte[] encodedSecret, string password, byte[] nonSecretPayload = null)
+        public static byte[] SimpleEncryptWithPassword(byte[] encodedSecret, string key, byte[] nonSecretPayload = null)
         {
             nonSecretPayload = nonSecretPayload ?? new byte[] { };
 
             //User Error Checks
-            if (string.IsNullOrWhiteSpace(password) || password.Length < MinPasswordLength)
+            if (string.IsNullOrWhiteSpace(key) || key.Length < MinPasswordLength)
                 throw new ArgumentException(String.Format("Must have a password of at least {0} characters!", MinPasswordLength), "password");
 
             if (encodedSecret == null || encodedSecret.Length == 0)
@@ -59,7 +59,7 @@ namespace NostreetsExtensions.Utilities
             byte[] cryptKey;
             byte[] authKey;
             //Use Random Salt to prevent pre-generated weak password attacks.
-            using (Rfc2898DeriveBytes generator = new Rfc2898DeriveBytes(password, SaltBitSize / 8, Iterations))
+            using (Rfc2898DeriveBytes generator = new Rfc2898DeriveBytes(key, SaltBitSize / 8, Iterations))
             {
                 var salt = generator.Salt;
 
@@ -73,7 +73,7 @@ namespace NostreetsExtensions.Utilities
 
             //Deriving separate key, might be less efficient than using HKDF, 
             //but now compatible with RNEncryptor which had a very similar wireformat and requires less code than HKDF.
-            using (Rfc2898DeriveBytes generator = new Rfc2898DeriveBytes(password, SaltBitSize / 8, Iterations))
+            using (Rfc2898DeriveBytes generator = new Rfc2898DeriveBytes(key, SaltBitSize / 8, Iterations))
             {
                 var salt = generator.Salt;
 
@@ -87,10 +87,10 @@ namespace NostreetsExtensions.Utilities
             return SimpleEncrypt(encodedSecret, cryptKey, authKey, payload);
         }
 
-        public static byte[] SimpleDecryptWithPassword(byte[] encryptedMessage, string password, int nonSecretPayloadLength = 0)
+        public static byte[] SimpleDecryptWithPassword(byte[] encryptedMessage, string key, int nonSecretPayloadLength = 0)
         {
             //User Error Checks
-            if (string.IsNullOrWhiteSpace(password) || password.Length < MinPasswordLength)
+            if (string.IsNullOrWhiteSpace(key) || key.Length < MinPasswordLength)
                 throw new ArgumentException(String.Format("Must have a password of at least {0} characters!", MinPasswordLength), "password");
 
             if (encryptedMessage == null || encryptedMessage.Length == 0)
@@ -107,12 +107,12 @@ namespace NostreetsExtensions.Utilities
             byte[] authKey;
 
             //Generate crypt key
-            using (var generator = new Rfc2898DeriveBytes(password, cryptSalt, Iterations))
+            using (var generator = new Rfc2898DeriveBytes(key, cryptSalt, Iterations))
             {
                 cryptKey = generator.GetBytes(KeyBitSize / 8);
             }
             //Generate auth key
-            using (var generator = new Rfc2898DeriveBytes(password, authSalt, Iterations))
+            using (var generator = new Rfc2898DeriveBytes(key, authSalt, Iterations))
             {
                 authKey = generator.GetBytes(KeyBitSize / 8);
             }

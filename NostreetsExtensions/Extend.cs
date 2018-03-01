@@ -28,6 +28,7 @@ using NostreetsExtensions.Interfaces;
 using System.Diagnostics;
 using RestSharp;
 using RestSharp.Authenticators;
+using System.Net.Mail;
 
 namespace NostreetsExtensions
 {
@@ -1116,7 +1117,7 @@ namespace NostreetsExtensions
         /// <returns></returns>
         public static List<Tuple<TAttribute, object>> GetObjectsWithAttribute<TAttribute>(this IList<Tuple<TAttribute, object>> obj, ClassTypes types, Func<Assembly, bool> assembliesToSkip = null) where TAttribute : Attribute
         {
-            return AttributeScanner<TAttribute>.ScanAssembliesForAttributes(types, null, assembliesToSkip);
+            return AttributeScanner<TAttribute>.ScanAssembliesForAttributes(types, null, assembliesToSkip)?.ToList();
         }
 
         /// <summary>
@@ -1282,9 +1283,9 @@ namespace NostreetsExtensions
         /// <returns></returns>
         public static List<PropertyInfo> GetPropertiesByAttribute<TAttribute>(this IList<PropertyInfo> obj, Type type = null, Func<Assembly, bool> assembliesToSkip = null) where TAttribute : Attribute
         {
-            List<PropertyInfo> result = null;
+            IEnumerable<PropertyInfo> result = null;
 
-            List<Tuple<TAttribute, object>> list = AttributeScanner<TAttribute>.ScanAssembliesForAttributes(ClassTypes.Properties, type, assembliesToSkip);
+            IEnumerable<Tuple<TAttribute, object>> list = AttributeScanner<TAttribute>.ScanAssembliesForAttributes(ClassTypes.Properties, type, assembliesToSkip);
 
             if (list != null)
             {
@@ -1294,7 +1295,7 @@ namespace NostreetsExtensions
                 foreach (var item in list) { result.Add((PropertyInfo)item.Item2); }
             }
 
-            return result;
+            return result.ToList();
         }
 
         /// <summary>
@@ -1307,9 +1308,8 @@ namespace NostreetsExtensions
         /// <returns></returns>
         public static List<PropertyInfo> GetPropertiesByAttribute<TAttribute>(this Type type, Func<Assembly, bool> assembliesToSkip = null) where TAttribute : Attribute
         {
-            List<PropertyInfo> result = null;
-
-            List<Tuple<TAttribute, object>> list = AttributeScanner<TAttribute>.ScanAssembliesForAttributes(ClassTypes.Properties, type, assembliesToSkip);
+            IEnumerable<PropertyInfo> result = null;
+            IEnumerable<Tuple<TAttribute, object>> list = AttributeScanner<TAttribute>.ScanAssembliesForAttributes(ClassTypes.Properties, type, assembliesToSkip);
 
             if (list != null)
             {
@@ -1319,7 +1319,7 @@ namespace NostreetsExtensions
                 foreach (var item in list) { result.Add((PropertyInfo)item.Item2); }
             }
 
-            return result;
+            return result.ToList();
         }
 
         /// <summary>
@@ -2398,7 +2398,7 @@ namespace NostreetsExtensions
             }
             return result;
         }
-
+       
         #endregion
     }
 }
