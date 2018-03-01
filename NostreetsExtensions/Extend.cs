@@ -21,13 +21,13 @@ using NostreetsExtensions.Utilities;
 using System.Text;
 using Microsoft.Practices.Unity;
 using Newtonsoft.Json.Serialization;
-using NostreetsExtensions.Helpers;
 using System.Data.Entity;
 using System.Data.Entity.Infrastructure;
 using System.Data.SqlClient;
 using NostreetsExtensions.Interfaces;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
+using RestSharp;
+using RestSharp.Authenticators;
 
 namespace NostreetsExtensions
 {
@@ -399,6 +399,88 @@ namespace NostreetsExtensions
         }
 
         /// <summary>
+        /// Hits the endpoint.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="url">The URL.</param>
+        /// <param name="method">The method.</param>
+        /// <param name="data">The data.</param>
+        /// <param name="contentType">Type of the content.</param>
+        /// <param name="headers">The headers.</param>
+        /// <returns></returns>
+        /// <exception cref="Exception">url to has to be valid url string to be able to HitEndpoint...
+        /// or</exception>
+        public static IRestResponse<T> RestSharpEndpoint<T>(this string url, string method = "GET", object data = null, string contentType = "application/json", Dictionary<string, string> headers = null) where T : new()
+        {
+            #region Client
+
+            RestClient rest = null;
+            if (url != null)
+            {
+                rest = new RestClient(url);
+            }
+            else { throw new Exception("URL is not defined!"); }
+
+            #endregion
+
+
+            #region Request
+
+            RestRequest request = new RestRequest();
+            switch (method)
+            {
+                case "GET":
+                    request.Method = Method.GET;
+                    break;
+
+                case "POST":
+                    request.Method = Method.POST;
+                    break;
+
+                case "PATCH":
+                    request.Method = Method.PATCH;
+                    break;
+
+                case "PUT":
+                    request.Method = Method.PUT;
+                    break;
+
+                case "DELETE":
+                    request.Method = Method.DELETE;
+                    break;
+                default:
+                    request.Method = Method.GET;
+                    break;
+            };
+            request.JsonSerializer = CustomSerializer.CamelCaseIngoreDictionaryKeys;
+            request.RequestFormat = DataFormat.Json;
+            request.AddBody(data);
+            if (headers != null)
+            {
+                foreach (var item in headers)
+                {
+                    if (item.Key.Contains("auth"))
+                    {
+                        rest.Authenticator = new HttpBasicAuthenticator("username", item.Value);
+                    }
+                    else if (item.Key == "contentType")
+                    {
+                        request.AddParameter(new Parameter { ContentType = item.Value });
+                    }
+                    else
+                    {
+                        request.AddParameter(new Parameter { Name = item.Key, Value = item.Value });
+                    }
+                }
+            }
+            #endregion
+
+
+            return rest.Execute<T>(request);
+
+        }
+
+        /// <summary>
         /// Gets the week of month.
         /// </summary>
         /// <param name="time">The time.</param>
@@ -681,7 +763,7 @@ namespace NostreetsExtensions
         public static string GetCookie(this HttpRequest request, string cookieName)
         {
             string result = null;
-            HttpCookie cookie = request.Cookies[cookieName] ?? default(HttpCookie);
+            System.Web.HttpCookie cookie = request.Cookies[cookieName] ?? default(System.Web.HttpCookie);
             if (cookie != null)
             {
                 result = cookie.Value;
@@ -701,7 +783,7 @@ namespace NostreetsExtensions
         {
             try
             {
-                HttpCookie cookie = new HttpCookie(cookieName, value);
+                System.Web.HttpCookie cookie = new System.Web.HttpCookie(cookieName, value);
                 cookie.Expires = (expires != null) ? expires.Value : default(DateTime);
 
                 context.Response.Cookies.Add(cookie);
@@ -735,7 +817,7 @@ namespace NostreetsExtensions
                     }
                 }
 
-                HttpCookie cookie = new HttpCookie(cookieName, value);
+                System.Web.HttpCookie cookie = new System.Web.HttpCookie(cookieName, value);
                 cookie.Expires = (expires != null) ? expires.Value : default(DateTime);
 
 
@@ -2295,6 +2377,8 @@ namespace NostreetsExtensions
         {
             return txt.Split(new string[] { seperator }, StringSplitOptions.None);
         }
+
+        
 
         #endregion
     }

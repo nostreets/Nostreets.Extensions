@@ -111,6 +111,7 @@
     <Compile Include="Helpers\DataMapper.cs" />
     <Compile Include="Helpers\DataProvider.cs" />
     <Compile Include="Utilities\ClassBuilder.cs" />
+    <Compile Include="Utilities\Encryption.cs" />
     <Compile Include="Utilities\ExcelService.cs" />
     <Compile Include="Helpers\SqlDao.cs" />
     <Compile Include="Interfaces\IDao.cs" />
@@ -122,6 +123,7 @@
     <Compile Include="Utilities\ExpressionBuilder.cs" />
     <Compile Include="Utilities\FileManager.cs" />
     <Compile Include="Utilities\Scanners.cs" />
+    <Compile Include="Utilities\SessionManager.cs" />
     <Compile Include="Utilities\TimeOut.cs" />
   </ItemGroup>
   <ItemGroup>
