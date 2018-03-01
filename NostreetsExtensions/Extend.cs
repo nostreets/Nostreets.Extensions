@@ -2370,15 +2370,34 @@ namespace NostreetsExtensions
         /// <returns></returns>
         public static string SafeName(this string txt)
         {
-            return txt?.Remove("`1")?.RemoveChar('<', '>', '@', '.', '{', '}', '[', ']');
+            return txt?.Remove("`1")?.RemoveChar('<', '>', '@', '.', '{', '}', '[', ']', '_');
         }
 
+        /// <summary>
+        /// Splits by the specified seperator.
+        /// </summary>
+        /// <param name="txt">The text.</param>
+        /// <param name="seperator">The seperator.</param>
+        /// <returns></returns>
         public static string[] Split(this string txt, string seperator)
         {
             return txt.Split(new string[] { seperator }, StringSplitOptions.None);
         }
 
-        
+        /// <summary>
+        /// Reads the file.
+        /// </summary>
+        /// <param name="path">The path.</param>
+        /// <returns></returns>
+        public static string ReadFile(this string path)
+        {
+            string result = null;
+            using (StreamReader reader = new StreamReader(path))
+            {
+                result = reader.ReadToEnd();
+            }
+            return result;
+        }
 
         #endregion
     }
