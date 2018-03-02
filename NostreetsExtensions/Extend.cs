@@ -1292,7 +1292,7 @@ namespace NostreetsExtensions
                 if (result == null)
                     result = new List<PropertyInfo>();
 
-                foreach (var item in list) { result.Add((PropertyInfo)item.Item2); }
+                foreach (var item in list) { result.AddValues((PropertyInfo)item.Item2); }
             }
 
             return result.ToList();
@@ -1308,7 +1308,7 @@ namespace NostreetsExtensions
         /// <returns></returns>
         public static List<PropertyInfo> GetPropertiesByAttribute<TAttribute>(this Type type, Func<Assembly, bool> assembliesToSkip = null) where TAttribute : Attribute
         {
-            IEnumerable<PropertyInfo> result = null;
+            List<PropertyInfo> result = null;
             IEnumerable<Tuple<TAttribute, object>> list = AttributeScanner<TAttribute>.ScanAssembliesForAttributes(ClassTypes.Properties, type, assembliesToSkip);
 
             if (list != null)
@@ -1319,7 +1319,7 @@ namespace NostreetsExtensions
                 foreach (var item in list) { result.Add((PropertyInfo)item.Item2); }
             }
 
-            return result.ToList();
+            return result;
         }
 
         /// <summary>
@@ -1683,7 +1683,7 @@ namespace NostreetsExtensions
         /// <param name="collection">The collection.</param>
         /// <param name="values">The values.</param>
         /// <returns></returns>
-        public static IEnumerable Add(this IEnumerable collection, params object[] values)
+        public static IEnumerable AddValues(this IEnumerable collection, params object[] values)
         {
             IEnumerable result = null;
             if (values.Length > 0)
@@ -2287,7 +2287,7 @@ namespace NostreetsExtensions
         {
             object result = null;
             if (isExtension)
-                parameters = (object[])parameters.Add(obj);
+                parameters = (object[])parameters.AddValues(obj);
 
             MethodInfo method = methodHolder.GetMethodInfo(methodName);
             result = method?.Invoke(obj, parameters);
@@ -2308,7 +2308,7 @@ namespace NostreetsExtensions
         {
             object result = null;
             if (isExtension)
-                parameters = (object[])parameters.Add(obj);
+                parameters = (object[])parameters.AddValues(obj);
 
             MethodInfo method = methodHolder.GetMethodInfo(methodName)?.MakeGenericMethod(new Type[] { type });
             result = method?.Invoke(obj, parameters);
