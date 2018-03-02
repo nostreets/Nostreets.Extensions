@@ -19,7 +19,6 @@ using System.Collections.Specialized;
 using System.Web;
 using NostreetsExtensions.Utilities;
 using System.Text;
-using Microsoft.Practices.Unity;
 using Newtonsoft.Json.Serialization;
 using System.Data.Entity;
 using System.Data.Entity.Infrastructure;
@@ -28,7 +27,9 @@ using NostreetsExtensions.Interfaces;
 using System.Diagnostics;
 using RestSharp;
 using RestSharp.Authenticators;
-using System.Net.Mail;
+using Unity;
+using Unity.Registration;
+using Unity.Resolution;
 
 namespace NostreetsExtensions
 {
@@ -1115,9 +1116,13 @@ namespace NostreetsExtensions
         /// <param name="types">The types.</param>
         /// <param name="assembliesToSkip">The assemblies to skip.</param>
         /// <returns></returns>
-        public static List<Tuple<TAttribute, object>> GetObjectsWithAttribute<TAttribute>(this IList<Tuple<TAttribute, object>> obj, ClassTypes types, Func<Assembly, bool> assembliesToSkip = null) where TAttribute : Attribute
+        public static List<Tuple<TAttribute, object>> GetObjectsWithAttribute<TAttribute>(this IList<Tuple<TAttribute, object>> obj, ClassTypes section, Func<Assembly, bool> assembliesToSkip = null) where TAttribute : Attribute
         {
-            return AttributeScanner<TAttribute>.ScanAssembliesForAttributes(types, null, assembliesToSkip)?.ToList();
+            IEnumerable<Tuple<TAttribute, object>> result = null;
+            using (AttributeScanner<TAttribute> scanner = new AttributeScanner<TAttribute>())
+                result = scanner.ScanAssembliesForAttributes(section, null, assembliesToSkip);
+
+            return result.ToList();
         }
 
         /// <summary>
@@ -1132,8 +1137,19 @@ namespace NostreetsExtensions
         public static List<object> GetObjectsByAttribute<TAttribute>(this IList<TAttribute> obj, ClassTypes section, Type type = null, Func<Assembly, bool> assembliesToSkip = null) where TAttribute : Attribute
         {
             List<object> result = new List<object>();
+            IEnumerable<Tuple<TAttribute, object>> list = null;
 
-            foreach (var item in AttributeScanner<TAttribute>.ScanAssembliesForAttributes(section, type, assembliesToSkip)) { result.Add(item.Item2); }
+            using (AttributeScanner<TAttribute> scanner = new AttributeScanner<TAttribute>())
+            {
+                list = scanner.ScanAssembliesForAttributes(section, type, assembliesToSkip);
+                if (list != null)
+                {
+                    if (result == null)
+                        result = new List<object>();
+
+                    foreach (var item in list) { result.Add((object)item.Item2); }
+                }
+            }
 
             return result;
         }
@@ -1150,8 +1166,19 @@ namespace NostreetsExtensions
         public static List<object> GetObjectsByAttribute<TAttribute>(this IList<object> obj, ClassTypes section, Type type = null, Func<Assembly, bool> assembliesToSkip = null) where TAttribute : Attribute
         {
             List<object> result = new List<object>();
+            IEnumerable<Tuple<TAttribute, object>> list = null;
 
-            foreach (var item in AttributeScanner<TAttribute>.ScanAssembliesForAttributes(section, type, assembliesToSkip)) { result.Add(item.Item2); }
+            using (AttributeScanner<TAttribute> scanner = new AttributeScanner<TAttribute>())
+            {
+                list = scanner.ScanAssembliesForAttributes(section, type, assembliesToSkip);
+                if (list != null)
+                {
+                    if (result == null)
+                        result = new List<object>();
+
+                    foreach (var item in list) { result.Add((object)item.Item2); }
+                }
+            }
 
             return result;
         }
@@ -1167,8 +1194,19 @@ namespace NostreetsExtensions
         public static List<MethodInfo> GetMethodsByAttribute<TAttribute>(this IList<TAttribute> obj, Type type = null, Func<Assembly, bool> assembliesToSkip = null) where TAttribute : Attribute
         {
             List<MethodInfo> result = new List<MethodInfo>();
+            IEnumerable<Tuple<TAttribute, object>> list = null;
 
-            foreach (var item in AttributeScanner<TAttribute>.ScanAssembliesForAttributes(ClassTypes.Methods, type, assembliesToSkip)) { result.Add((MethodInfo)item.Item2); }
+            using (AttributeScanner<TAttribute> scanner = new AttributeScanner<TAttribute>())
+            {
+                list = scanner.ScanAssembliesForAttributes(ClassTypes.Methods, type, assembliesToSkip);
+                if (list != null)
+                {
+                    if (result == null)
+                        result = new List<MethodInfo>();
+
+                    foreach (var item in list) { result.Add((MethodInfo)item.Item2); }
+                }
+            }
 
             return result;
         }
@@ -1184,8 +1222,19 @@ namespace NostreetsExtensions
         public static List<MethodInfo> GetMethodsByAttribute<TAttribute>(this IList<MethodInfo> obj, Type type = null, Func<Assembly, bool> assembliesToSkip = null) where TAttribute : Attribute
         {
             List<MethodInfo> result = new List<MethodInfo>();
+            IEnumerable<Tuple<TAttribute, object>> list = null;
 
-            foreach (var item in AttributeScanner<TAttribute>.ScanAssembliesForAttributes(ClassTypes.Methods, type, assembliesToSkip)) { result.Add((MethodInfo)item.Item2); }
+            using (AttributeScanner<TAttribute> scanner = new AttributeScanner<TAttribute>())
+            {
+                list = scanner.ScanAssembliesForAttributes(ClassTypes.Methods, type, assembliesToSkip);
+                if (list != null)
+                {
+                    if (result == null)
+                        result = new List<MethodInfo>();
+
+                    foreach (var item in list) { result.Add((MethodInfo)item.Item2); }
+                }
+            }
 
             return result;
         }
@@ -1201,8 +1250,19 @@ namespace NostreetsExtensions
         public static List<Type> GetTypesByAttribute<TAttribute>(this IList<TAttribute> obj, Type type = null, Func<Assembly, bool> assembliesToSkip = null) where TAttribute : Attribute
         {
             List<Type> result = new List<Type>();
+            IEnumerable<Tuple<TAttribute, object>> list = null;
 
-            foreach (var item in AttributeScanner<TAttribute>.ScanAssembliesForAttributes(ClassTypes.Type, type, assembliesToSkip)) { result.Add((Type)item.Item2); }
+            using (AttributeScanner<TAttribute> scanner = new AttributeScanner<TAttribute>())
+            {
+                list = scanner.ScanAssembliesForAttributes(ClassTypes.Type, type, assembliesToSkip);
+                if (list != null)
+                {
+                    if (result == null)
+                        result = new List<Type>();
+
+                    foreach (var item in list) { result.Add((Type)item.Item2); }
+                }
+            }
 
             return result;
         }
@@ -1218,8 +1278,19 @@ namespace NostreetsExtensions
         public static List<Type> GetTypesByAttribute<TAttribute>(this IList<Type> obj, Type type = null, Func<Assembly, bool> assembliesToSkip = null) where TAttribute : Attribute
         {
             List<Type> result = new List<Type>();
+            IEnumerable<Tuple<TAttribute, object>> list = null;
 
-            foreach (var item in AttributeScanner<TAttribute>.ScanAssembliesForAttributes(ClassTypes.Type, type, assembliesToSkip)) { result.Add((Type)item.Item2); }
+            using (AttributeScanner<TAttribute> scanner = new AttributeScanner<TAttribute>())
+            {
+                list = scanner.ScanAssembliesForAttributes(ClassTypes.Type, type, assembliesToSkip);
+                if (list != null)
+                {
+                    if (result == null)
+                        result = new List<Type>();
+
+                    foreach (var item in list) { result.Add((Type)item.Item2); }
+                }
+            }
 
             return result;
         }
@@ -1234,8 +1305,19 @@ namespace NostreetsExtensions
         public static List<Assembly> GetAssembliesByAttribute<TAttribute>(this IList<TAttribute> obj, Func<Assembly, bool> assembliesToSkip = null) where TAttribute : Attribute
         {
             List<Assembly> result = new List<Assembly>();
+            IEnumerable<Tuple<TAttribute, object>> list = null;
 
-            foreach (var item in AttributeScanner<TAttribute>.ScanAssembliesForAttributes(ClassTypes.Assembly, null, assembliesToSkip)) { result.Add((Assembly)item.Item2); }
+            using (AttributeScanner<TAttribute> scanner = new AttributeScanner<TAttribute>())
+            {
+                list = scanner.ScanAssembliesForAttributes(ClassTypes.Assembly, null, assembliesToSkip);
+                if (list != null)
+                {
+                    if (result == null)
+                        result = new List<Assembly>();
+
+                    foreach (var item in list) { result.Add((Assembly)item.Item2); }
+                }
+            }
 
             return result;
         }
@@ -1250,8 +1332,19 @@ namespace NostreetsExtensions
         public static List<Assembly> GetAssembliesByAttribute<TAttribute>(this IList<Assembly> obj, Func<Assembly, bool> assembliesToSkip = null) where TAttribute : Attribute
         {
             List<Assembly> result = new List<Assembly>();
+            IEnumerable<Tuple<TAttribute, object>> list = null;
 
-            foreach (var item in AttributeScanner<TAttribute>.ScanAssembliesForAttributes(ClassTypes.Assembly, null, assembliesToSkip)) { result.Add((Assembly)item.Item2); }
+            using (AttributeScanner<TAttribute> scanner = new AttributeScanner<TAttribute>())
+            {
+                list = scanner.ScanAssembliesForAttributes(ClassTypes.Assembly, null, assembliesToSkip);
+                if (list != null)
+                {
+                    if (result == null)
+                        result = new List<Assembly>();
+
+                    foreach (var item in list) { result.Add((Assembly)item.Item2); }
+                }
+            }
 
             return result;
         }
@@ -1267,8 +1360,19 @@ namespace NostreetsExtensions
         public static List<PropertyInfo> GetPropertiesByAttribute<TAttribute>(this IList<TAttribute> obj, Type type = null, Func<Assembly, bool> assembliesToSkip = null) where TAttribute : Attribute
         {
             List<PropertyInfo> result = new List<PropertyInfo>();
+            IEnumerable<Tuple<TAttribute, object>> list = null;
 
-            foreach (var item in AttributeScanner<TAttribute>.ScanAssembliesForAttributes(ClassTypes.Properties, type, assembliesToSkip)) { result.Add((PropertyInfo)item.Item2); }
+            using (AttributeScanner<TAttribute> scanner = new AttributeScanner<TAttribute>())
+            {
+                list = scanner.ScanAssembliesForAttributes(ClassTypes.Properties, type, assembliesToSkip);
+                if (list != null)
+                {
+                    if (result == null)
+                        result = new List<PropertyInfo>();
+
+                    foreach (var item in list) { result.Add((PropertyInfo)item.Item2); }
+                }
+            }
 
             return result;
         }
@@ -1283,16 +1387,19 @@ namespace NostreetsExtensions
         /// <returns></returns>
         public static List<PropertyInfo> GetPropertiesByAttribute<TAttribute>(this IList<PropertyInfo> obj, Type type = null, Func<Assembly, bool> assembliesToSkip = null) where TAttribute : Attribute
         {
-            IEnumerable<PropertyInfo> result = null;
+            List<PropertyInfo> result = null;
+            IEnumerable<Tuple<TAttribute, object>> list = null;
 
-            IEnumerable<Tuple<TAttribute, object>> list = AttributeScanner<TAttribute>.ScanAssembliesForAttributes(ClassTypes.Properties, type, assembliesToSkip);
-
-            if (list != null)
+            using (AttributeScanner<TAttribute> scanner = new AttributeScanner<TAttribute>())
             {
-                if (result == null)
-                    result = new List<PropertyInfo>();
+                list = scanner.ScanAssembliesForAttributes(ClassTypes.Properties, type, assembliesToSkip);
+                if (list != null)
+                {
+                    if (result == null)
+                        result = new List<PropertyInfo>();
 
-                foreach (var item in list) { result.AddValues((PropertyInfo)item.Item2); }
+                    foreach (var item in list) { result.Add((PropertyInfo)item.Item2); }
+                }
             }
 
             return result.ToList();
@@ -1309,14 +1416,18 @@ namespace NostreetsExtensions
         public static List<PropertyInfo> GetPropertiesByAttribute<TAttribute>(this Type type, Func<Assembly, bool> assembliesToSkip = null) where TAttribute : Attribute
         {
             List<PropertyInfo> result = null;
-            IEnumerable<Tuple<TAttribute, object>> list = AttributeScanner<TAttribute>.ScanAssembliesForAttributes(ClassTypes.Properties, type, assembliesToSkip);
+            IEnumerable<Tuple<TAttribute, object>> list = null;
 
-            if (list != null)
+            using (AttributeScanner<TAttribute> scanner = new AttributeScanner<TAttribute>())
             {
-                if (result == null)
-                    result = new List<PropertyInfo>();
+                list = scanner.ScanAssembliesForAttributes(ClassTypes.Properties, type, assembliesToSkip);
+                if (list != null)
+                {
+                    if (result == null)
+                        result = new List<PropertyInfo>();
 
-                foreach (var item in list) { result.Add((PropertyInfo)item.Item2); }
+                    foreach (var item in list) { result.Add((PropertyInfo)item.Item2); }
+                }
             }
 
             return result;
@@ -1358,27 +1469,31 @@ namespace NostreetsExtensions
                 return Activator.CreateInstance<T>();
         }
 
-        /// <summary>
-        /// Unities the instantiate.
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="type">The type.</param>
-        /// <param name="containter">The containter.</param>
-        /// <returns></returns>
-        public static T UnityInstantiate<T>(this T type, UnityContainer containter)
-        {
-            return containter.Resolve<T>();
-        }
-
-        /// <summary>
-        /// Unities the instantiate.
-        /// </summary>
-        /// <param name="type">The type.</param>
-        /// <param name="containter">The containter.</param>
-        /// <returns></returns>
-        public static object UnityInstantiate(this Type type, UnityContainer containter)
+        public static object UnityResolve(this Type type, IUnityContainer containter)
         {
             return containter.Resolve(type);
+        }
+
+        public static T UntityResolve<T>(this T type, IUnityContainer container, object overrideObject = null)
+        {
+            PropertyInfo[] properties = overrideObject?.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance);
+
+            ResolverOverride[] overridesArray = properties?.Select(p => new ParameterOverride(p.Name, p.GetValue(overrideObject, null))).Cast<ResolverOverride>().ToArray();
+
+            return (overrideObject != null) 
+                    ? container.Resolve<T>(null, overridesArray) 
+                    : container.Resolve<T>();
+        }
+
+        public static object UntityResolve(this Type type, IUnityContainer container, object overrideObject = null)
+        {
+            PropertyInfo[] properties = overrideObject?.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance);
+
+            ResolverOverride[] overridesArray = properties?.Select(p => new ParameterOverride(p.Name, p.GetValue(overrideObject, null))).Cast<ResolverOverride>().ToArray();
+
+            return (overrideObject != null)
+                    ? container.Resolve(type, overridesArray)
+                    : container.Resolve(type);
         }
 
         /// <summary>
@@ -1389,7 +1504,9 @@ namespace NostreetsExtensions
         /// <returns></returns>
         public static object ScanAssembliesForObject(this string nameToCheckFor, string assemblyToLookFor)
         {
-            object result = AssemblyScanner.ScanAssembliesForObject(nameToCheckFor, new[] { assemblyToLookFor });
+            object result = null;
+            using (AssemblyScanner scanner = new AssemblyScanner())
+                result = scanner.ScanAssembliesForObject(nameToCheckFor, new[] { assemblyToLookFor });
             return result;
         }
 
@@ -1401,7 +1518,9 @@ namespace NostreetsExtensions
         /// <returns></returns>
         public static object ScanAssembliesForObject(this string nameToCheckFor, params string[] assembliesToLookFor)
         {
-            object result = AssemblyScanner.ScanAssembliesForObject(nameToCheckFor, assembliesToLookFor);
+            object result = null;
+            using (AssemblyScanner scanner = new AssemblyScanner())
+                result = scanner.ScanAssembliesForObject(nameToCheckFor, assembliesToLookFor);
             return result;
         }
 
@@ -1414,7 +1533,9 @@ namespace NostreetsExtensions
         /// <returns></returns>
         public static object ScanAssembliesForObject(this string nameToCheckFor, string[] assembliesToSkip, string[] assembliesToLookFor)
         {
-            object result = AssemblyScanner.ScanAssembliesForObject(nameToCheckFor, assembliesToLookFor, assembliesToSkip);
+            object result = null;
+            using (AssemblyScanner scanner = new AssemblyScanner())
+                result = scanner.ScanAssembliesForObject(nameToCheckFor, assembliesToLookFor, assembliesToSkip);
             return result;
         }
 
@@ -2398,7 +2519,7 @@ namespace NostreetsExtensions
             }
             return result;
         }
-       
+
         #endregion
     }
 }

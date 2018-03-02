@@ -1,11 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace NostreetsExtensions.Utilities
 {
@@ -21,32 +18,31 @@ namespace NostreetsExtensions.Utilities
         Parameters = 128
     }
 
-    public static class DirectoryScanner
+    public class DirectoryScanner : Disposable
     {
-
-        static DirectoryScanner()
+        public DirectoryScanner()
         {
 
         }
 
-        private static string BaseDirectory { get { return AppDomain.CurrentDomain.BaseDirectory; } }
-        private static List<string> CheckedDirectories { get { return _checkedDirectories; } }
-        public static Dictionary<string, Assembly> BackedUpAssemblies { get { return _backedUpAssemblies; } }
+        private string BaseDirectory { get { return AppDomain.CurrentDomain.BaseDirectory; } }
+        private List<string> CheckedDirectories { get { return _checkedDirectories; } }
+        public Dictionary<string, Assembly> BackedUpAssemblies { get { return _backedUpAssemblies; } }
 
-        private static List<string> _checkedDirectories = new List<string>();
-        private static Dictionary<string, Assembly> _backedUpAssemblies = new Dictionary<string, Assembly>();
+        private List<string> _checkedDirectories = new List<string>();
+        private Dictionary<string, Assembly> _backedUpAssemblies = new Dictionary<string, Assembly>();
 
-        public static Assembly GetBackedUpAssembly(Assembly assembly)
+        public Assembly GetBackedUpAssembly(Assembly assembly)
         {
             return BackedUpAssemblies.FirstOrDefault(a => a.Value == assembly).Value;
         }
 
-        public static Assembly GetBackedUpAssembly(string assemblyName)
+        public Assembly GetBackedUpAssembly(string assemblyName)
         {
             return BackedUpAssemblies.FirstOrDefault(a => a.Key == assemblyName).Value;
         }
 
-        public static ResolveEventHandler LoadBackUpDirectoryOnEvent()
+        public ResolveEventHandler LoadBackUpDirectoryOnEvent()
         {
             return new ResolveEventHandler(
                 (a, b) =>
@@ -57,7 +53,7 @@ namespace NostreetsExtensions.Utilities
                     });
         }
 
-        private static void LoadBackupAssemblies(params string[] assemblies)
+        private void LoadBackupAssemblies(params string[] assemblies)
         {
             Dictionary<string, Assembly> result = new Dictionary<string, Assembly>();
             List<string> list = ScanFolderForKeywords("BACKUP", ".dll", true, 2, assemblies);
@@ -75,7 +71,7 @@ namespace NostreetsExtensions.Utilities
             _backedUpAssemblies = result;
         }
 
-        private static List<string> ScanFolderForKeywords(string pathExt = null, string fileExt = null, bool searchRecursively = false, int numOfBckstps = 0, params string[] keys)
+        private List<string> ScanFolderForKeywords(string pathExt = null, string fileExt = null, bool searchRecursively = false, int numOfBckstps = 0, params string[] keys)
         {
             List<string> result = new List<string>();
             string targetedDirectory = BaseDirectory,
@@ -159,9 +155,9 @@ namespace NostreetsExtensions.Utilities
 
     }
 
-    public static class AssemblyScanner
+    public class AssemblyScanner : Disposable
     {
-        static AssemblyScanner()
+        public AssemblyScanner()
         {
             skipAssemblies = new List<string>();
 
@@ -174,9 +170,9 @@ namespace NostreetsExtensions.Utilities
 
         }
 
-        private static List<string> skipAssemblies = null;
+        private List<string> skipAssemblies = null;
 
-        private static void SearchForObject(Assembly assembly, string nameToCheckFor, out object result, string[] assembliesToLookFor, string[] assembliesToSkip)
+        private void SearchForObject(Assembly assembly, string nameToCheckFor, out object result, string[] assembliesToLookFor, string[] assembliesToSkip)
         {
 
             result = null;
@@ -232,7 +228,7 @@ namespace NostreetsExtensions.Utilities
             }
         }
 
-        public static object ScanAssembliesForObject(string nameToCheckFor, string[] assembliesToLookFor = null, string[] assembliesToSkip = null)
+        public object ScanAssembliesForObject(string nameToCheckFor, string[] assembliesToLookFor = null, string[] assembliesToSkip = null)
         {
             object result = null;
 
@@ -247,20 +243,20 @@ namespace NostreetsExtensions.Utilities
 
     }
 
-    public static class AttributeScanner<TAttribute> where TAttribute : Attribute
+    public class AttributeScanner<TAttribute> : Disposable where TAttribute : Attribute
     {
-        private static List<Tuple<TAttribute, object, Type>> _targetMap;
-        private static List<string> _skipAssemblies;
-        private static Func<Assembly, bool> _assembliesToSkip;
+        private List<Tuple<TAttribute, object, Type>> _targetMap;
+        private List<string> _skipAssemblies;
+        private Func<Assembly, bool> _assembliesToSkip;
 
-        static AttributeScanner()
+        public AttributeScanner()
         {
             _targetMap = new List<Tuple<TAttribute, object, Type>>();
             _skipAssemblies = new List<string>(typeof(TAttribute).Assembly.GetReferencedAssemblies().Select(c => c.FullName));
 
         }
 
-        public static IEnumerable<Tuple<TAttribute, object>> ScanAssembliesForAttributes(ClassTypes section = ClassTypes.Any, Type type = null, Func<Assembly, bool> assembliesToSkip = null)
+        public IEnumerable<Tuple<TAttribute, object>> ScanAssembliesForAttributes(ClassTypes section = ClassTypes.Any, Type type = null, Func<Assembly, bool> assembliesToSkip = null)
         {
             List<Tuple<TAttribute, object>> result = new List<Tuple<TAttribute, object>>();
             var props = _targetMap.Where(a => type != null && a.Item3 == type);
@@ -289,12 +285,12 @@ namespace NostreetsExtensions.Utilities
             return (result.Count == 0) ? null : result;
         }
 
-        private static void Add(TAttribute attribute, object item, Type type)
+        private void Add(TAttribute attribute, object item, Type type)
         {
             _targetMap.Add(new Tuple<TAttribute, object, Type>(attribute, item, type));
         }
 
-        private static void AddSkippedAssemblies()
+        private void AddSkippedAssemblies()
         {
             foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
             {
@@ -303,7 +299,7 @@ namespace NostreetsExtensions.Utilities
 
         }
 
-        private static void ScanType(Type typeToScan, ClassTypes classPart)
+        private void ScanType(Type typeToScan, ClassTypes classPart)
         {
             const BindingFlags memberInfoBinding = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance;
 
@@ -333,7 +329,7 @@ namespace NostreetsExtensions.Utilities
             }
         }
 
-        private static void ScanAllAssemblies(ClassTypes classPart = ClassTypes.Any)
+        private void ScanAllAssemblies(ClassTypes classPart = ClassTypes.Any)
         {
             AddSkippedAssemblies();
 
@@ -343,7 +339,7 @@ namespace NostreetsExtensions.Utilities
             }
         }
 
-        private static void SearchForAttributes(Assembly assembly, ClassTypes classPart = ClassTypes.Any, Type typeToCheck = null)
+        private void SearchForAttributes(Assembly assembly, ClassTypes classPart = ClassTypes.Any, Type typeToCheck = null)
         {
             bool shouldSkip = false;
 
