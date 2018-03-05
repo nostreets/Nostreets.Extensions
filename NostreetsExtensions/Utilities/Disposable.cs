@@ -4,9 +4,8 @@ namespace NostreetsExtensions.Utilities
 {
     public abstract class Disposable : IDisposable
     {
-        private bool _disposed;
-
-        protected virtual void Dispose(bool disposing)
+        bool _disposed;
+        void Dispose(bool disposing)
         {
             if (!_disposed)
             {
@@ -19,7 +18,7 @@ namespace NostreetsExtensions.Utilities
             _disposed = true;
         }
 
-        public void Dispose()
+        public virtual void Dispose()
         {
             Dispose(true);
             GC.SuppressFinalize(this);

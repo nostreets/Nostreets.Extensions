@@ -172,7 +172,7 @@ namespace NostreetsExtensions.Utilities
 
         private List<string> skipAssemblies = null;
 
-        private void SearchForObject(Assembly assembly, string nameToCheckFor, out object result, string[] assembliesToLookFor, string[] assembliesToSkip)
+        private void SearchForObject(Assembly assembly, string nameToCheckFor, out object result, string[] assembliesToLookFor, string[] assembliesToSkip, ClassTypes classType = ClassTypes.Any)
         {
 
             result = null;
@@ -189,36 +189,62 @@ namespace NostreetsExtensions.Utilities
             foreach (string skippedAssembly in skipAssemblies)
             {
                 if (assembly.FullName.Contains(skippedAssembly)) { shouldSkip = true; }
-                else if (assembliesToLookFor != null && assembliesToLookFor.Length > 0 && !assembliesToLookFor.Any(a => a.Contains(assembly.GetName().Name))) { shouldSkip = true; }
+                else if (assembliesToLookFor != null && assembliesToLookFor.Length > 0 && assembliesToLookFor[0] != null && !assembliesToLookFor.Any(a => a.Contains(assembly.GetName().Name))) { shouldSkip = true; }
             }
 
             if (!shouldSkip)
             {
+                if ((classType == ClassTypes.Assembly || classType == ClassTypes.Any) && namesToCheckFor.Any(a => assembly.FullName.Contains(a)))
+                    result = assembly;
+
                 foreach (Type type in assembly.GetTypes())
                 {
                     if (namesToCheckFor.Any(a => a == type.Name))
                     {
-                        foreach (MemberInfo member in type.GetMembers(memberInfoBinding))
-                        {
-                            if (member.MemberType == MemberTypes.Method && namesToCheckFor.Any(a => a == member.Name))
+                        if (classType == ClassTypes.Methods || classType == ClassTypes.Any)
+                            foreach (MemberInfo member in type.GetMembers(memberInfoBinding))
                             {
-                                foreach (ParameterInfo parameter in ((MethodInfo)member).GetParameters())
-                                {
-                                    if (result != null) { break; }
-                                    if (namesToCheckFor.Any(a => a == parameter.Name))
+                                if (classType == ClassTypes.Parameters || classType == ClassTypes.Any)
+                                    foreach (ParameterInfo parameter in ((MethodInfo)member).GetParameters())
                                     {
-                                        result = parameter;
-                                    }
-                                }
+                                        if (result != null)
+                                            break;
 
-                                if (result != null) { break; }
-                                if (namesToCheckFor.Any(a => a == member.Name)) { result = member; }
+                                        if (namesToCheckFor.Any(a => a == parameter.Name))
+                                            result = parameter;
+                                    }
+
+                                if (result != null)
+                                    break;
+
+                                if (namesToCheckFor.Any(a => a == member.Name))
+                                    result = member;
 
                             }
-                        }
+
+                        if (classType == ClassTypes.Properties || classType == ClassTypes.Any)
+                            foreach (PropertyInfo prop in type.GetProperties())
+                            {
+                                if (result != null)
+                                    break;
+
+                                if (namesToCheckFor.Any(a => a == prop.Name))
+                                    result = prop;
+                            }
+
+                        if (classType == ClassTypes.Constructors || classType == ClassTypes.Any)
+                            foreach (ConstructorInfo construct in type.GetConstructors())
+                            {
+                                if (result != null)
+                                    break;
+
+                                if (namesToCheckFor.Any(a => a == construct.Name))
+                                    result = construct;
+                            }
 
                         if (result != null) { break; }
-                        if (namesToCheckFor.Any(a => a == type.Name))
+
+                        if (namesToCheckFor.Any(a => a == type.Name) && classType == ClassTypes.Type || classType == ClassTypes.Any)
                         {
                             result = type;
                         }
@@ -228,13 +254,13 @@ namespace NostreetsExtensions.Utilities
             }
         }
 
-        public object ScanAssembliesForObject(string nameToCheckFor, string[] assembliesToLookFor = null, string[] assembliesToSkip = null)
+        public object ScanAssembliesForObject(string nameToCheckFor, string[] assembliesToLookFor = null, string[] assembliesToSkip = null, ClassTypes classType = ClassTypes.Any)
         {
             object result = null;
 
             foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
             {
-                SearchForObject(assembly, nameToCheckFor, out result, assembliesToLookFor, assembliesToSkip);
+                SearchForObject(assembly, nameToCheckFor, out result, assembliesToLookFor, assembliesToSkip, classType);
                 if (result != null) { break; }
             }
 
@@ -245,20 +271,19 @@ namespace NostreetsExtensions.Utilities
 
     public class AttributeScanner<TAttribute> : Disposable where TAttribute : Attribute
     {
-        private List<Tuple<TAttribute, object, Type>> _targetMap;
+        private List<Tuple<TAttribute, object, Type, Assembly>> _targetMap;
         private List<string> _skipAssemblies;
         private Func<Assembly, bool> _assembliesToSkip;
 
         public AttributeScanner()
         {
-            _targetMap = new List<Tuple<TAttribute, object, Type>>();
+            _targetMap = new List<Tuple<TAttribute, object, Type, Assembly>>();
             _skipAssemblies = new List<string>(typeof(TAttribute).Assembly.GetReferencedAssemblies().Select(c => c.FullName));
 
         }
 
-        public IEnumerable<Tuple<TAttribute, object>> ScanAssembliesForAttributes(ClassTypes section = ClassTypes.Any, Type type = null, Func<Assembly, bool> assembliesToSkip = null)
+        public IEnumerable<Tuple<TAttribute, object, Type, Assembly>> ScanAssembliesForAttributes(ClassTypes section = ClassTypes.Any, Type type = null, Func<Assembly, bool> assembliesToSkip = null)
         {
-            List<Tuple<TAttribute, object>> result = new List<Tuple<TAttribute, object>>();
             var props = _targetMap.Where(a => type != null && a.Item3 == type);
             _assembliesToSkip = assembliesToSkip;
 
@@ -269,25 +294,12 @@ namespace NostreetsExtensions.Utilities
                 else
                     ScanType(type, section);
 
-            foreach (Tuple<TAttribute, object, Type> item in _targetMap)
-            {
-
-                if (type != null)
-                {
-                    if (item.Item3 == type)
-                        result.Add(new Tuple<TAttribute, object>(item.Item1, item.Item2));
-                }
-                else
-                    result.Add(new Tuple<TAttribute, object>(item.Item1, item.Item2));
-            }
-
-
-            return (result.Count == 0) ? null : result;
+            return (props.Count() == 0) ? _targetMap : _targetMap.Where(a => type != null && a.Item3 == type);
         }
 
-        private void Add(TAttribute attribute, object item, Type type)
+        private void Add(TAttribute attribute, object item, Type type, Assembly assembly)
         {
-            _targetMap.Add(new Tuple<TAttribute, object, Type>(attribute, item, type));
+            _targetMap.Add(new Tuple<TAttribute, object, Type, Assembly>(attribute, item, type, assembly));
         }
 
         private void AddSkippedAssemblies()
@@ -306,25 +318,25 @@ namespace NostreetsExtensions.Utilities
 
             if (classPart == ClassTypes.Any || classPart == ClassTypes.Type)
                 foreach (TAttribute attr in typeToScan.GetCustomAttributes(typeof(TAttribute), false))
-                    Add(attr, typeToScan, typeToScan);
+                    Add(attr, typeToScan, typeToScan, typeToScan.Assembly);
 
 
             foreach (MemberInfo member in typeToScan.GetMembers(memberInfoBinding))
             {
                 if (member.MemberType == MemberTypes.Property && (classPart == ClassTypes.Properties | classPart == ClassTypes.Any))
                     foreach (TAttribute attr in member.GetCustomAttributes(typeof(TAttribute), false))
-                        Add(attr, member, typeToScan);
+                        Add(attr, member, typeToScan, typeToScan.Assembly);
 
 
                 if (member.MemberType == MemberTypes.Method && (classPart == ClassTypes.Methods | classPart == ClassTypes.Any))
                     foreach (TAttribute attr in member.GetCustomAttributes(typeof(TAttribute), false))
-                        Add(attr, member, typeToScan);
+                        Add(attr, member, typeToScan, typeToScan.Assembly);
 
 
                 if (member.MemberType == MemberTypes.Method && (classPart == ClassTypes.Parameters | classPart == ClassTypes.Any))
                     foreach (ParameterInfo parameter in ((MethodInfo)member).GetParameters())
                         foreach (TAttribute attr in parameter.GetCustomAttributes(typeof(TAttribute), false))
-                            Add(attr, parameter, typeToScan);
+                            Add(attr, parameter, typeToScan, typeToScan.Assembly);
 
             }
         }
@@ -356,7 +368,7 @@ namespace NostreetsExtensions.Utilities
                     if (classPart == ClassTypes.Any || classPart == ClassTypes.Assembly)
                     {
                         foreach (TAttribute attr in assembly.GetCustomAttributes(typeof(TAttribute), false))
-                        { Add(attr, assembly, typeof(Assembly)); }
+                        { Add(attr, assembly, typeof(Assembly), assembly); }
                     }
 
                     foreach (Type type in assembly.GetTypes())

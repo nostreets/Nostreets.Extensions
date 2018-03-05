@@ -1,5 +1,5 @@
 ﻿using NostreetsExtensions.Interfaces;
-using System.Data.Common;
+using NostreetsExtensions.Utilities;
 using System.Data.OleDb;
 using System.Data.SqlClient;
 using System.Web.Configuration;
@@ -7,7 +7,7 @@ using System.Web.Configuration;
 namespace NostreetsExtensions.Helpers
 {
 
-    public abstract class SqlService
+    public abstract class SqlService : Disposable
     {
         public SqlService()
         {

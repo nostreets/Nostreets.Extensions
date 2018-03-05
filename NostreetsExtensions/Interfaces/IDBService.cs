@@ -16,7 +16,6 @@ namespace NostreetsExtensions.Interfaces
 
     public interface IDBService<T>
     {
-
         List<T> GetAll();
         T Get(object id);
         object Insert(T model);
