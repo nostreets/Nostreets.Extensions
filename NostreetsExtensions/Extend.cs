@@ -1361,12 +1361,17 @@ namespace NostreetsExtensions
         public static List<PropertyInfo> GetPropertiesByAttribute<TAttribute>(this Type type, Func<Assembly, bool> assembliesToSkip = null) where TAttribute : Attribute
         {
             List<PropertyInfo> result = null;
-            IEnumerable<Tuple<TAttribute, object>> list = null;
 
             using (AttributeScanner<TAttribute> scanner = new AttributeScanner<TAttribute>())
             {
+
                 foreach (var item in scanner.ScanAssembliesForAttributes(ClassTypes.Properties, type, assembliesToSkip))
+                {
+                    if (result == null)
+                        result = new List<PropertyInfo>();
+
                     result.Add((PropertyInfo)item.Item2);
+                }
             }
 
             return result;
@@ -1479,7 +1484,7 @@ namespace NostreetsExtensions
                 instance = containter.Resolve(type);
                 result = true;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 instance = null;
             }
