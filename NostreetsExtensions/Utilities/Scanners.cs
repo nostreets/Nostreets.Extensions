@@ -202,10 +202,10 @@ namespace NostreetsExtensions.Utilities
                     if (namesToCheckFor.Any(a => a == type.Name))
                     {
                         if (classType == ClassTypes.Methods || classType == ClassTypes.Any)
-                            foreach (MemberInfo member in type.GetMembers(memberInfoBinding))
+                            foreach (MethodInfo method in type.GetMethods(memberInfoBinding))
                             {
                                 if (classType == ClassTypes.Parameters || classType == ClassTypes.Any)
-                                    foreach (ParameterInfo parameter in ((MethodInfo)member).GetParameters())
+                                    foreach (ParameterInfo parameter in method.GetParameters())
                                     {
                                         if (result != null)
                                             break;
@@ -217,8 +217,8 @@ namespace NostreetsExtensions.Utilities
                                 if (result != null)
                                     break;
 
-                                if (namesToCheckFor.Any(a => a == member.Name))
-                                    result = member;
+                                if (namesToCheckFor.Any(a => a == method.Name))
+                                    result = method;
 
                             }
 

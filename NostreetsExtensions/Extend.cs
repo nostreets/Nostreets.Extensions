@@ -1461,14 +1461,14 @@ namespace NostreetsExtensions
 
         public static object WindsorResolve(this object obj, IWindsorContainer containter)
         {
-            bool resolved = obj.TryWindsorResolve(containter, out object instance);
+            bool resolved = obj.GetType().TryWindsorResolve(containter, out object instance);
             return resolved ? instance : null;
         }
 
         public static T WindsorResolve<T>(this T obj, IWindsorContainer containter)
         {
-            bool resolved = obj.TryWindsorResolve(containter, out T instance);
-            return resolved ? instance : default(T);
+            bool resolved = typeof(T).TryWindsorResolve(containter, out object instance);
+            return resolved ? (T)instance : default(T);
         }
 
         public static bool TryWindsorResolve(this Type type, IWindsorContainer containter, out object instance)
@@ -1486,36 +1486,24 @@ namespace NostreetsExtensions
             return result;
         }
 
-        public static bool TryWindsorResolve<T>(this T type, IWindsorContainer containter, out T instance)
+        public static bool TryUnityResolve(this Type type, IUnityContainer containter, out object instance)
         {
             bool result = false;
             try
             {
-                instance = containter.Resolve<T>();
+                instance = containter.Resolve(type);
                 result = true;
             }
             catch (Exception)
             {
-                instance = default(T);
+                instance = null;
             }
             return result;
         }
 
-
         public static object UnityResolve(this Type type, IUnityContainer containter)
         {
             return containter.Resolve(type);
-        }
-
-        public static T UntityResolve<T>(this T type, IUnityContainer container, object overrideObject = null)
-        {
-            PropertyInfo[] properties = overrideObject?.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance);
-
-            ResolverOverride[] overridesArray = properties?.Select(p => new ParameterOverride(p.Name, p.GetValue(overrideObject, null))).Cast<ResolverOverride>().ToArray();
-
-            return (overrideObject != null)
-                    ? container.Resolve<T>(null, overridesArray)
-                    : container.Resolve<T>();
         }
 
         public static object UntityResolve(this Type type, IUnityContainer container, object overrideObject = null)
@@ -2557,7 +2545,7 @@ namespace NostreetsExtensions
         {
             MethodInfo methodInfo = (MethodInfo)"UnityConfig.GetContainer".ScanAssembliesForObject(assemblyName);
             object unityConfig = "UnityConfig".ScanAssembliesForObject().Instantiate();
-            UnityContainer result = (UnityContainer)methodInfo.Invoke(unityConfig, null);
+            UnityContainer result = (UnityContainer)methodInfo?.Invoke(unityConfig, null);
             return result;
         }
 
@@ -2565,7 +2553,7 @@ namespace NostreetsExtensions
         {
             MethodInfo methodInfo = (MethodInfo)"UnityConfig.GetContainer".ScanAssembliesForObject(assembly.GetName().Name);
             object unityConfig = "UnityConfig".ScanAssembliesForObject().Instantiate();
-            UnityContainer result = (UnityContainer)methodInfo.Invoke(unityConfig, null);
+            UnityContainer result = (UnityContainer)methodInfo?.Invoke(unityConfig, null);
             return result;
         }
 
@@ -2573,7 +2561,7 @@ namespace NostreetsExtensions
         {
             MethodInfo methodInfo = (MethodInfo)"WindsorConfig.Container".ScanAssembliesForObject(assemblyName);
             object windsorConfig = "WindsorConfig".ScanAssembliesForObject().Instantiate();
-            WindsorContainer result = (WindsorContainer)methodInfo.Invoke(windsorConfig, null);
+            WindsorContainer result = (WindsorContainer)methodInfo?.Invoke(windsorConfig, null);
             return result;
         }
 
@@ -2581,7 +2569,7 @@ namespace NostreetsExtensions
         {
             MethodInfo methodInfo = (MethodInfo)"WindsorConfig.GetContainer".ScanAssembliesForObject(assembly.GetName().Name);
             object windsorConfig = "WindsorConfig".ScanAssembliesForObject().Instantiate();
-            WindsorContainer result = (WindsorContainer)methodInfo.Invoke(windsorConfig, null);
+            WindsorContainer result = (WindsorContainer)methodInfo?.Invoke(windsorConfig, null);
             return result;
         }
         #endregion
