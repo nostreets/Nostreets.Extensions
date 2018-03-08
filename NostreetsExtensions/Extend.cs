@@ -2577,6 +2577,15 @@ namespace NostreetsExtensions
             WindsorContainer result = (WindsorContainer)methodInfo?.Invoke(windsorConfig, null);
             return result;
         }
+
+        public static string TranlateToSQL<T>(this Func<T, bool> predicate)
+        {
+            string result = null;
+            using (SqlTranslator translator = new SqlTranslator())
+                result = translator.GetQueryText(predicate.ToExpression());
+            return result;
+        }
+
         #endregion
     }
 }

@@ -132,6 +132,7 @@
     <Compile Include="Helpers\DataHelper.cs" />
     <Compile Include="Helpers\DataMapper.cs" />
     <Compile Include="Helpers\DataProvider.cs" />
+    <Compile Include="Utilities\SqlTranslator.cs" />
     <Compile Include="Utilities\ClassBuilder.cs" />
     <Compile Include="Utilities\Disposable.cs" />
     <Compile Include="Utilities\Encryption.cs" />

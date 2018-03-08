@@ -7,10 +7,7 @@ namespace NostreetsExtensions.Utilities
 {
     public class SessionManager
     {
-        private static HttpSessionState _session = HttpContext.Current.Session;
-
-        static SessionManager()
-        { }
+        public static HttpSessionState Sessions => HttpContext.Current.Session;
 
         public static bool DoesKeyExist(SessionState key)
         {
@@ -19,9 +16,9 @@ namespace NostreetsExtensions.Utilities
                 return false;
             }
             bool exist = false;
-            for (int i = 0; i < _session.Count; i++)
+            for (int i = 0; i < Sessions.Count; i++)
             {
-                exist = _session.Keys[i] == key.ToString();
+                exist = Sessions.Keys[i] == key.ToString();
                 if (exist)
                 {
                     break;
@@ -32,12 +29,12 @@ namespace NostreetsExtensions.Utilities
 
         public static bool IsNull(SessionState key)
         {
-            return _session[key.ToString()] == null;
+            return Sessions[key.ToString()] == null;
         }
 
         public static void SetNull(SessionState key)
         {
-            _session[key.ToString()] = null;
+            Sessions[key.ToString()] = null;
         }
 
         public static TSource Get<TSource>(SessionState key)
@@ -46,7 +43,7 @@ namespace NostreetsExtensions.Utilities
             {
                 throw new Exception(String.Format("The session with key '{0}' is null", key.ToString()));
             }
-            return (TSource)_session[key.ToString()];
+            return (TSource)Sessions[key.ToString()];
         }
 
         public static object Get(SessionState key)
@@ -55,7 +52,7 @@ namespace NostreetsExtensions.Utilities
             {
                 throw new Exception(String.Format("The session with key '{0}' is null", key.ToString()));
             }
-            return _session[key.ToString()];
+            return Sessions[key.ToString()];
         }
 
         public static void Add<TSource>(TSource model, SessionState key)
@@ -65,7 +62,7 @@ namespace NostreetsExtensions.Utilities
                 throw new Exception(String.Format("The session key '{0}' is already been used, try using another key",
                     key.ToString()));
             }
-            _session.Add(key.ToString(), model);
+            Sessions.Add(key.ToString(), model);
         }
 
         public static void Add(Dictionary<SessionState, object> models)
@@ -77,7 +74,7 @@ namespace NostreetsExtensions.Utilities
                     throw new Exception(String.Format("The session key '{0}' is already been used, try using another key",
                         item.Key.ToString()));
                 }
-                _session.Add(item.Key.ToString(), item.Value);
+                Sessions.Add(item.Key.ToString(), item.Value);
             }
         }
 
@@ -88,13 +85,13 @@ namespace NostreetsExtensions.Utilities
                 throw new Exception(String.Format("The session key '{0}' is not been used yet", key.ToString()));
             }
 
-            if (!IsNull(key) && (model.GetType() != _session[key.ToString()].GetType()))
+            if (!IsNull(key) && (model.GetType() != Sessions[key.ToString()].GetType()))
             {
                 throw new Exception(
                     String.Format("The old data type of session key '{0}' is not matching with the new data type",
                         key.ToString()));
             }
-            _session[key.ToString()] = model;
+            Sessions[key.ToString()] = model;
         }
 
         public static void Remove(SessionState key)
@@ -104,28 +101,29 @@ namespace NostreetsExtensions.Utilities
                 throw new Exception(
                     String.Format("The session with the key '{0}' is already been removed, or not used yet", key.ToString()));
             }
-            _session.Remove(key.ToString());
+            Sessions.Remove(key.ToString());
         }
 
         public static string GetSessionId()
         {
-            return _session.SessionID;
+            return Sessions.SessionID;
         }
 
         public static bool HasAnySessions()
         {
-            return _session.Count > 0;
+            return Sessions.Count > 0;
         }
 
         public static void RemoveAll()
         {
-            _session.RemoveAll();
+            Sessions.RemoveAll();
         }
 
         public static void AbandonSessions()
         {
-            _session.Abandon();
+            Sessions.Abandon();
         }
+
     }
 
     public enum SessionState
