@@ -31,6 +31,7 @@ using Unity;
 using Unity.Registration;
 using Unity.Resolution;
 using Castle.Windsor;
+using NostreetsExtensions.Helpers;
 
 namespace NostreetsExtensions
 {
@@ -2584,6 +2585,11 @@ namespace NostreetsExtensions
             using (SqlTranslator translator = new SqlTranslator())
                 result = translator.GetQueryText(predicate.ToExpression());
             return result;
+        }
+
+        public static SqlDbType GetSqlDbType(this Type type)
+        {
+            return SqlHelper.GetDbType(type);
         }
 
         #endregion
