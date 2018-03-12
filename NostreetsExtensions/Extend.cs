@@ -32,6 +32,7 @@ using Unity.Registration;
 using Unity.Resolution;
 using Castle.Windsor;
 using NostreetsExtensions.Helpers;
+using System.Threading.Tasks;
 
 namespace NostreetsExtensions
 {
@@ -2590,6 +2591,32 @@ namespace NostreetsExtensions
         public static SqlDbType GetSqlDbType(this Type type)
         {
             return SqlHelper.GetDbType(type);
+        }
+
+        public static string JsonSerialize(this object obj)
+        {
+            return JsonConvert.SerializeObject(obj);
+        }
+
+        public static object JsonDeserialize(this string obj)
+        {
+            return JsonConvert.DeserializeObject(obj);
+        }
+
+        public static T JsonDeserialize<T>(this string obj)
+        {
+            return JsonConvert.DeserializeObject<T>(obj);
+        }
+
+        public static T SyncTask<T>(this Task<T> task)
+        {
+            task.RunSynchronously();
+            return task.Result;
+        }
+
+        public static char ToChar(this int num)
+        {
+            return Convert.ToChar(num);
         }
 
         #endregion
