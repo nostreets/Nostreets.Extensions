@@ -2192,7 +2192,7 @@ namespace NostreetsExtensions
         /// </summary>
         /// <param name="context">The context.</param>
         /// <returns></returns>
-        public static string GetRequestIPAddress(this HttpContext context)
+        public static string GetIPAddress(this HttpContext context)
         {
             string ipAddress = context.Request.ServerVariables["HTTP_X_FORWARDED_FOR"];
 

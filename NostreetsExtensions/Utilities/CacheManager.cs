@@ -29,7 +29,7 @@ namespace NostreetsExtensions.Utilities
 
         public static void InsertItem(string key, object data, DateTimeOffset? timespan = null)
         {
-            DateTimeOffset offset = (timespan == null) ? DateTimeOffset.Now : timespan.Value;
+            DateTimeOffset offset = (timespan == null) ? DateTimeOffset.Now.AddHours(6) : timespan.Value;
 
             if (!Contains(key))
             {
