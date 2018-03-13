@@ -1909,7 +1909,7 @@ namespace NostreetsExtensions
         /// <exception cref="Exception">dataSouce param must not be null or return null...
         /// or
         /// dataSouce param must not be null or return null...</exception>
-        public static List<string> GetSchema(this ISqlDao srv, Func<SqlConnection> dataSouce, string tableName)
+        public static List<string> GetSchema(this ISqlExecutor srv, Func<SqlConnection> dataSouce, string tableName)
         {
             SqlDataReader reader = null;
             SqlCommand cmd = null;
@@ -2577,14 +2577,6 @@ namespace NostreetsExtensions
             MethodInfo methodInfo = (MethodInfo)"WindsorConfig.GetContainer".ScanAssembliesForObject(assembly.GetName().Name);
             object windsorConfig = "WindsorConfig".ScanAssembliesForObject().Instantiate();
             WindsorContainer result = (WindsorContainer)methodInfo?.Invoke(windsorConfig, null);
-            return result;
-        }
-
-        public static string TranlateToSQL<T>(this Func<T, bool> predicate)
-        {
-            string result = null;
-            using (SqlTranslator translator = new SqlTranslator())
-                result = translator.GetQueryText(predicate.ToExpression());
             return result;
         }
 

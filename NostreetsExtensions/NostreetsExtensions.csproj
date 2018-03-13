@@ -127,19 +127,19 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Extend.cs" />
-    <Compile Include="Helpers\OleDbDao.cs" />
+    <Compile Include="Helpers\OleDbExecutor.cs" />
     <Compile Include="Helpers\BaseServices.cs" />
     <Compile Include="Helpers\DataHelper.cs" />
     <Compile Include="Helpers\DataMapper.cs" />
     <Compile Include="Helpers\DataProvider.cs" />
     <Compile Include="Helpers\SqlHelper.cs" />
-    <Compile Include="Utilities\SqlTranslator.cs" />
+    <Compile Include="Helpers\SqlTranslator\Example.cs" />
     <Compile Include="Utilities\ClassBuilder.cs" />
     <Compile Include="Utilities\Disposable.cs" />
     <Compile Include="Utilities\Encryption.cs" />
     <Compile Include="Utilities\ExcelService.cs" />
-    <Compile Include="Helpers\SqlDao.cs" />
-    <Compile Include="Interfaces\IDao.cs" />
+    <Compile Include="Helpers\SqlExecutor.cs" />
+    <Compile Include="Interfaces\IExecutors.cs" />
     <Compile Include="Interfaces\IDataReaderExt.cs" />
     <Compile Include="Interfaces\IDBService.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -149,6 +149,27 @@
     <Compile Include="Utilities\FileManager.cs" />
     <Compile Include="Utilities\Scanners.cs" />
     <Compile Include="Utilities\SessionManager.cs" />
+    <Compile Include="Helpers\SqlTranslator\AggregateRewriter.cs" />
+    <Compile Include="Helpers\SqlTranslator\AliasesProduced.cs" />
+    <Compile Include="Helpers\SqlTranslator\ColumnProjector.cs" />
+    <Compile Include="Helpers\SqlTranslator\DbExpressions.cs" />
+    <Compile Include="Helpers\SqlTranslator\DbExtensions.cs" />
+    <Compile Include="Helpers\SqlTranslator\LinqProvider.cs" />
+    <Compile Include="Helpers\SqlTranslator\Evaluator.cs" />
+    <Compile Include="Helpers\SqlTranslator\ExpressionVisitor.cs" />
+    <Compile Include="Helpers\SqlTranslator\OrderByRewriter.cs" />
+    <Compile Include="Helpers\SqlTranslator\Parameterizer.cs" />
+    <Compile Include="Helpers\SqlTranslator\ProjectionReader.cs" />
+    <Compile Include="Helpers\SqlTranslator\QueryBinder.cs" />
+    <Compile Include="Helpers\SqlTranslator\QueryFormatter.cs" />
+    <Compile Include="Helpers\SqlTranslator\QueryProvider.cs" />
+    <Compile Include="Helpers\SqlTranslator\RedundantSubqueryRemover.cs" />
+    <Compile Include="Helpers\SqlTranslator\Replacer.cs" />
+    <Compile Include="Helpers\SqlTranslator\SkipRewriter.cs" />
+    <Compile Include="Helpers\SqlTranslator\SubqueryRemover.cs" />
+    <Compile Include="Helpers\SqlTranslator\Tests.cs" />
+    <Compile Include="Helpers\SqlTranslator\TypeSystem.cs" />
+    <Compile Include="Helpers\SqlTranslator\UnusedColumnRemover.cs" />
     <Compile Include="Utilities\TimeOut.cs" />
   </ItemGroup>
   <ItemGroup>

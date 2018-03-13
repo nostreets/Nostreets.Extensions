@@ -1,36 +1,36 @@
-﻿using NostreetsExtensions.Interfaces;
+﻿using NostreetsExtensions.Helpers.SqlTranslator;
+using NostreetsExtensions.Interfaces;
 using NostreetsExtensions.Utilities;
 using System.Data.OleDb;
 using System.Data.SqlClient;
+using System.Linq;
 using System.Web.Configuration;
 
 namespace NostreetsExtensions.Helpers
 {
-
     public abstract class SqlService : Disposable
     {
         public SqlService()
         {
             _connectionString = WebConfigurationManager.ConnectionStrings["DefaultConnection"].ConnectionString;
-
+            _queryProvider = new LinqProvider(Connection);
         }
 
         public SqlService(string connectionKey)
         {
 
             _connectionString = WebConfigurationManager.ConnectionStrings[connectionKey].ConnectionString;
+            _queryProvider = new LinqProvider(Connection);
         }
 
 
-        private string _connectionString;
+        private string _connectionString = null;
+        private LinqProvider _queryProvider = null;
 
-        public SqlConnection Connection { get { return new SqlConnection(_connectionString); } }
+        public SqlConnection Connection => new SqlConnection(_connectionString);
+        public static ISqlExecutor Instance => DataProvider.SqlInstance;
+        public LinqProvider QueryProvider => _queryProvider;
 
-        protected static ISqlDao DataProvider
-        {
-
-            get { return Helpers.DataProvider.SqlInstance; }
-        }
 
         public SqlConnection ChangeSqlConnection(string connectionKey)
         {
@@ -42,7 +42,6 @@ namespace NostreetsExtensions.Helpers
 
     public abstract class OleDbService
     {
-
         public OleDbService(string filePath)
         {
             string[] splitPath = filePath.Split('.');
@@ -58,7 +57,7 @@ namespace NostreetsExtensions.Helpers
 
         public OleDbConnection Connection { get { return new OleDbConnection(_connectionString); } }
 
-        protected static IOleDbDao DataProvider
+        protected static IOleDbExecutor DataProvider
         {
 
             get { return Helpers.DataProvider.OleDbInstance; }
@@ -70,9 +69,5 @@ namespace NostreetsExtensions.Helpers
             return Connection;
 
         }
-
     }
-
-
-
 }

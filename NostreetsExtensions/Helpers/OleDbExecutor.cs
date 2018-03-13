@@ -9,19 +9,19 @@ using System.Threading.Tasks;
 
 namespace NostreetsExtensions.Helpers
 {
-    internal sealed class OleDbDao : IOleDbDao
+    internal sealed class OleDbExecutor : IOleDbExecutor
     {
-        private static OleDbDao _instance = null;
+        private static OleDbExecutor _instance = null;
         private const string LOG_CAT = "DAO";
 
-        private OleDbDao() { }
+        private OleDbExecutor() { }
 
-        static OleDbDao()
+        static OleDbExecutor()
         {
-            _instance = new OleDbDao();
+            _instance = new OleDbExecutor();
         }
 
-        public static OleDbDao Instance
+        public static OleDbExecutor Instance
         {
             get
             {

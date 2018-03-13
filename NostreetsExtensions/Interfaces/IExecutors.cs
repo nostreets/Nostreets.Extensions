@@ -5,7 +5,7 @@ using System.Data.SqlClient;
 
 namespace NostreetsExtensions.Interfaces
 {
-    public interface ISqlDao
+    public interface ISqlExecutor
     {
         /// <summary>
         /// 
@@ -39,7 +39,7 @@ namespace NostreetsExtensions.Interfaces
 
     }
 
-    public interface IOleDbDao
+    public interface IOleDbExecutor
     {
         /// <summary>
         /// 

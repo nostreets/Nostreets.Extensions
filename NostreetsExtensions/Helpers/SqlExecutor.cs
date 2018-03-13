@@ -5,20 +5,19 @@ using System.Data.SqlClient;
 
 namespace NostreetsExtensions.Helpers
 {
-    internal sealed class SqlDao : ISqlDao
+    internal sealed class SqlExecutor : ISqlExecutor
     {
-        private static SqlDao _instance = null;
-        private const string LOG_CAT = "DAO";
+        private static SqlExecutor _instance = null;
         private int _numOfCalls = 0;
 
-        private SqlDao() { }
+        private SqlExecutor() { }
 
-        static SqlDao()
+        static SqlExecutor()
         {
-            _instance = new SqlDao();
+            _instance = new SqlExecutor();
         }
 
-        public static SqlDao Instance
+        public static SqlExecutor Instance
         {
             get
             {
@@ -221,6 +220,9 @@ namespace NostreetsExtensions.Helpers
             return cmd;
 
         }
+
+
+
 
     }
 
