@@ -7,34 +7,53 @@ namespace NostreetsExtensions.Utilities
 {
     public class SessionManager
     {
-        public static HttpSessionState Sessions => HttpContext.Current.Session;
+        static SessionManager()
+        {
+            _session = HttpContext.Current.Session;
+        }
+
+        public SessionManager(HttpSessionState session)
+        {
+            _session = session;
+        }
+
+        public static HttpSessionState Session
+        {
+            get
+            {
+                if (_session == null)
+                    throw new Exception("Sessions are null in this web project...");
+                else
+                    return _session;
+            }
+        }
+
+        private static HttpSessionState _session = null;
 
         public static bool DoesKeyExist(SessionState key)
         {
             if (!HasAnySessions())
-            {
                 return false;
-            }
+
             bool exist = false;
-            for (int i = 0; i < Sessions.Count; i++)
+            for (int i = 0; i < Session.Count; i++)
             {
-                exist = Sessions.Keys[i] == key.ToString();
+                exist = Session.Keys[i] == key.ToString();
                 if (exist)
-                {
                     break;
-                }
             }
+
             return exist;
         }
 
         public static bool IsNull(SessionState key)
         {
-            return Sessions[key.ToString()] == null;
+            return Session[key.ToString()] == null;
         }
 
         public static void SetNull(SessionState key)
         {
-            Sessions[key.ToString()] = null;
+            Session[key.ToString()] = null;
         }
 
         public static TSource Get<TSource>(SessionState key)
@@ -43,26 +62,23 @@ namespace NostreetsExtensions.Utilities
             {
                 throw new Exception(String.Format("The session with key '{0}' is null", key.ToString()));
             }
-            return (TSource)Sessions[key.ToString()];
+            return (TSource)Session[key.ToString()];
         }
 
         public static object Get(SessionState key)
         {
             if (IsNull(key))
-            {
                 throw new Exception(String.Format("The session with key '{0}' is null", key.ToString()));
-            }
-            return Sessions[key.ToString()];
+
+            return Session[key.ToString()];
         }
 
         public static void Add<TSource>(TSource model, SessionState key)
         {
             if (DoesKeyExist(key))
-            {
-                throw new Exception(String.Format("The session key '{0}' is already been used, try using another key",
-                    key.ToString()));
-            }
-            Sessions.Add(key.ToString(), model);
+                throw new Exception(String.Format("The session key '{0}' is already been used, try using another key",  key.ToString()));
+
+            Session.Add(key.ToString(), model);
         }
 
         public static void Add(Dictionary<SessionState, object> models)
@@ -70,11 +86,9 @@ namespace NostreetsExtensions.Utilities
             foreach (KeyValuePair<SessionState, object> item in models)
             {
                 if (DoesKeyExist(item.Key))
-                {
-                    throw new Exception(String.Format("The session key '{0}' is already been used, try using another key",
-                        item.Key.ToString()));
-                }
-                Sessions.Add(item.Key.ToString(), item.Value);
+                    throw new Exception(String.Format("The session key '{0}' is already been used, try using another key", item.Key.ToString()));
+
+                Session.Add(item.Key.ToString(), item.Value);
             }
         }
 
@@ -85,13 +99,13 @@ namespace NostreetsExtensions.Utilities
                 throw new Exception(String.Format("The session key '{0}' is not been used yet", key.ToString()));
             }
 
-            if (!IsNull(key) && (model.GetType() != Sessions[key.ToString()].GetType()))
+            if (!IsNull(key) && (model.GetType() != Session[key.ToString()].GetType()))
             {
                 throw new Exception(
                     String.Format("The old data type of session key '{0}' is not matching with the new data type",
                         key.ToString()));
             }
-            Sessions[key.ToString()] = model;
+            Session[key.ToString()] = model;
         }
 
         public static void Remove(SessionState key)
@@ -101,28 +115,29 @@ namespace NostreetsExtensions.Utilities
                 throw new Exception(
                     String.Format("The session with the key '{0}' is already been removed, or not used yet", key.ToString()));
             }
-            Sessions.Remove(key.ToString());
+            Session.Remove(key.ToString());
         }
 
         public static string GetSessionId()
         {
-            return Sessions.SessionID;
+            return Session.SessionID;
         }
 
         public static bool HasAnySessions()
         {
-            return Sessions.Count > 0;
+            return Session.Count > 0;
         }
 
         public static void RemoveAll()
         {
-            Sessions.RemoveAll();
+            Session.RemoveAll();
         }
 
         public static void AbandonSessions()
         {
-            Sessions.Abandon();
+            Session.Abandon();
         }
+
 
     }
 

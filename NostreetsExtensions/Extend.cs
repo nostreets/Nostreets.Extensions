@@ -2619,6 +2619,11 @@ namespace NostreetsExtensions
             return Convert.ToChar(num);
         }
 
+        public static EventInfo GetEvent(this object obj, string eventName)
+        {
+            return obj.GetType().GetEvent(eventName);
+        }
+
         #endregion
     }
 }
