@@ -25,7 +25,7 @@ namespace NostreetsExtensions.Utilities
             Type[] schemaTypes = null;
             Type dynamicType = null;
 
-            DataProvider.ExecuteCmd(() => Connection, string.Format("Select * From [{0}$]", sheetName), null,
+            Instance.ExecuteCmd(() => Connection, string.Format("Select * From [{0}$]", sheetName), null,
                 (reader, set) =>
                 {
                     if (result == null)
@@ -54,7 +54,7 @@ namespace NostreetsExtensions.Utilities
         {
             List<string> result = null;
 
-            DataProvider.ExecuteCmd(() => Connection, string.Format("SELECT `{0}$`.{1} FROM [{0}$]", sheetName, columnName), null,
+            Instance.ExecuteCmd(() => Connection, string.Format("SELECT `{0}$`.{1} FROM [{0}$]", sheetName, columnName), null,
                 (reader, set) =>
                 {
                     if (result == null)
@@ -75,7 +75,7 @@ namespace NostreetsExtensions.Utilities
             Type[] schemaTypes = null;
             Type dynamicType = null;
 
-            DataProvider.ExecuteCmd(() => Connection, string.Format("Select * From [{0}$]", sheetName), null,
+            Instance.ExecuteCmd(() => Connection, string.Format("Select * From [{0}$]", sheetName), null,
                 (reader, set) =>
                 {
                     if (result == null)

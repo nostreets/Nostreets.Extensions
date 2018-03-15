@@ -2,10 +2,32 @@
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Text;
 
-namespace NostreetsEntities.Utilities
+namespace NostreetsExtensions.Utilities
 {
+
+    public static class ExpressionHelper
+    {
+        public static Func<T, R> Func<T, R>(Func<T, R> f) => f;
+
+        public static Expression<Func<T, R>> Expr<T, R>(Expression<Func<T, R>> f) => f;
+
+        public static Expression<Func<T, R>> Expr<T, R>(Expression func)
+        {
+            return Expression.Lambda<Func<T, R>>(func);
+        }
+
+        public static Expression Expr(Expression func, Type t, Type r)
+        {
+            Type castedFunc = typeof(Func<,>).InsertGenericTypes(new[] { t, r });
+            object result = typeof(Expression).IntoGenericMethod("Lambda", castedFunc, func);
+            return (Expression)result;
+        }
+
+
+    }
+
+
     public static class ExpressionBuilder
     {
         private static MethodInfo containsMethod = typeof(string).GetMethod("Contains");

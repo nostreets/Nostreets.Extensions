@@ -1387,15 +1387,21 @@ namespace NostreetsExtensions
         /// <returns></returns>
         public static object Instantiate(this Type type, params object[] parameters)
         {
-            if (type == typeof(string))
-                return Activator.CreateInstance(typeof(string), Char.MinValue, 0);
+            try
+            {
+                if (type == typeof(string))
+                    return Activator.CreateInstance(typeof(string), Char.MinValue, 0);
+                else
+                        if (parameters.Length > 0 && parameters[0] != null)
+                    return Activator.CreateInstance(type, parameters);
 
-            else
-                if (parameters.Length > 0 && parameters[0] != null)
-                return Activator.CreateInstance(type, parameters);
-
-            else
-                return Activator.CreateInstance(type);
+                else
+                    return Activator.CreateInstance(type);
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
 
         }
 
@@ -1407,12 +1413,7 @@ namespace NostreetsExtensions
         /// <returns></returns>
         public static T Instantiate<T>(this T type)
         {
-
-            if (typeof(T) == typeof(string))
-                return (T)Activator.CreateInstance(typeof(string), Char.MinValue, 0);
-
-            else
-                return Activator.CreateInstance<T>();
+            return (T)typeof(T).Instantiate();
         }
 
         public static void GetConstructorParams(this Type type, object[] param = null)
@@ -2435,11 +2436,42 @@ namespace NostreetsExtensions
         public static object IntoMethod(this object obj, Type methodHolder, string methodName, bool isExtension = false, params object[] parameters)
         {
             object result = null;
+            bool isStatic = false;
+
             if (isExtension)
                 parameters = (object[])parameters.AddValues(obj);
 
+            if (methodHolder.GetMethods(BindingFlags.Static | BindingFlags.Public).Any(a => a.Name == methodName))
+                isStatic = true;
+
             MethodInfo method = methodHolder.GetMethodInfo(methodName);
-            result = method?.Invoke(obj, parameters);
+            result = method?.Invoke((isStatic) ? null : obj, parameters);
+            return result;
+        }
+
+        public static object IntoMethod(this object obj, string methodName, params object[] parameters)
+        {
+            object result = null;
+            bool isStatic = false;
+
+            if (obj.GetType().GetMethods(BindingFlags.Static | BindingFlags.Public).Any(a => a.Name == methodName))
+                isStatic = true;
+
+            MethodInfo method = obj.GetType().GetMethodInfo(methodName);
+            result = method?.Invoke((isStatic) ? null : obj, parameters);
+            return result;
+        }
+
+        public static object IntoMethod(this Type methodHolder, string methodName, params object[] parameters)
+        {
+            object result = null;
+            bool isStatic = false;
+
+            if (methodHolder.GetMethods(BindingFlags.Static | BindingFlags.Public).Any(a => a.Name == methodName))
+                isStatic = true;
+
+            MethodInfo method = methodHolder.GetMethodInfo(methodName);
+            result = method?.Invoke((isStatic) ? null : methodHolder.Instantiate(), parameters);
             return result;
         }
 
@@ -2449,18 +2481,64 @@ namespace NostreetsExtensions
         /// <param name="obj">The object.</param>
         /// <param name="methodHolder">The method holder.</param>
         /// <param name="methodName">Name of the method.</param>
-        /// <param name="type">The type.</param>
+        /// <param name="types">The type.</param>
         /// <param name="isExtension">if set to <c>true</c> [is extension].</param>
         /// <param name="parameters">The parameters.</param>
         /// <returns></returns>
-        public static object IntoGenericMethod(this object obj, Type methodHolder, string methodName, Type type, bool isExtension = false, params object[] parameters)
+        public static object IntoGenericMethod(this object obj, Type methodHolder, string methodName, Type[] types, bool isExtension = false, params object[] parameters)
         {
             object result = null;
+            bool isStatic = false;
+
             if (isExtension)
                 parameters = (object[])parameters.AddValues(obj);
 
+            if (methodHolder.GetMethods(BindingFlags.Static | BindingFlags.Public).Any(a => a.Name == methodName))
+                isStatic = true;
+
+            MethodInfo method = methodHolder.GetMethodInfo(methodName)?.MakeGenericMethod(types);
+            result = method?.Invoke((isStatic) ? null : obj, parameters);
+            return result;
+        }
+
+        public static object IntoGenericMethod(this object obj, string methodName, Type type, params object[] parameters)
+        {
+            object result = null;
+            bool isStatic = false;
+
+            if (obj.GetType().GetMethods(BindingFlags.Static | BindingFlags.Public).Any(a => a.Name == methodName))
+                isStatic = true;
+
+            MethodInfo method = obj.GetType().GetMethodInfo(methodName)?.MakeGenericMethod(new Type[] { type });
+            result = method?.Invoke((isStatic) ? null : obj, parameters);
+            return result;
+        }
+
+        public static object IntoGenericMethod(this Type methodHolder, string methodName,  Type type, params object[] parameters)
+        {
+            object result = null;
+            bool isStatic = false;
+
+            if (methodHolder.GetMethods(BindingFlags.Static | BindingFlags.Public).Any(a => a.Name == methodName))
+                isStatic = true;
+
             MethodInfo method = methodHolder.GetMethodInfo(methodName)?.MakeGenericMethod(new Type[] { type });
-            result = method?.Invoke(obj, parameters);
+
+            result = method?.Invoke((isStatic) ? null : methodHolder.Instantiate(), parameters);
+            return result;
+        }
+
+        public static object IntoGenericMethod(this Type methodHolder, string methodName, Type[] types, params object[] parameters)
+        {
+            object result = null;
+            bool isStatic = false;
+
+            if (methodHolder.GetMethods(BindingFlags.Static | BindingFlags.Public).Any(a => a.Name == methodName))
+                isStatic = true;
+
+            MethodInfo method = methodHolder.GetMethodInfo(methodName)?.MakeGenericMethod(types);
+
+            result = method?.Invoke((isStatic) ? null : methodHolder.Instantiate(), parameters);
             return result;
         }
 
@@ -2614,6 +2692,16 @@ namespace NostreetsExtensions
         public static EventInfo GetEvent(this object obj, string eventName)
         {
             return obj.GetType().GetEvent(eventName);
+        }
+
+        public static object IntoGenericAsT(this Type type, Type genericType, params object[] parms)
+        {
+            return genericType.MakeGenericType(type).Instantiate(parms);
+        }
+
+        public static Type InsertGenericTypes(this Type genericType, Type[] types, params object[] parms)
+        {
+            return genericType.MakeGenericType(types);
         }
 
         #endregion

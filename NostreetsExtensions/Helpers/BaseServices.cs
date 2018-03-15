@@ -1,5 +1,4 @@
-﻿using NostreetsExtensions.Helpers.SqlTranslator;
-using NostreetsExtensions.Interfaces;
+﻿using NostreetsExtensions.Interfaces;
 using NostreetsExtensions.Utilities;
 using System.Data.OleDb;
 using System.Data.SqlClient;
@@ -13,23 +12,20 @@ namespace NostreetsExtensions.Helpers
         public SqlService()
         {
             _connectionString = WebConfigurationManager.ConnectionStrings["DefaultConnection"].ConnectionString;
-            _queryProvider = new LinqProvider(Connection);
         }
 
         public SqlService(string connectionKey)
         {
-
             _connectionString = WebConfigurationManager.ConnectionStrings[connectionKey].ConnectionString;
-            _queryProvider = new LinqProvider(Connection);
         }
 
 
         private string _connectionString = null;
-        private LinqProvider _queryProvider = null;
+        private IQueryProvider _queryProvider = null;
 
         public SqlConnection Connection => new SqlConnection(_connectionString);
         public static ISqlExecutor Instance => DataProvider.SqlInstance;
-        public LinqProvider QueryProvider => _queryProvider;
+        public IQueryProvider QueryProvider { get => _queryProvider; set => _queryProvider = value; }
 
 
         public SqlConnection ChangeSqlConnection(string connectionKey)
@@ -54,14 +50,11 @@ namespace NostreetsExtensions.Helpers
         }
 
         private string _connectionString;
+        private IQueryProvider _queryProvider = null;
 
-        public OleDbConnection Connection { get { return new OleDbConnection(_connectionString); } }
-
-        protected static IOleDbExecutor DataProvider
-        {
-
-            get { return Helpers.DataProvider.OleDbInstance; }
-        }
+        public OleDbConnection Connection => new OleDbConnection(_connectionString); 
+        public IQueryProvider QueryProvider { get => _queryProvider; set => _queryProvider = value; }
+        protected static IOleDbExecutor Instance => DataProvider.OleDbInstance;
 
         public OleDbConnection ChangeSqlConnection(string connectionKey)
         {
