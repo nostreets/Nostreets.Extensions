@@ -17,40 +17,52 @@ namespace NostreetsExtensions.Utilities
             _asemblyName = new AssemblyName(className);
         }
 
-        public static Type CreateType(string className, string[] propertyNames, Type[] types)
+        public static Type CreateType(string className, string[] propertyNames, Type[] types, Tuple<string, Type, object[]>[] attributes = null)
         {
             ClassBuilder builder = new ClassBuilder(className);
-            return builder.CreateType(propertyNames, types);
+            return builder.CreateType(propertyNames, types, attributes);
         }
 
-        public static object CreateObject(string className, string[] propertyNames, Type[] types)
+        public static object CreateObject(string className, string[] propertyNames, Type[] types, Tuple<string, Type, object[]>[] attributes = null)
         {
             ClassBuilder builder = new ClassBuilder(className);
-            return builder.CreateObject(propertyNames, types);
+            return builder.CreateObject(propertyNames, types, attributes);
         }
 
-        private Type CreateType(string[] propertyNames, Type[] types)
+        private Type CreateType(string[] propertyNames, Type[] types, Tuple<string, Type, object[]>[] attributes = null)
         {
+
             if (propertyNames.Length != types.Length)
                 throw new Exception("The number of property names should match their corresopnding types number");
 
             else
-                return CreateObject(propertyNames, types).GetType();
+            {
+                if (propertyNames.Length != types.Length)
+                    throw new Exception("The number of property names should match their corresopnding types number");
+
+                TypeBuilder dynamicClass = CreateClass();
+                CreateConstructor(dynamicClass);
+
+
+                for (int ind = 0; ind < propertyNames.Count(); ind++)
+                    CreateProperty(dynamicClass, propertyNames[ind], types[ind]
+                                  , (attributes != null && attributes.Any(a => a.Item1 == propertyNames[ind]))
+                                     ? attributes.Where(a => a.Item1 == propertyNames[ind]).ToArray()
+                                     : null); 
+
+
+                return dynamicClass.CreateType();
+            }
         }
 
-        private object CreateObject(string[] propertyNames, Type[] types)
+        private object CreateObject(string[] propertyNames, Type[] types, Tuple<string, Type, object[]>[] attributes = null)
         {
+            Type type = null;
             if (propertyNames.Length != types.Length)
                 throw new Exception("The number of property names should match their corresopnding types number");
 
-            TypeBuilder dynamicClass = this.CreateClass();
-
-            this.CreateConstructor(dynamicClass);
-
-            for (int ind = 0; ind < propertyNames.Count(); ind++)
-                CreateProperty(dynamicClass, propertyNames[ind], types[ind]);
-
-            Type type = dynamicClass.CreateType();
+            else
+                type = CreateType(propertyNames, types, attributes);
 
             return Activator.CreateInstance(type);
         }
@@ -75,13 +87,13 @@ namespace NostreetsExtensions.Utilities
             typeBuilder.DefineDefaultConstructor(MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.RTSpecialName);
         }
 
-        private void CreateProperty(TypeBuilder typeBuilder, string propertyName, Type propertyType)
+        private void CreateProperty(TypeBuilder typeBuilder, string propertyName, Type propertyType, Tuple<string, Type, object[]>[] attributes)
         {
             FieldBuilder fieldBuilder = typeBuilder.DefineField("_" + propertyName, propertyType, FieldAttributes.Private);
-
             PropertyBuilder propertyBuilder = typeBuilder.DefineProperty(propertyName, PropertyAttributes.HasDefault, propertyType, null);
             MethodBuilder getPropMthdBldr = typeBuilder.DefineMethod("get_" + propertyName, MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig, propertyType, Type.EmptyTypes);
             ILGenerator getIl = getPropMthdBldr.GetILGenerator();
+
 
             getIl.Emit(OpCodes.Ldarg_0);
             getIl.Emit(OpCodes.Ldfld, fieldBuilder);
@@ -92,7 +104,6 @@ namespace NostreetsExtensions.Utilities
                   MethodAttributes.SpecialName |
                   MethodAttributes.HideBySig,
                   null, new[] { propertyType });
-
             ILGenerator setIl = setPropMthdBldr.GetILGenerator();
             Label modifyProperty = setIl.DefineLabel();
             Label exitSet = setIl.DefineLabel();
@@ -108,6 +119,19 @@ namespace NostreetsExtensions.Utilities
 
             propertyBuilder.SetGetMethod(getPropMthdBldr);
             propertyBuilder.SetSetMethod(setPropMthdBldr);
+
+
+            if (attributes != null)
+                foreach (var attribute in attributes)
+                {
+                    Type[] attrParams = attribute.Item3.Select(a => a.GetType()).ToArray();
+                    ConstructorInfo attrConstructor = attribute.Item2.GetConstructor(attrParams) 
+                                        ?? attribute.Item2.GetConstructors().Where((a, b) => a.GetParameters().Length == attrParams.Length && attrParams[b] == a.GetParameters()[b].ParameterType).FirstOrDefault()
+                                        ?? attribute.Item2.GetConstructors()[0];
+
+                    CustomAttributeBuilder attrBuilder = new CustomAttributeBuilder(attrConstructor, attribute.Item3);
+                    propertyBuilder.SetCustomAttribute(attrBuilder);
+                }
         }
     }
 }

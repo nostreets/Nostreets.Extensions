@@ -1,13 +1,1003 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
-using System.Threading.Tasks;
+using System.Threading;
+using System.Xml.Linq;
 
 namespace NostreetsExtensions.Helpers.QueryProvider
 {
+    public class AttributeMapping : AdvancedMapping
+    {
+        Type contextType;
+        Dictionary<string, MappingEntity> entities = new Dictionary<string, MappingEntity>();
+        ReaderWriterLock rwLock = new ReaderWriterLock();
+
+        public AttributeMapping(Type contextType)
+        {
+            this.contextType = contextType;
+        }
+
+        public override MappingEntity GetEntity(MemberInfo contextMember)
+        {
+            Type elementType = TypeHelper.GetElementType(TypeHelper.GetMemberType(contextMember));
+            return this.GetEntity(elementType, contextMember.Name);
+        }
+
+        public override MappingEntity GetEntity(Type type, string tableId)
+        {
+            return this.GetEntity(type, tableId, type);
+        }
+
+        private MappingEntity GetEntity(Type elementType, string tableId, Type entityType)
+        {
+            MappingEntity entity;
+            rwLock.AcquireReaderLock(Timeout.Infinite);
+            if (!entities.TryGetValue(tableId, out entity))
+            {
+                rwLock.ReleaseReaderLock();
+                rwLock.AcquireWriterLock(Timeout.Infinite);
+                if (!entities.TryGetValue(tableId, out entity))
+                {
+                    entity = this.CreateEntity(elementType, tableId, entityType);
+                    this.entities.Add(tableId, entity);
+                }
+                rwLock.ReleaseWriterLock();
+            }
+            else
+            {
+                rwLock.ReleaseReaderLock();
+            }
+            return entity;
+        }
+
+        protected virtual IEnumerable<MappingAttribute> GetMappingAttributes(string rootEntityId)
+        {
+            var contextMember = this.FindMember(this.contextType, rootEntityId);
+            return (MappingAttribute[])Attribute.GetCustomAttributes(contextMember, typeof(MappingAttribute));
+        }
+
+        public override string GetTableId(Type entityType)
+        {
+            if (contextType != null)
+            {
+                foreach (var mi in contextType.GetMembers(BindingFlags.Instance | BindingFlags.Public))
+                {
+                    FieldInfo fi = mi as FieldInfo;
+                    if (fi != null && TypeHelper.GetElementType(fi.FieldType) == entityType)
+                        return fi.Name;
+                    PropertyInfo pi = mi as PropertyInfo;
+                    if (pi != null && TypeHelper.GetElementType(pi.PropertyType) == entityType)
+                        return pi.Name;
+                }
+            }
+            return entityType.Name;
+        }
+
+        private MappingEntity CreateEntity(Type elementType, string tableId, Type entityType)
+        {
+            if (tableId == null)
+                tableId = this.GetTableId(elementType);
+            var members = new HashSet<string>();
+            var mappingMembers = new List<AttributeMappingMember>();
+            int dot = tableId.IndexOf('.');
+            var rootTableId = dot > 0 ? tableId.Substring(0, dot) : tableId;
+            var path = dot > 0 ? tableId.Substring(dot + 1) : "";
+            var mappingAttributes = this.GetMappingAttributes(rootTableId);
+            var tableAttributes = mappingAttributes.OfType<TableBaseAttribute>()
+                .OrderBy(ta => ta.Name);
+            var tableAttr = tableAttributes.OfType<TableAttribute>().FirstOrDefault();
+            if (tableAttr != null && tableAttr.EntityType != null && entityType == elementType)
+            {
+                entityType = tableAttr.EntityType;
+            }
+            var memberAttributes = mappingAttributes.OfType<MemberAttribute>()
+                .Where(ma => ma.Member.StartsWith(path))
+                .OrderBy(ma => ma.Member);
+
+            foreach (var attr in memberAttributes)
+            {
+                if (string.IsNullOrEmpty(attr.Member))
+                    continue;
+                string memberName = (path.Length == 0) ? attr.Member : attr.Member.Substring(path.Length + 1);
+                MemberInfo member = null;
+                MemberAttribute attribute = null;
+                AttributeMappingEntity nested = null;
+                if (memberName.Contains('.')) // additional nested mappings
+                {
+                    string nestedMember = memberName.Substring(0, memberName.IndexOf('.'));
+                    if (nestedMember.Contains('.'))
+                        continue; // don't consider deeply nested members yet
+                    if (members.Contains(nestedMember))
+                        continue; // already seen it (ignore additional)
+                    members.Add(nestedMember);
+                    member = this.FindMember(entityType, nestedMember);
+                    string newTableId = tableId + "." + nestedMember;
+                    nested = (AttributeMappingEntity)this.GetEntity(TypeHelper.GetMemberType(member), newTableId);
+                }
+                else
+                {
+                    if (members.Contains(memberName))
+                    {
+                        throw new InvalidOperationException(string.Format("AttributeMapping: more than one mapping attribute specified for member '{0}' on type '{1}'", memberName, entityType.Name));
+                    }
+                    member = this.FindMember(entityType, memberName);
+                    attribute = attr;
+                }
+                mappingMembers.Add(new AttributeMappingMember(member, attribute, nested));
+            }
+            return new AttributeMappingEntity(elementType, tableId, entityType, tableAttributes, mappingMembers);
+        }
+
+        private static readonly char[] dotSeparator = new char[] { '.' };
+
+        private MemberInfo FindMember(Type type, string path)
+        {
+            MemberInfo member = null;
+            string[] names = path.Split(dotSeparator);
+            foreach (string name in names)
+            {
+                member = type.GetMember(name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.IgnoreCase).FirstOrDefault();
+                if (member == null)
+                {
+                    throw new InvalidOperationException(string.Format("AttributMapping: the member '{0}' does not exist on type '{1}'", name, type.Name));
+                }
+                type = TypeHelper.GetElementType(TypeHelper.GetMemberType(member));
+            }
+            return member;
+        }
+
+        public override string GetTableName(MappingEntity entity)
+        {
+            AttributeMappingEntity en = (AttributeMappingEntity)entity;
+            var table = en.Tables.FirstOrDefault();
+            return this.GetTableName(table);
+        }
+
+        private string GetTableName(MappingEntity entity, TableBaseAttribute attr)
+        {
+            string name = (attr != null && !string.IsNullOrEmpty(attr.Name))
+                ? attr.Name
+                : entity.TableId;
+            return name;
+        }
+
+        public override IEnumerable<MemberInfo> GetMappedMembers(MappingEntity entity)
+        {
+            return ((AttributeMappingEntity)entity).MappedMembers;
+        }
+
+        public override bool IsMapped(MappingEntity entity, MemberInfo member)
+        {
+            AttributeMappingMember mm = ((AttributeMappingEntity)entity).GetMappingMember(member.Name);
+            return mm != null;
+        }
+
+        public override bool IsColumn(MappingEntity entity, MemberInfo member)
+        {
+            AttributeMappingMember mm = ((AttributeMappingEntity)entity).GetMappingMember(member.Name);
+            return mm != null && mm.Column != null;
+        }
+
+        public override bool IsComputed(MappingEntity entity, MemberInfo member)
+        {
+            AttributeMappingMember mm = ((AttributeMappingEntity)entity).GetMappingMember(member.Name);
+            return mm != null && mm.Column != null && mm.Column.IsComputed;
+        }
+
+        public override bool IsGenerated(MappingEntity entity, MemberInfo member)
+        {
+            AttributeMappingMember mm = ((AttributeMappingEntity)entity).GetMappingMember(member.Name);
+            return mm != null && mm.Column != null && mm.Column.IsGenerated;
+        }
+
+        public override bool IsReadOnly(MappingEntity entity, MemberInfo member)
+        {
+            AttributeMappingMember mm = ((AttributeMappingEntity)entity).GetMappingMember(member.Name);
+            return mm != null && mm.Column != null && mm.Column.IsReadOnly;
+        }
+
+        public override bool IsPrimaryKey(MappingEntity entity, MemberInfo member)
+        {
+            AttributeMappingMember mm = ((AttributeMappingEntity)entity).GetMappingMember(member.Name);
+            return mm != null && mm.Column != null && mm.Column.IsPrimaryKey;
+        }
+
+        public override string GetColumnName(MappingEntity entity, MemberInfo member)
+        {
+            AttributeMappingMember mm = ((AttributeMappingEntity)entity).GetMappingMember(member.Name);
+            if (mm != null && mm.Column != null && !string.IsNullOrEmpty(mm.Column.Name))
+                return mm.Column.Name;
+            return base.GetColumnName(entity, member);
+        }
+
+        public override string GetColumnDbType(MappingEntity entity, MemberInfo member)
+        {
+            AttributeMappingMember mm = ((AttributeMappingEntity)entity).GetMappingMember(member.Name);
+            if (mm != null && mm.Column != null && !string.IsNullOrEmpty(mm.Column.DbType))
+                return mm.Column.DbType;
+            return null;
+        }
+
+        public override bool IsAssociationRelationship(MappingEntity entity, MemberInfo member)
+        {
+            AttributeMappingMember mm = ((AttributeMappingEntity)entity).GetMappingMember(member.Name);
+            return mm != null && mm.Association != null;
+        }
+
+        public override bool IsRelationshipSource(MappingEntity entity, MemberInfo member)
+        {
+            AttributeMappingMember mm = ((AttributeMappingEntity)entity).GetMappingMember(member.Name);
+            if (mm != null && mm.Association != null)
+            {
+                if (mm.Association.IsForeignKey && !typeof(IEnumerable).IsAssignableFrom(TypeHelper.GetMemberType(member)))
+                    return true;
+            }
+            return false;
+        }
+
+        public override bool IsRelationshipTarget(MappingEntity entity, MemberInfo member)
+        {
+            AttributeMappingMember mm = ((AttributeMappingEntity)entity).GetMappingMember(member.Name);
+            if (mm != null && mm.Association != null)
+            {
+                if (!mm.Association.IsForeignKey || typeof(IEnumerable).IsAssignableFrom(TypeHelper.GetMemberType(member)))
+                    return true;
+            }
+            return false;
+        }
+
+        public override bool IsNestedEntity(MappingEntity entity, MemberInfo member)
+        {
+            AttributeMappingMember mm = ((AttributeMappingEntity)entity).GetMappingMember(member.Name);
+            return mm != null && mm.NestedEntity != null;
+        }
+
+        public override MappingEntity GetRelatedEntity(MappingEntity entity, MemberInfo member)
+        {
+            AttributeMappingEntity thisEntity = (AttributeMappingEntity)entity;
+            AttributeMappingMember mm = thisEntity.GetMappingMember(member.Name);
+            if (mm != null)
+            {
+                if (mm.Association != null)
+                {
+                    Type elementType = TypeHelper.GetElementType(TypeHelper.GetMemberType(member));
+                    Type entityType = (mm.Association.RelatedEntityType != null) ? mm.Association.RelatedEntityType : elementType;
+                    return this.GetReferencedEntity(elementType, mm.Association.RelatedEntityID, entityType, "Association.RelatedEntityID");
+                }
+                else if (mm.NestedEntity != null)
+                {
+                    return mm.NestedEntity;
+                }
+            }
+            return base.GetRelatedEntity(entity, member);
+        }
+
+        private static readonly char[] separators = new char[] { ' ', ',', '|' };
+
+        public override IEnumerable<MemberInfo> GetAssociationKeyMembers(MappingEntity entity, MemberInfo member)
+        {
+            AttributeMappingEntity thisEntity = (AttributeMappingEntity)entity;
+            AttributeMappingMember mm = thisEntity.GetMappingMember(member.Name);
+            if (mm != null && mm.Association != null)
+            {
+                return this.GetReferencedMembers(thisEntity, mm.Association.KeyMembers, "Association.KeyMembers", thisEntity.EntityType);
+            }
+            return base.GetAssociationKeyMembers(entity, member);
+        }
+
+        public override IEnumerable<MemberInfo> GetAssociationRelatedKeyMembers(MappingEntity entity, MemberInfo member)
+        {
+            AttributeMappingEntity thisEntity = (AttributeMappingEntity)entity;
+            AttributeMappingEntity relatedEntity = (AttributeMappingEntity)this.GetRelatedEntity(entity, member);
+            AttributeMappingMember mm = thisEntity.GetMappingMember(member.Name);
+            if (mm != null && mm.Association != null)
+            {
+                return this.GetReferencedMembers(relatedEntity, mm.Association.RelatedKeyMembers, "Association.RelatedKeyMembers", thisEntity.EntityType);
+            }
+            return base.GetAssociationRelatedKeyMembers(entity, member);
+        }
+
+        private IEnumerable<MemberInfo> GetReferencedMembers(AttributeMappingEntity entity, string names, string source, Type sourceType)
+        {
+            return names.Split(separators).Select(n => this.GetReferencedMember(entity, n, source, sourceType));
+        }
+
+        private MemberInfo GetReferencedMember(AttributeMappingEntity entity, string name, string source, Type sourceType)
+        {
+            var mm = entity.GetMappingMember(name);
+            if (mm == null)
+            {
+                throw new InvalidOperationException(string.Format("AttributeMapping: The member '{0}.{1}' referenced in {2} for '{3}' is not mapped or does not exist", entity.EntityType.Name, name, source, sourceType.Name));
+            }
+            return mm.Member;
+        }
+
+        private MappingEntity GetReferencedEntity(Type elementType, string name, Type entityType, string source)
+        {
+            var entity = this.GetEntity(elementType, name, entityType);
+            if (entity == null)
+            {
+                throw new InvalidOperationException(string.Format("The entity '{0}' referenced in {1} of '{2}' does not exist", name, source, entityType.Name));
+            }
+            return entity;
+        }
+
+        public override IList<MappingTable> GetTables(MappingEntity entity)
+        {
+            return ((AttributeMappingEntity)entity).Tables;
+        }
+
+        public override string GetAlias(MappingTable table)
+        {
+            return ((AttributeMappingTable)table).Attribute.Alias;
+        }
+
+        public override string GetAlias(MappingEntity entity, MemberInfo member)
+        {
+            AttributeMappingMember mm = ((AttributeMappingEntity)entity).GetMappingMember(member.Name);
+            return (mm != null && mm.Column != null) ? mm.Column.Alias : null;
+        }
+
+        public override string GetTableName(MappingTable table)
+        {
+            var amt = (AttributeMappingTable)table;
+            return this.GetTableName(amt.Entity, amt.Attribute);
+        }
+
+        public override bool IsExtensionTable(MappingTable table)
+        {
+            return ((AttributeMappingTable)table).Attribute is ExtensionTableAttribute;
+        }
+
+        public override string GetExtensionRelatedAlias(MappingTable table)
+        {
+            var attr = ((AttributeMappingTable)table).Attribute as ExtensionTableAttribute;
+            return (attr != null) ? attr.RelatedAlias : null;
+        }
+
+        public override IEnumerable<string> GetExtensionKeyColumnNames(MappingTable table)
+        {
+            var attr = ((AttributeMappingTable)table).Attribute as ExtensionTableAttribute;
+            if (attr == null) return new string[] { };
+            return attr.KeyColumns.Split(separators);
+        }
+
+        public override IEnumerable<MemberInfo> GetExtensionRelatedMembers(MappingTable table)
+        {
+            var amt = (AttributeMappingTable)table;
+            var attr = amt.Attribute as ExtensionTableAttribute;
+            if (attr == null) return new MemberInfo[] { };
+            return attr.RelatedKeyColumns.Split(separators).Select(n => this.GetMemberForColumn(amt.Entity, n));
+        }
+
+        private MemberInfo GetMemberForColumn(MappingEntity entity, string columnName)
+        {
+            foreach (var m in this.GetMappedMembers(entity))
+            {
+                if (this.IsNestedEntity(entity, m))
+                {
+                    var m2 = this.GetMemberForColumn(this.GetRelatedEntity(entity, m), columnName);
+                    if (m2 != null)
+                        return m2;
+                }
+                else if (this.IsColumn(entity, m) && string.Compare(this.GetColumnName(entity, m), columnName, true) == 0)
+                {
+                    return m;
+                }
+            }
+            return null;
+        }
+
+        public override QueryMapper CreateMapper(QueryTranslator translator)
+        {
+            return new AttributeMapper(this, translator);
+        }
+
+        class AttributeMapper : AdvancedMapper
+        {
+            AttributeMapping mapping;
+
+            public AttributeMapper(AttributeMapping mapping, QueryTranslator translator)
+                : base(mapping, translator)
+            {
+                this.mapping = mapping;
+            }
+        }
+
+        class AttributeMappingMember
+        {
+            MemberInfo member;
+            MemberAttribute attribute;
+            AttributeMappingEntity nested;
+
+            internal AttributeMappingMember(MemberInfo member, MemberAttribute attribute, AttributeMappingEntity nested)
+            {
+                this.member = member;
+                this.attribute = attribute;
+                this.nested = nested;
+            }
+
+            internal MemberInfo Member
+            {
+                get { return this.member; }
+            }
+
+            internal ColumnAttribute Column
+            {
+                get { return this.attribute as ColumnAttribute; }
+            }
+
+            internal AssociationAttribute Association
+            {
+                get { return this.attribute as AssociationAttribute; }
+            }
+
+            internal AttributeMappingEntity NestedEntity
+            {
+                get { return this.nested; }
+            }
+        }
+
+        class AttributeMappingTable : MappingTable
+        {
+            AttributeMappingEntity entity;
+            TableBaseAttribute attribute;
+
+            internal AttributeMappingTable(AttributeMappingEntity entity, TableBaseAttribute attribute)
+            {
+                this.entity = entity;
+                this.attribute = attribute;
+            }
+
+            public AttributeMappingEntity Entity
+            {
+                get { return this.entity; }
+            }
+
+            public TableBaseAttribute Attribute
+            {
+                get { return this.attribute; }
+            }
+        }
+
+        class AttributeMappingEntity : MappingEntity
+        {
+            string tableId;
+            Type elementType;
+            Type entityType;
+            ReadOnlyCollection<MappingTable> tables;
+            Dictionary<string, AttributeMappingMember> mappingMembers;
+
+            internal AttributeMappingEntity(Type elementType, string tableId, Type entityType, IEnumerable<TableBaseAttribute> attrs, IEnumerable<AttributeMappingMember> mappingMembers)
+            {
+                this.tableId = tableId;
+                this.elementType = elementType;
+                this.entityType = entityType;
+                this.tables = attrs.Select(a => (MappingTable)new AttributeMappingTable(this, a)).ToReadOnly();
+                this.mappingMembers = mappingMembers.ToDictionary(mm => mm.Member.Name);
+            }
+
+            public override string TableId
+            {
+                get { return this.tableId; }
+            }
+
+            public override Type ElementType
+            {
+                get { return this.elementType; }
+            }
+
+            public override Type EntityType
+            {
+                get { return this.entityType; }
+            }
+
+            internal ReadOnlyCollection<MappingTable> Tables
+            {
+                get { return this.tables; }
+            }
+
+            internal AttributeMappingMember GetMappingMember(string name)
+            {
+                AttributeMappingMember mm = null;
+                this.mappingMembers.TryGetValue(name, out mm);
+                return mm;
+            }
+
+            internal IEnumerable<MemberInfo> MappedMembers
+            {
+                get { return this.mappingMembers.Values.Select(mm => mm.Member); }
+            }
+        }
+    }
+
+
+    public abstract class MappingTable
+    {
+    }
+
+    public abstract class AdvancedMapping : BasicMapping
+    {
+        public abstract bool IsNestedEntity(MappingEntity entity, MemberInfo member);
+        public abstract IList<MappingTable> GetTables(MappingEntity entity);
+        public abstract string GetAlias(MappingTable table);
+        public abstract string GetAlias(MappingEntity entity, MemberInfo member);
+        public abstract string GetTableName(MappingTable table);
+        public abstract bool IsExtensionTable(MappingTable table);
+        public abstract string GetExtensionRelatedAlias(MappingTable table);
+        public abstract IEnumerable<string> GetExtensionKeyColumnNames(MappingTable table);
+        public abstract IEnumerable<MemberInfo> GetExtensionRelatedMembers(MappingTable table);
+
+        protected AdvancedMapping()
+        {
+        }
+
+        public override bool IsRelationship(MappingEntity entity, MemberInfo member)
+        {
+            return base.IsRelationship(entity, member)
+                || this.IsNestedEntity(entity, member);
+        }
+
+        public override object CloneEntity(MappingEntity entity, object instance)
+        {
+            object clone = base.CloneEntity(entity, instance);
+
+            // need to clone nested entities too
+            foreach (var mi in this.GetMappedMembers(entity))
+            {
+                if (this.IsNestedEntity(entity, mi))
+                {
+                    MappingEntity nested = this.GetRelatedEntity(entity, mi);
+                    var nestedValue = mi.GetValue(instance);
+                    if (nestedValue != null)
+                    {
+                        var nestedClone = this.CloneEntity(nested, mi.GetValue(instance));
+                        mi.SetValue(clone, nestedClone);
+                    }
+                }
+            }
+
+            return clone;
+        }
+
+        public override bool IsModified(MappingEntity entity, object instance, object original)
+        {
+            if (base.IsModified(entity, instance, original))
+                return true;
+
+            // need to check nested entities too
+            foreach (var mi in this.GetMappedMembers(entity))
+            {
+                if (this.IsNestedEntity(entity, mi))
+                {
+                    MappingEntity nested = this.GetRelatedEntity(entity, mi);
+                    if (this.IsModified(nested, mi.GetValue(instance), mi.GetValue(original)))
+                        return true;
+                }
+            }
+
+            return false;
+        }
+
+        public override QueryMapper CreateMapper(QueryTranslator translator)
+        {
+            return new AdvancedMapper(this, translator);
+        }
+    }
+
+    public class AdvancedMapper : BasicMapper
+    {
+        AdvancedMapping mapping;
+
+        public AdvancedMapper(AdvancedMapping mapping, QueryTranslator translator)
+            : base(mapping, translator)
+        {
+            this.mapping = mapping;
+        }
+
+        public virtual IEnumerable<MappingTable> GetDependencyOrderedTables(MappingEntity entity)
+        {
+            var lookup = this.mapping.GetTables(entity).ToLookup(t => this.mapping.GetAlias(t));
+            return this.mapping.GetTables(entity).Sort(t => this.mapping.IsExtensionTable(t) ? lookup[this.mapping.GetExtensionRelatedAlias(t)] : null);
+        }
+
+        public override EntityExpression GetEntityExpression(Expression root, MappingEntity entity)
+        {
+            // must be some complex type constructed from multiple columns
+            var assignments = new List<EntityAssignment>();
+            foreach (MemberInfo mi in this.mapping.GetMappedMembers(entity))
+            {
+                if (!this.mapping.IsAssociationRelationship(entity, mi))
+                {
+                    Expression me;
+                    if (this.mapping.IsNestedEntity(entity, mi))
+                    {
+                        me = this.GetEntityExpression(root, this.mapping.GetRelatedEntity(entity, mi));
+                    }
+                    else
+                    {
+                        me = this.GetMemberExpression(root, entity, mi);
+                    }
+                    if (me != null)
+                    {
+                        assignments.Add(new EntityAssignment(mi, me));
+                    }
+                }
+            }
+
+            return new EntityExpression(entity, this.BuildEntityExpression(entity, assignments));
+        }
+
+        public override Expression GetMemberExpression(Expression root, MappingEntity entity, MemberInfo member)
+        {
+            if (this.mapping.IsNestedEntity(entity, member))
+            {
+                MappingEntity subEntity = this.mapping.GetRelatedEntity(entity, member);
+                return this.GetEntityExpression(root, subEntity);
+            }
+            else
+            {
+                return base.GetMemberExpression(root, entity, member);
+            }
+        }
+
+        public override ProjectionExpression GetQueryExpression(MappingEntity entity)
+        {
+            var tables = this.mapping.GetTables(entity);
+            if (tables.Count <= 1)
+            {
+                return base.GetQueryExpression(entity);
+            }
+
+            var aliases = new Dictionary<string, TableAlias>();
+            MappingTable rootTable = tables.Single(ta => !this.mapping.IsExtensionTable(ta));
+            var tex = new TableExpression(new TableAlias(), entity, this.mapping.GetTableName(rootTable));
+            aliases.Add(this.mapping.GetAlias(rootTable), tex.Alias);
+            Expression source = tex;
+
+            foreach (MappingTable table in tables.Where(t => this.mapping.IsExtensionTable(t)))
+            {
+                TableAlias joinedTableAlias = new TableAlias();
+                string extensionAlias = this.mapping.GetAlias(table);
+                aliases.Add(extensionAlias, joinedTableAlias);
+
+                List<string> keyColumns = this.mapping.GetExtensionKeyColumnNames(table).ToList();
+                List<MemberInfo> relatedMembers = this.mapping.GetExtensionRelatedMembers(table).ToList();
+                string relatedAlias = this.mapping.GetExtensionRelatedAlias(table);
+
+                TableAlias relatedTableAlias;
+                aliases.TryGetValue(relatedAlias, out relatedTableAlias);
+
+                TableExpression joinedTex = new TableExpression(joinedTableAlias, entity, this.mapping.GetTableName(table));
+
+                Expression cond = null;
+                for (int i = 0, n = keyColumns.Count; i < n; i++)
+                {
+                    var memberType = TypeHelper.GetMemberType(relatedMembers[i]);
+                    var colType = this.GetColumnType(entity, relatedMembers[i]);
+                    var relatedColumn = new ColumnExpression(memberType, colType, relatedTableAlias, this.mapping.GetColumnName(entity, relatedMembers[i]));
+                    var joinedColumn = new ColumnExpression(memberType, colType, joinedTableAlias, keyColumns[i]);
+                    var eq = joinedColumn.Equal(relatedColumn);
+                    cond = (cond != null) ? cond.And(eq) : eq;
+                }
+
+                source = new JoinExpression(JoinType.SingletonLeftOuter, source, joinedTex, cond);
+            }
+
+            var columns = new List<ColumnDeclaration>();
+            this.GetColumns(entity, aliases, columns);
+            SelectExpression root = new SelectExpression(new TableAlias(), columns, source, null);
+            var existingAliases = aliases.Values.ToArray();
+
+            Expression projector = this.GetEntityExpression(root, entity);
+            var selectAlias = new TableAlias();
+            var pc = ColumnProjector.ProjectColumns(this.Translator.Linguist.Language, projector, null, selectAlias, root.Alias);
+            var proj = new ProjectionExpression(
+                new SelectExpression(selectAlias, pc.Columns, root, null),
+                pc.Projector
+                );
+
+            return (ProjectionExpression)this.Translator.Police.ApplyPolicy(proj, entity.ElementType);
+        }
+
+        private void GetColumns(MappingEntity entity, Dictionary<string, TableAlias> aliases, List<ColumnDeclaration> columns)
+        {
+            foreach (MemberInfo mi in this.mapping.GetMappedMembers(entity))
+            {
+                if (!this.mapping.IsAssociationRelationship(entity, mi))
+                {
+                    if (this.mapping.IsNestedEntity(entity, mi))
+                    {
+                        this.GetColumns(this.mapping.GetRelatedEntity(entity, mi), aliases, columns);
+                    }
+                    else if (this.mapping.IsColumn(entity, mi))
+                    {
+                        string name = this.mapping.GetColumnName(entity, mi);
+                        string aliasName = this.mapping.GetAlias(entity, mi);
+                        TableAlias alias;
+                        aliases.TryGetValue(aliasName, out alias);
+                        var colType = this.GetColumnType(entity, mi);
+                        ColumnExpression ce = new ColumnExpression(TypeHelper.GetMemberType(mi), colType, alias, name);
+                        ColumnDeclaration cd = new ColumnDeclaration(name, ce, colType);
+                        columns.Add(cd);
+                    }
+                }
+            }
+        }
+
+        public override Expression GetInsertExpression(MappingEntity entity, Expression instance, LambdaExpression selector)
+        {
+            var tables = this.mapping.GetTables(entity);
+            if (tables.Count < 2)
+            {
+                return base.GetInsertExpression(entity, instance, selector);
+            }
+
+            var commands = new List<Expression>();
+
+            var map = this.GetDependentGeneratedColumns(entity);
+            var vexMap = new Dictionary<MemberInfo, Expression>();
+
+            foreach (var table in this.GetDependencyOrderedTables(entity))
+            {
+                var tableAlias = new TableAlias();
+                var tex = new TableExpression(tableAlias, entity, this.mapping.GetTableName(table));
+                var assignments = this.GetColumnAssignments(tex, instance, entity,
+                    (e, m) => this.mapping.GetAlias(e, m) == this.mapping.GetAlias(table) && !this.mapping.IsGenerated(e, m),
+                    vexMap
+                    );
+                var totalAssignments = assignments.Concat(
+                    this.GetRelatedColumnAssignments(tex, entity, table, vexMap)
+                    );
+                commands.Add(new InsertCommand(tex, totalAssignments));
+
+                List<MemberInfo> members;
+                if (map.TryGetValue(this.mapping.GetAlias(table), out members))
+                {
+                    var d = this.GetDependentGeneratedVariableDeclaration(entity, table, members, instance, vexMap);
+                    commands.Add(d);
+                }
+            }
+
+            if (selector != null)
+            {
+                commands.Add(this.GetInsertResult(entity, instance, selector, vexMap));
+            }
+
+            return new BlockCommand(commands);
+        }
+
+        private Dictionary<string, List<MemberInfo>> GetDependentGeneratedColumns(MappingEntity entity)
+        {
+            return
+                (from xt in this.mapping.GetTables(entity).Where(t => this.mapping.IsExtensionTable(t))
+                 group xt by this.mapping.GetExtensionRelatedAlias(xt))
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.SelectMany(xt => this.mapping.GetExtensionRelatedMembers(xt)).Distinct().ToList()
+                );
+        }
+
+        // make a variable declaration / initialization for dependent generated values
+        private CommandExpression GetDependentGeneratedVariableDeclaration(MappingEntity entity, MappingTable table, List<MemberInfo> members, Expression instance, Dictionary<MemberInfo, Expression> map)
+        {
+            // first make command that retrieves the generated ids if any
+            DeclarationCommand genIdCommand = null;
+            var generatedIds = this.mapping.GetMappedMembers(entity).Where(m => this.mapping.IsPrimaryKey(entity, m) && this.mapping.IsGenerated(entity, m)).ToList();
+            if (generatedIds.Count > 0)
+            {
+                genIdCommand = this.GetGeneratedIdCommand(entity, members, map);
+
+                // if that's all there is then just return the generated ids
+                if (members.Count == generatedIds.Count)
+                {
+                    return genIdCommand;
+                }
+            }
+
+            // next make command that retrieves the generated members
+            // only consider members that were not generated ids
+            members = members.Except(generatedIds).ToList();
+
+            var tableAlias = new TableAlias();
+            var tex = new TableExpression(tableAlias, entity, this.mapping.GetTableName(table));
+
+            Expression where = null;
+            if (generatedIds.Count > 0)
+            {
+                where = generatedIds.Select((m, i) =>
+                    this.GetMemberExpression(tex, entity, m).Equal(map[m])
+                    ).Aggregate((x, y) => x.And(y));
+            }
+            else
+            {
+                where = this.GetIdentityCheck(tex, entity, instance);
+            }
+
+            TableAlias selectAlias = new TableAlias();
+            var columns = new List<ColumnDeclaration>();
+            var variables = new List<VariableDeclaration>();
+            foreach (var mi in members)
+            {
+                ColumnExpression col = (ColumnExpression)this.GetMemberExpression(tex, entity, mi);
+                columns.Add(new ColumnDeclaration(this.mapping.GetColumnName(entity, mi), col, col.QueryType));
+                ColumnExpression vcol = new ColumnExpression(col.Type, col.QueryType, selectAlias, col.Name);
+                variables.Add(new VariableDeclaration(mi.Name, col.QueryType, vcol));
+                map.Add(mi, new VariableExpression(mi.Name, col.Type, col.QueryType));
+            }
+
+            var genMembersCommand = new DeclarationCommand(variables, new SelectExpression(selectAlias, columns, tex, where));
+
+            if (genIdCommand != null)
+            {
+                return new BlockCommand(genIdCommand, genMembersCommand);
+            }
+
+            return genMembersCommand;
+        }
+
+        private IEnumerable<ColumnAssignment> GetColumnAssignments(
+            Expression table, Expression instance, MappingEntity entity,
+            Func<MappingEntity, MemberInfo, bool> fnIncludeColumn,
+            Dictionary<MemberInfo, Expression> map)
+        {
+            foreach (var m in this.mapping.GetMappedMembers(entity))
+            {
+                if (this.mapping.IsColumn(entity, m) && fnIncludeColumn(entity, m))
+                {
+                    yield return new ColumnAssignment(
+                        (ColumnExpression)this.GetMemberExpression(table, entity, m),
+                        this.GetMemberAccess(instance, m, map)
+                        );
+                }
+                else if (this.mapping.IsNestedEntity(entity, m))
+                {
+                    var assignments = this.GetColumnAssignments(
+                        table,
+                        Expression.MakeMemberAccess(instance, m),
+                        this.mapping.GetRelatedEntity(entity, m),
+                        fnIncludeColumn,
+                        map
+                        );
+                    foreach (var ca in assignments)
+                    {
+                        yield return ca;
+                    }
+                }
+            }
+        }
+
+        private IEnumerable<ColumnAssignment> GetRelatedColumnAssignments(Expression expr, MappingEntity entity, MappingTable table, Dictionary<MemberInfo, Expression> map)
+        {
+            if (this.mapping.IsExtensionTable(table))
+            {
+                var keyColumns = this.mapping.GetExtensionKeyColumnNames(table).ToArray();
+                var relatedMembers = this.mapping.GetExtensionRelatedMembers(table).ToArray();
+                for (int i = 0, n = keyColumns.Length; i < n; i++)
+                {
+                    MemberInfo member = relatedMembers[i];
+                    Expression exp = map[member];
+                    yield return new ColumnAssignment((ColumnExpression)this.GetMemberExpression(expr, entity, member), exp);
+                }
+            }
+        }
+
+        private Expression GetMemberAccess(Expression instance, MemberInfo member, Dictionary<MemberInfo, Expression> map)
+        {
+            Expression exp;
+            if (map == null || !map.TryGetValue(member, out exp))
+            {
+                exp = Expression.MakeMemberAccess(instance, member);
+            }
+            return exp;
+        }
+
+        public override Expression GetUpdateExpression(MappingEntity entity, Expression instance, LambdaExpression updateCheck, LambdaExpression selector, Expression @else)
+        {
+            var tables = this.mapping.GetTables(entity);
+            if (tables.Count < 2)
+            {
+                return base.GetUpdateExpression(entity, instance, updateCheck, selector, @else);
+            }
+
+            var commands = new List<Expression>();
+            foreach (var table in this.GetDependencyOrderedTables(entity))
+            {
+                TableExpression tex = new TableExpression(new TableAlias(), entity, this.mapping.GetTableName(table));
+                var assignments = this.GetColumnAssignments(tex, instance, entity, (e, m) => this.mapping.GetAlias(e, m) == this.mapping.GetAlias(table) && this.mapping.IsUpdatable(e, m), null);
+                var where = this.GetIdentityCheck(tex, entity, instance);
+                commands.Add(new UpdateCommand(tex, where, assignments));
+            }
+
+            if (selector != null)
+            {
+                commands.Add(
+                    new IFCommand(
+                        this.Translator.Linguist.Language.GetRowsAffectedExpression(commands[commands.Count - 1]).GreaterThan(Expression.Constant(0)),
+                        this.GetUpdateResult(entity, instance, selector),
+                        @else
+                        )
+                    );
+            }
+            else if (@else != null)
+            {
+                commands.Add(
+                    new IFCommand(
+                        this.Translator.Linguist.Language.GetRowsAffectedExpression(commands[commands.Count - 1]).LessThanOrEqual(Expression.Constant(0)),
+                        @else,
+                        null
+                        )
+                    );
+            }
+
+            Expression block = new BlockCommand(commands);
+
+            if (updateCheck != null)
+            {
+                var test = this.GetEntityStateTest(entity, instance, updateCheck);
+                return new IFCommand(test, block, null);
+            }
+
+            return block;
+        }
+
+        private Expression GetIdentityCheck(TableExpression root, MappingEntity entity, Expression instance, MappingTable table)
+        {
+            if (this.mapping.IsExtensionTable(table))
+            {
+                var keyColNames = this.mapping.GetExtensionKeyColumnNames(table).ToArray();
+                var relatedMembers = this.mapping.GetExtensionRelatedMembers(table).ToArray();
+
+                Expression where = null;
+                for (int i = 0, n = keyColNames.Length; i < n; i++)
+                {
+                    var relatedMember = relatedMembers[i];
+                    var cex = new ColumnExpression(TypeHelper.GetMemberType(relatedMember), this.GetColumnType(entity, relatedMember), root.Alias, keyColNames[n]);
+                    var nex = this.GetMemberExpression(instance, entity, relatedMember);
+                    var eq = cex.Equal(nex);
+                    where = (where != null) ? where.And(eq) : where;
+                }
+                return where;
+            }
+            else
+            {
+                return base.GetIdentityCheck(root, entity, instance);
+            }
+        }
+
+        public override Expression GetDeleteExpression(MappingEntity entity, Expression instance, LambdaExpression deleteCheck)
+        {
+            var tables = this.mapping.GetTables(entity);
+            if (tables.Count < 2)
+            {
+                return base.GetDeleteExpression(entity, instance, deleteCheck);
+            }
+
+            var commands = new List<Expression>();
+            foreach (var table in this.GetDependencyOrderedTables(entity).Reverse())
+            {
+                TableExpression tex = new TableExpression(new TableAlias(), entity, this.mapping.GetTableName(table));
+                var where = this.GetIdentityCheck(tex, entity, instance);
+                commands.Add(new DeleteCommand(tex, where));
+            }
+
+            Expression block = new BlockCommand(commands);
+
+            if (deleteCheck != null)
+            {
+                var test = this.GetEntityStateTest(entity, instance, deleteCheck);
+                return new IFCommand(test, block, null);
+            }
+
+            return block;
+        }
+    }
+
     public abstract class BasicMapping : QueryMapping
     {
         protected BasicMapping()
@@ -110,7 +1100,7 @@ namespace NostreetsExtensions.Helpers.QueryProvider
         {
             return false;
         }
-        
+
         /// <summary>
         /// Determines if a property should not be written back to database
         /// </summary>
@@ -127,7 +1117,7 @@ namespace NostreetsExtensions.Helpers.QueryProvider
         /// <returns></returns>
         public virtual bool IsUpdatable(MappingEntity entity, MemberInfo member)
         {
-            return !this.IsPrimaryKey(entity, member) && !this.IsReadOnly(entity, member);   
+            return !this.IsPrimaryKey(entity, member) && !this.IsReadOnly(entity, member);
         }
 
         /// <summary>
@@ -157,7 +1147,7 @@ namespace NostreetsExtensions.Helpers.QueryProvider
         /// <param name="member"></param>
         /// <returns></returns>
         public virtual IEnumerable<MemberInfo> GetAssociationKeyMembers(MappingEntity entity, MemberInfo member)
-        {            
+        {
             return new MemberInfo[] { };
         }
 
@@ -490,7 +1480,7 @@ namespace NostreetsExtensions.Helpers.QueryProvider
         {
             foreach (var assign in assignments)
             {
-                MemberInfo[] members = entityType.GetMember(assign.Member.Name, BindingFlags.Instance|BindingFlags.Public);
+                MemberInfo[] members = entityType.GetMember(assign.Member.Name, BindingFlags.Instance | BindingFlags.Public);
                 if (members != null && members.Length > 0)
                 {
                     yield return new EntityAssignment(members[0], assign.Expression);
@@ -642,7 +1632,7 @@ namespace NostreetsExtensions.Helpers.QueryProvider
                 Expression where = null;
                 for (int i = 0, n = associatedMembers.Count; i < n; i++)
                 {
-                    Expression equal = 
+                    Expression equal =
                         this.GetMemberExpression(projection.Projector, relatedEntity, associatedMembers[i]).Equal(
                             this.GetMemberExpression(root, entity, declaredTypeMembers[i])
                         );
@@ -675,7 +1665,7 @@ namespace NostreetsExtensions.Helpers.QueryProvider
         {
             var tableAlias = new TableAlias();
             var table = new TableExpression(tableAlias, entity, this.mapping.GetTableName(entity));
-            var assignments = this.GetColumnAssignments(table, instance, entity, (e, m) => !(mapping.IsGenerated(e, m) || mapping.IsReadOnly(e,m)));   // #MLCHANGE
+            var assignments = this.GetColumnAssignments(table, instance, entity, (e, m) => !(mapping.IsGenerated(e, m) || mapping.IsReadOnly(e, m)));   // #MLCHANGE
 
             if (selector != null)
             {
@@ -885,7 +1875,7 @@ namespace NostreetsExtensions.Helpers.QueryProvider
                 var check = this.GetEntityExistsTest(entity, instance);
                 return new IFCommand(check, update, insert);
             }
-            else 
+            else
             {
                 Expression insert = this.GetInsertExpression(entity, instance, resultSelector);
                 Expression update = this.GetUpdateExpression(entity, instance, updateCheck, resultSelector, insert);
@@ -928,10 +1918,10 @@ namespace NostreetsExtensions.Helpers.QueryProvider
         public override bool IsPrimaryKey(MappingEntity entity, MemberInfo member)
         {
             // Customers has CustomerID, Orders has OrderID, etc
-            if (this.IsColumn(entity, member)) 
+            if (this.IsColumn(entity, member))
             {
                 string name = NameWithoutTrailingDigits(member.Name);
-                return member.Name.EndsWith("ID") && member.DeclaringType.Name.StartsWith(member.Name.Substring(0, member.Name.Length - 2)); 
+                return member.Name.EndsWith("ID") && member.DeclaringType.Name.StartsWith(member.Name.Substring(0, member.Name.Length - 2));
             }
             return false;
         }
@@ -1089,13 +2079,13 @@ namespace NostreetsExtensions.Helpers.QueryProvider
 
         public static string Plural(string name)
         {
-            if (name.EndsWith("x", StringComparison.InvariantCultureIgnoreCase) 
+            if (name.EndsWith("x", StringComparison.InvariantCultureIgnoreCase)
                 || name.EndsWith("ch", StringComparison.InvariantCultureIgnoreCase)
-                || name.EndsWith("ss", StringComparison.InvariantCultureIgnoreCase)) 
+                || name.EndsWith("ss", StringComparison.InvariantCultureIgnoreCase))
             {
                 return name + "es";
             }
-            else if (name.EndsWith("y", StringComparison.InvariantCultureIgnoreCase)) 
+            else if (name.EndsWith("y", StringComparison.InvariantCultureIgnoreCase))
             {
                 return name.Substring(0, name.Length - 1) + "ies";
             }

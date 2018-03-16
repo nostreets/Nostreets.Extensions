@@ -556,29 +556,28 @@ namespace NostreetsExtensions
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="obj">The object.</param>
-        /// <param name="affectBaseObj">if set to <c>true</c> [affect base object].</param>
+        /// <param name="addToBaseObj">if set to <c>true</c> [affect base object].</param>
         /// <param name="attributeParams">The attribute parameters.</param>
         /// <param name="affectedFields">The affected fields.</param>
-        public static void AddAttribute<T>(this object obj, bool affectBaseObj = true, Dictionary<object, Type> attributeParams = null, FieldInfo[] affectedFields = null) where T : Attribute
+        public static void AddAttribute<T>(this object obj, Dictionary<Type, object> attributeParams, bool addToBaseObj = true, FieldInfo[] affectedFields = null) where T : Attribute
         {
             Type type = obj.GetType();
 
             AssemblyName aName = new AssemblyName("SomeNamespace");
             AssemblyBuilder assemblyBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(aName, AssemblyBuilderAccess.Run);
             ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule(aName.Name);
-            TypeBuilder affectedType = moduleBuilder.DefineType(type.Name + "Proxy", TypeAttributes.Public, type);
+            TypeBuilder affectedType = moduleBuilder.DefineType(type.Name + Guid.NewGuid().ToString(), TypeAttributes.Public, type);
 
 
-            Type[] attrParams = attributeParams.Values.ToArray();
+            Type[] attrParams = attributeParams.Keys.ToArray();
             ConstructorInfo attrConstructor = typeof(T).GetConstructor(attrParams);
-            CustomAttributeBuilder attrBuilder = new CustomAttributeBuilder(attrConstructor, attributeParams.Keys.ToArray());
+            CustomAttributeBuilder attrBuilder = new CustomAttributeBuilder(attrConstructor, attributeParams.Values.ToArray());
 
 
-            if (affectBaseObj)
-            {
+            if (addToBaseObj)
                 affectedType.SetCustomAttribute(attrBuilder);
-            }
-            else if (affectedFields != null && affectedFields.Length > 1)
+
+            if (affectedFields != null && affectedFields.Length > 1)
             {
                 foreach (FieldInfo field in affectedFields)
                 {
@@ -594,6 +593,28 @@ namespace NostreetsExtensions
 
             obj = instance;
 
+        }
+
+        public static object AddAttribute(this object obj, Tuple<string, Type, object[]>[] attributeParams, bool addToBaseObj = true)
+        {
+            object result = null;
+            if (attributeParams.Any(a => !a.Item2.IsSubclassOf(typeof(Attribute))))
+                throw new InvalidDataException("attributeParams must only have Type's of Attributes...");
+
+            Type type = obj.GetType();
+            PropertyInfo[] props = type.GetProperties();
+
+            result = ClassBuilder.CreateObject(
+                                type.Name
+                                , props.Select(a => a.Name).ToArray()
+                                , props.Select(a => a.PropertyType).ToArray()
+                                , attributeParams
+                            );
+
+            foreach (PropertyInfo prop in props)
+                result.SetPropertyValue(prop.Name, obj.GetPropertyValue(prop.Name));
+
+            return result;
         }
 
         /// <summary>
@@ -2514,7 +2535,7 @@ namespace NostreetsExtensions
             return result;
         }
 
-        public static object IntoGenericMethod(this Type methodHolder, string methodName,  Type type, params object[] parameters)
+        public static object IntoGenericMethod(this Type methodHolder, string methodName, Type type, params object[] parameters)
         {
             object result = null;
             bool isStatic = false;
@@ -2696,12 +2717,27 @@ namespace NostreetsExtensions
 
         public static object IntoGenericAsT(this Type type, Type genericType, params object[] parms)
         {
-            return genericType.MakeGenericType(type).Instantiate(parms);
+            return type.IntoGenericAsT(genericType).Instantiate(parms);
+        }
+
+        public static Type IntoGenericAsT(this Type type, Type genericType)
+        {
+            return genericType.MakeGenericType(type);
         }
 
         public static Type InsertGenericTypes(this Type genericType, Type[] types, params object[] parms)
         {
             return genericType.MakeGenericType(types);
+        }
+
+        public static Type CreateClass(string[] propNames, Type[] propTypes)
+        {
+            return CreateClass(propNames, propTypes);
+        }
+
+        public static Type CreateClass(string name, string[] propNames, Type[] propTypes)
+        {
+            return ClassBuilder.CreateType(name ?? "Class" + Guid.NewGuid().ToString(), propNames, propTypes);
         }
 
         #endregion

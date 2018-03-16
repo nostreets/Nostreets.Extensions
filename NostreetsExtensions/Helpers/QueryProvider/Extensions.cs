@@ -1,16 +1,55 @@
-﻿using System;
+﻿using NostreetsExtensions.Utilities;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace NostreetsExtensions.Helpers.QueryProvider
 {
    public static class Extensions
     {
+        public static void InsertOnSubmit<T>(this ISessionTable<T> table, T instance)
+        {
+            table.SetSubmitAction(instance, SubmitAction.Insert);
+        }
+
+        public static void InsertOnSubmit(this ISessionTable table, object instance)
+        {
+            table.SetSubmitAction(instance, SubmitAction.Insert);
+        }
+
+        public static void InsertOrUpdateOnSubmit<T>(this ISessionTable<T> table, T instance)
+        {
+            table.SetSubmitAction(instance, SubmitAction.InsertOrUpdate);
+        }
+
+        public static void InsertOrUpdateOnSubmit(this ISessionTable table, object instance)
+        {
+            table.SetSubmitAction(instance, SubmitAction.InsertOrUpdate);
+        }
+
+        public static void UpdateOnSubmit<T>(this ISessionTable<T> table, T instance)
+        {
+            table.SetSubmitAction(instance, SubmitAction.Update);
+        }
+
+        public static void UpdateOnSubmit(this ISessionTable table, object instance)
+        {
+            table.SetSubmitAction(instance, SubmitAction.Update);
+        }
+
+        public static void DeleteOnSubmit<T>(this ISessionTable<T> table, T instance)
+        {
+            table.SetSubmitAction(instance, SubmitAction.Delete);
+        }
+
+        public static void DeleteOnSubmit(this ISessionTable table, object instance)
+        {
+            table.SetSubmitAction(instance, SubmitAction.Delete);
+        }
+
         public static bool IsDbExpression(ExpressionType nodeType)
         {
             return (int)nodeType >= (int)DbExpressionType.Table;
