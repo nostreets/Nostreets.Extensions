@@ -546,7 +546,6 @@ namespace NostreetsExtensions.Helpers.QueryProvider
         }
     }
 
-
     /// <summary>
     /// Rewrite all column references to one or more aliases to a new single alias
     /// </summary>
@@ -580,7 +579,6 @@ namespace NostreetsExtensions.Helpers.QueryProvider
             return column;
         }
     }
-
 
     public enum SubmitAction
     {
@@ -903,7 +901,6 @@ namespace NostreetsExtensions.Helpers.QueryProvider
         }
     }
 
-
     /// <summary>
     /// A list implementation that is loaded the first time the contents are examined
     /// </summary>
@@ -1214,7 +1211,6 @@ namespace NostreetsExtensions.Helpers.QueryProvider
             return expression;
         }
     }
-
 
     /// <summary>
     /// Implements a cache over a most recently used list

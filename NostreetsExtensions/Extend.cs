@@ -1801,8 +1801,12 @@ namespace NostreetsExtensions
         /// <returns></returns>
         public static object GetPropertyValue(this object obj, string propertyName)
         {
-            return obj.GetType().GetProperties().Single(pi => pi.Name == propertyName).GetValue(obj, null);
+            if (obj.GetType() == typeof(Type).GetType())
+                throw new Exception("obj cannot be a Type its self to be able to GetPropertyValue...");
+
+            return obj.GetType().GetProperties().Single(pi => pi.Name == propertyName).GetValue(obj);
         }
+
 
         /// <summary>
         /// Sets the property value.
@@ -2788,6 +2792,24 @@ namespace NostreetsExtensions
             return ClassBuilder.CreateType(name ?? "Class" + Guid.NewGuid().ToString(), propNames, propTypes);
         }
 
+        public static bool IsNumeric(this Type type)
+        {
+            Type nnType = Nullable.GetUnderlyingType(type) ?? type;
+            switch (Type.GetTypeCode(nnType))
+            {
+                case TypeCode.SByte:
+                case TypeCode.Int16:
+                case TypeCode.Int32:
+                case TypeCode.Int64:
+                case TypeCode.Byte:
+                case TypeCode.UInt16:
+                case TypeCode.UInt32:
+                case TypeCode.UInt64:
+                    return true;
+                default:
+                    return false;
+            }
+        }
         #endregion
     }
 }
