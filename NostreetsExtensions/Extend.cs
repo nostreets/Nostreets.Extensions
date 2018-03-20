@@ -33,6 +33,7 @@ using Unity.Resolution;
 using Castle.Windsor;
 using NostreetsExtensions.Helpers;
 using System.Threading.Tasks;
+using System.Xml;
 
 namespace NostreetsExtensions
 {
@@ -2334,6 +2335,14 @@ namespace NostreetsExtensions
             return x => method(x);
         }
 
+        public static Expression<Func<T, TResult>> ToExpression<T, TResult>(this object method)
+        {
+            if (method is Delegate)
+                return x => ((Func<T, TResult>)method)(x);
+            else
+                throw new Exception("obj is not an method...");
+        }
+
         /// <summary>
         /// Logs the specified text.
         /// </summary>
@@ -2697,6 +2706,45 @@ namespace NostreetsExtensions
         public static T JsonDeserialize<T>(this string obj)
         {
             return JsonConvert.DeserializeObject<T>(obj);
+        }
+
+        public static string XmlSerialize(this object obj)
+        {
+            if (obj == null)
+                return string.Empty;
+
+            try
+            {
+                var xmlserializer = new XmlSerializer(obj.GetType());
+                var stringWriter = new StringWriter();
+                using (var writer = XmlWriter.Create(stringWriter))
+                {
+                    xmlserializer.Serialize(writer, obj);
+                    return stringWriter.ToString();
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("An error occurred on XmlSerialize(this object obj)...", ex);
+            }
+        }
+
+        public static object XmlDeserialize(this string obj)
+        {
+            object result = null;
+            string path = "cars.xml";
+
+            XmlSerializer serializer = new XmlSerializer(obj.GetType());
+
+            StreamReader reader = new StreamReader(path);
+            result = serializer.Deserialize(reader);
+            reader.Close();
+            return result;
+        }
+
+        public static T XmlDeserialize<T>(this string obj)
+        {
+            return (T)XmlDeserialize(obj);
         }
 
         public static T SyncTask<T>(this Task<T> task)

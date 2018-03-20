@@ -13,8 +13,8 @@ namespace NostreetsExtensions.Helpers.QueryProvider
     /// </summary>
     public class TSqlFormatter : SqlFormatter
     {
-        protected TSqlFormatter(QueryLanguage language)
-            : base(language)
+        protected TSqlFormatter(QueryLanguage language, bool forDebug = false)
+            : base(language, forDebug)
         {
         }
 
@@ -23,9 +23,16 @@ namespace NostreetsExtensions.Helpers.QueryProvider
             return Format(expression, new TSqlLanguage());
         }
 
-        public static string Format(Expression expression, QueryLanguage language)
+        public static string Format(Expression expression, QueryMapper map)
         {
-            TSqlFormatter formatter = new TSqlFormatter(language);
+            return Format(expression, new TSqlLanguage());
+
+        }
+
+
+        public static string Format(Expression expression, QueryLanguage language, bool forDebug = false)
+        {
+            TSqlFormatter formatter = new TSqlFormatter(language, forDebug);
             formatter.Visit(expression);
             return formatter.ToString();
         }
@@ -736,15 +743,16 @@ namespace NostreetsExtensions.Helpers.QueryProvider
     {
         QueryLanguage language;
         StringBuilder sb;
-        int indent = 2;
-        int depth;
         Dictionary<TableAlias, string> aliases;
+
         bool hideColumnAliases;
         bool hideTableAliases;
         bool isNested;
         bool forDebug;
+        int indent = 2;
+        int depth;
 
-        private SqlFormatter(QueryLanguage language, bool forDebug)
+        protected SqlFormatter(QueryLanguage language, bool forDebug)
         {
             this.language = language;
             this.sb = new StringBuilder();
@@ -770,7 +778,7 @@ namespace NostreetsExtensions.Helpers.QueryProvider
             formatter.Visit(expression);
             return formatter.ToString();
         }
-
+       
         public override string ToString()
         {
             return this.sb.ToString();
@@ -804,17 +812,51 @@ namespace NostreetsExtensions.Helpers.QueryProvider
             get { return this.forDebug; }
         }
 
-        protected enum Indentation
-        {
-            Same,
-            Inner,
-            Outer
-        }
-
         public int IndentationWidth
         {
             get { return this.indent; }
             set { this.indent = value; }
+        }
+
+        #region Writes
+        protected virtual void WriteValue(object value)
+        {
+            if (value == null)
+            {
+                this.Write("NULL");
+            }
+            else if (value.GetType().IsEnum)
+            {
+                this.Write(Convert.ChangeType(value, Enum.GetUnderlyingType(value.GetType())));
+            }
+            else
+            {
+                switch (Type.GetTypeCode(value.GetType()))
+                {
+                    case TypeCode.Boolean:
+                        this.Write(((bool)value) ? 1 : 0);
+                        break;
+                    case TypeCode.String:
+                        this.Write("'");
+                        this.Write(value);
+                        this.Write("'");
+                        break;
+                    case TypeCode.Object:
+                        throw new NotSupportedException(string.Format("The constant for '{0}' is not supported", value));
+                    case TypeCode.Single:
+                    case TypeCode.Double:
+                        string str = value.ToString();
+                        if (!str.Contains('.'))
+                        {
+                            str += ".0";
+                        }
+                        this.Write(str);
+                        break;
+                    default:
+                        this.Write(value);
+                        break;
+                }
+            }
         }
 
         protected void Write(object value)
@@ -871,57 +913,100 @@ namespace NostreetsExtensions.Helpers.QueryProvider
             }
         }
 
-        protected void Indent(Indentation style)
+        protected virtual void WriteTopClause(Expression expression)
         {
-            if (style == Indentation.Inner)
-            {
-                this.depth++;
-            }
-            else if (style == Indentation.Outer)
-            {
-                this.depth--;
-                System.Diagnostics.Debug.Assert(this.depth >= 0);
-            }
+            this.Write("TOP (");
+            this.Visit(expression);
+            this.Write(") ");
         }
 
-        protected virtual string GetAliasName(TableAlias alias)
+        protected virtual void WriteColumns(ReadOnlyCollection<ColumnDeclaration> columns)
         {
-            string name;
-            if (!this.aliases.TryGetValue(alias, out name))
+            if (columns.Count > 0)
             {
-                name = "A" + alias.GetHashCode() + "?";
-                this.aliases.Add(alias, name);
-            }
-            return name;
-        }
-
-        protected void AddAlias(TableAlias alias)
-        {
-            string name;
-            if (!this.aliases.TryGetValue(alias, out name))
-            {
-                name = "t" + this.aliases.Count;
-                this.aliases.Add(alias, name);
-            }
-        }
-
-        protected virtual void AddAliases(Expression expr)
-        {
-            AliasedExpression ax = expr as AliasedExpression;
-            if (ax != null)
-            {
-                this.AddAlias(ax.Alias);
+                for (int i = 0, n = columns.Count; i < n; i++)
+                {
+                    ColumnDeclaration column = columns[i];
+                    if (i > 0)
+                    {
+                        this.Write(", ");
+                    }
+                    ColumnExpression c = this.VisitValue(column.Expression) as ColumnExpression;
+                    if (!string.IsNullOrEmpty(column.Name) && (c == null || c.Name != column.Name))
+                    {
+                        this.Write(" ");
+                        this.WriteAsColumnName(column.Name);
+                    }
+                }
             }
             else
             {
-                JoinExpression jx = expr as JoinExpression;
-                if (jx != null)
+                this.Write("NULL ");
+                if (this.isNested)
                 {
-                    this.AddAliases(jx.Left);
-                    this.AddAliases(jx.Right);
+                    this.WriteAsColumnName("tmp");
+                    this.Write(" ");
                 }
             }
         }
+
+        protected virtual void WriteAggregateName(string aggregateName)
+        {
+            switch (aggregateName)
+            {
+                case "Average":
+                    this.Write("AVG");
+                    break;
+                case "LongCount":
+                    this.Write("COUNT");
+                    break;
+                default:
+                    this.Write(aggregateName.ToUpper());
+                    break;
+            }
+        }
+
+        #endregion
+
+        #region Vists
+        protected virtual Expression VisitValue(Expression expr)
+        {
+            return this.Visit(expr);
+        }
+
+        protected virtual Expression VisitPredicate(Expression expr)
+        {
+            this.Visit(expr);
+            if (!IsPredicate(expr))
+            {
+                this.Write(" <> 0");
+            }
+            return expr;
+        }
+
+        protected virtual Expression VisitJoinLeft(Expression source)
+        {
+            return this.VisitSource(source);
+        }
+
+        protected virtual Expression VisitJoinRight(Expression source)
+        {
+            return this.VisitSource(source);
+        }
+
+        protected virtual void VisitStatement(Expression expression)
+        {
+            var p = expression as ProjectionExpression;
+            if (p != null)
+            {
+                this.Visit(p.Select);
+            }
+            else
+            {
+                this.Visit(expression);
+            }
+        }
+
 
         protected override Expression Visit(Expression exp)
         {
@@ -1114,11 +1199,6 @@ namespace NostreetsExtensions.Helpers.QueryProvider
             {
                 throw new NotSupportedException(string.Format("The method '{0}' is not supported", m.Method.Name));
             }
-        }
-
-        protected virtual bool IsInteger(Type type)
-        {
-            return TypeHelper.IsInteger(type);
         }
 
         protected override NewExpression VisitNew(NewExpression nex)
@@ -1332,131 +1412,6 @@ namespace NostreetsExtensions.Helpers.QueryProvider
             return b;
         }
 
-        protected virtual string GetOperator(string methodName)
-        {
-            switch (methodName)
-            {
-                case "Add": return "+";
-                case "Subtract": return "-";
-                case "Multiply": return "*";
-                case "Divide": return "/";
-                case "Negate": return "-";
-                case "Remainder": return "%";
-                default: return null;
-            }
-        }
-
-        protected virtual string GetOperator(UnaryExpression u)
-        {
-            switch (u.NodeType)
-            {
-                case ExpressionType.Negate:
-                case ExpressionType.NegateChecked:
-                    return "-";
-                case ExpressionType.UnaryPlus:
-                    return "+";
-                case ExpressionType.Not:
-                    return IsBoolean(u.Operand.Type) ? "NOT" : "~";
-                default:
-                    return "";
-            }
-        }
-
-        protected virtual string GetOperator(BinaryExpression b)
-        {
-            switch (b.NodeType)
-            {
-                case ExpressionType.And:
-                case ExpressionType.AndAlso:
-                    return (IsBoolean(b.Left.Type)) ? "AND" : "&";
-                case ExpressionType.Or:
-                case ExpressionType.OrElse:
-                    return (IsBoolean(b.Left.Type) ? "OR" : "|");
-                case ExpressionType.Equal:
-                    return "=";
-                case ExpressionType.NotEqual:
-                    return "<>";
-                case ExpressionType.LessThan:
-                    return "<";
-                case ExpressionType.LessThanOrEqual:
-                    return "<=";
-                case ExpressionType.GreaterThan:
-                    return ">";
-                case ExpressionType.GreaterThanOrEqual:
-                    return ">=";
-                case ExpressionType.Add:
-                case ExpressionType.AddChecked:
-                    return "+";
-                case ExpressionType.Subtract:
-                case ExpressionType.SubtractChecked:
-                    return "-";
-                case ExpressionType.Multiply:
-                case ExpressionType.MultiplyChecked:
-                    return "*";
-                case ExpressionType.Divide:
-                    return "/";
-                case ExpressionType.Modulo:
-                    return "%";
-                case ExpressionType.ExclusiveOr:
-                    return "^";
-                case ExpressionType.LeftShift:
-                    return "<<";
-                case ExpressionType.RightShift:
-                    return ">>";
-                default:
-                    return "";
-            }
-        }
-
-        protected virtual bool IsBoolean(Type type)
-        {
-            return type == typeof(bool) || type == typeof(bool?);
-        }
-
-        protected virtual bool IsPredicate(Expression expr)
-        {
-            switch (expr.NodeType)
-            {
-                case ExpressionType.And:
-                case ExpressionType.AndAlso:
-                case ExpressionType.Or:
-                case ExpressionType.OrElse:
-                    return IsBoolean(((BinaryExpression)expr).Type);
-                case ExpressionType.Not:
-                    return IsBoolean(((UnaryExpression)expr).Type);
-                case ExpressionType.Equal:
-                case ExpressionType.NotEqual:
-                case ExpressionType.LessThan:
-                case ExpressionType.LessThanOrEqual:
-                case ExpressionType.GreaterThan:
-                case ExpressionType.GreaterThanOrEqual:
-                case (ExpressionType)DbExpressionType.IsNull:
-                case (ExpressionType)DbExpressionType.Between:
-                case (ExpressionType)DbExpressionType.Exists:
-                case (ExpressionType)DbExpressionType.In:
-                    return true;
-                case ExpressionType.Call:
-                    return IsBoolean(((MethodCallExpression)expr).Type);
-                default:
-                    return false;
-            }
-        }
-
-        protected virtual Expression VisitPredicate(Expression expr)
-        {
-            this.Visit(expr);
-            if (!IsPredicate(expr))
-            {
-                this.Write(" <> 0");
-            }
-            return expr;
-        }
-
-        protected virtual Expression VisitValue(Expression expr)
-        {
-            return this.Visit(expr);
-        }
-
         protected override Expression VisitConditional(ConditionalExpression c)
         {
             if (this.forDebug)
@@ -1480,46 +1435,6 @@ namespace NostreetsExtensions.Helpers.QueryProvider
         {
             this.WriteValue(c.Value);
             return c;
-        }
-
-        protected virtual void WriteValue(object value)
-        {
-            if (value == null)
-            {
-                this.Write("NULL");
-            }
-            else if (value.GetType().IsEnum)
-            {
-                this.Write(Convert.ChangeType(value, Enum.GetUnderlyingType(value.GetType())));
-            }
-            else
-            {
-                switch (Type.GetTypeCode(value.GetType()))
-                {
-                    case TypeCode.Boolean:
-                        this.Write(((bool)value) ? 1 : 0);
-                        break;
-                    case TypeCode.String:
-                        this.Write("'");
-                        this.Write(value);
-                        this.Write("'");
-                        break;
-                    case TypeCode.Object:
-                        throw new NotSupportedException(string.Format("The constant for '{0}' is not supported", value));
-                    case TypeCode.Single:
-                    case TypeCode.Double:
-                        string str = value.ToString();
-                        if (!str.Contains('.'))
-                        {
-                            str += ".0";
-                        }
-                        this.Write(str);
-                        break;
-                    default:
-                        this.Write(value);
-                        break;
-                }
-            }
         }
 
         protected override Expression VisitColumn(ColumnExpression column)
@@ -1610,43 +1525,6 @@ namespace NostreetsExtensions.Helpers.QueryProvider
             return select;
         }
 
-        protected virtual void WriteTopClause(Expression expression)
-        {
-            this.Write("TOP (");
-            this.Visit(expression);
-            this.Write(") ");
-        }
-
-        protected virtual void WriteColumns(ReadOnlyCollection<ColumnDeclaration> columns)
-        {
-            if (columns.Count > 0)
-            {
-                for (int i = 0, n = columns.Count; i < n; i++)
-                {
-                    ColumnDeclaration column = columns[i];
-                    if (i > 0)
-                    {
-                        this.Write(", ");
-                    }
-                    ColumnExpression c = this.VisitValue(column.Expression) as ColumnExpression;
-                    if (!string.IsNullOrEmpty(column.Name) && (c == null || c.Name != column.Name))
-                    {
-                        this.Write(" ");
-                        this.WriteAsColumnName(column.Name);
-                    }
-                }
-            }
-            else
-            {
-                this.Write("NULL ");
-                if (this.isNested)
-                {
-                    this.WriteAsColumnName("tmp");
-                    this.Write(" ");
-                }
-            }
-        }
-
         protected override Expression VisitSource(Expression source)
         {
             bool saveIsNested = this.isNested;
@@ -1714,37 +1592,6 @@ namespace NostreetsExtensions.Helpers.QueryProvider
                 this.Indent(Indentation.Outer);
             }
             return join;
-        }
-
-        protected virtual Expression VisitJoinLeft(Expression source)
-        {
-            return this.VisitSource(source);
-        }
-
-        protected virtual Expression VisitJoinRight(Expression source)
-        {
-            return this.VisitSource(source);
-        }
-
-        protected virtual void WriteAggregateName(string aggregateName)
-        {
-            switch (aggregateName)
-            {
-                case "Average":
-                    this.Write("AVG");
-                    break;
-                case "LongCount":
-                    this.Write("COUNT");
-                    break;
-                default:
-                    this.Write(aggregateName.ToUpper());
-                    break;
-            }
-        }
-
-        protected virtual bool RequiresAsteriskWhenNoArgument(string aggregateName)
-        {
-            return aggregateName == "Count" || aggregateName == "LongCount";
         }
 
         protected override Expression VisitAggregate(AggregateExpression aggregate)
@@ -1940,19 +1787,6 @@ namespace NostreetsExtensions.Helpers.QueryProvider
             return vex;
         }
 
-        protected virtual void VisitStatement(Expression expression)
-        {
-            var p = expression as ProjectionExpression;
-            if (p != null)
-            {
-                this.Visit(p.Select);
-            }
-            else
-            {
-                this.Visit(expression);
-            }
-        }
-
         protected override Expression VisitFunction(FunctionExpression func)
         {
             this.Write(func.Name);
@@ -1967,6 +1801,188 @@ namespace NostreetsExtensions.Helpers.QueryProvider
                 this.Write(")");
             }
             return func;
+        }
+        #endregion
+
+        #region Other Logic
+        protected void Indent(Indentation style)
+        {
+            if (style == Indentation.Inner)
+            {
+                this.depth++;
+            }
+            else if (style == Indentation.Outer)
+            {
+                this.depth--;
+                System.Diagnostics.Debug.Assert(this.depth >= 0);
+            }
+        }
+
+        protected virtual string GetAliasName(TableAlias alias)
+        {
+            string name;
+            if (!this.aliases.TryGetValue(alias, out name))
+            {
+                name = "A" + alias.GetHashCode() + "?";
+                this.aliases.Add(alias, name);
+            }
+            return name;
+        }
+
+        protected void AddAlias(TableAlias alias)
+        {
+            string name;
+            if (!this.aliases.TryGetValue(alias, out name))
+            {
+                name = "t" + this.aliases.Count;
+                this.aliases.Add(alias, name);
+            }
+        }
+
+        protected virtual void AddAliases(Expression expr)
+        {
+            AliasedExpression ax = expr as AliasedExpression;
+            if (ax != null)
+            {
+                this.AddAlias(ax.Alias);
+            }
+            else
+            {
+                JoinExpression jx = expr as JoinExpression;
+                if (jx != null)
+                {
+                    this.AddAliases(jx.Left);
+                    this.AddAliases(jx.Right);
+                }
+            }
+        }
+
+        protected virtual string GetOperator(string methodName)
+        {
+            switch (methodName)
+            {
+                case "Add": return "+";
+                case "Subtract": return "-";
+                case "Multiply": return "*";
+                case "Divide": return "/";
+                case "Negate": return "-";
+                case "Remainder": return "%";
+                default: return null;
+            }
+        }
+
+        protected virtual string GetOperator(UnaryExpression u)
+        {
+            switch (u.NodeType)
+            {
+                case ExpressionType.Negate:
+                case ExpressionType.NegateChecked:
+                    return "-";
+                case ExpressionType.UnaryPlus:
+                    return "+";
+                case ExpressionType.Not:
+                    return IsBoolean(u.Operand.Type) ? "NOT" : "~";
+                default:
+                    return "";
+            }
+        }
+
+        protected virtual string GetOperator(BinaryExpression b)
+        {
+            switch (b.NodeType)
+            {
+                case ExpressionType.And:
+                case ExpressionType.AndAlso:
+                    return (IsBoolean(b.Left.Type)) ? "AND" : "&";
+                case ExpressionType.Or:
+                case ExpressionType.OrElse:
+                    return (IsBoolean(b.Left.Type) ? "OR" : "|");
+                case ExpressionType.Equal:
+                    return "=";
+                case ExpressionType.NotEqual:
+                    return "<>";
+                case ExpressionType.LessThan:
+                    return "<";
+                case ExpressionType.LessThanOrEqual:
+                    return "<=";
+                case ExpressionType.GreaterThan:
+                    return ">";
+                case ExpressionType.GreaterThanOrEqual:
+                    return ">=";
+                case ExpressionType.Add:
+                case ExpressionType.AddChecked:
+                    return "+";
+                case ExpressionType.Subtract:
+                case ExpressionType.SubtractChecked:
+                    return "-";
+                case ExpressionType.Multiply:
+                case ExpressionType.MultiplyChecked:
+                    return "*";
+                case ExpressionType.Divide:
+                    return "/";
+                case ExpressionType.Modulo:
+                    return "%";
+                case ExpressionType.ExclusiveOr:
+                    return "^";
+                case ExpressionType.LeftShift:
+                    return "<<";
+                case ExpressionType.RightShift:
+                    return ">>";
+                default:
+                    return "";
+            }
+        }
+
+        protected virtual bool IsBoolean(Type type)
+        {
+            return type == typeof(bool) || type == typeof(bool?);
+        }
+
+        protected virtual bool IsPredicate(Expression expr)
+        {
+            switch (expr.NodeType)
+            {
+                case ExpressionType.And:
+                case ExpressionType.AndAlso:
+                case ExpressionType.Or:
+                case ExpressionType.OrElse:
+                    return IsBoolean(((BinaryExpression)expr).Type);
+                case ExpressionType.Not:
+                    return IsBoolean(((UnaryExpression)expr).Type);
+                case ExpressionType.Equal:
+                case ExpressionType.NotEqual:
+                case ExpressionType.LessThan:
+                case ExpressionType.LessThanOrEqual:
+                case ExpressionType.GreaterThan:
+                case ExpressionType.GreaterThanOrEqual:
+                case (ExpressionType)DbExpressionType.IsNull:
+                case (ExpressionType)DbExpressionType.Between:
+                case (ExpressionType)DbExpressionType.Exists:
+                case (ExpressionType)DbExpressionType.In:
+                    return true;
+                case ExpressionType.Call:
+                    return IsBoolean(((MethodCallExpression)expr).Type);
+                default:
+                    return false;
+            }
+        }
+
+        protected virtual bool IsInteger(Type type)
+        {
+            return TypeHelper.IsInteger(type);
+        }
+
+        protected virtual bool RequiresAsteriskWhenNoArgument(string aggregateName)
+        {
+            return aggregateName == "Count" || aggregateName == "LongCount";
+        }
+        #endregion
+
+        protected enum Indentation
+        {
+            Same,
+            Inner,
+            Outer
         }
     }
 }

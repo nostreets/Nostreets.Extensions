@@ -927,6 +927,165 @@ namespace NostreetsExtensions.Helpers.QueryProvider
         {
         }
 
+        #region Updates
+        protected UnaryExpression UpdateUnary(UnaryExpression u, Expression operand, Type resultType, MethodInfo method)
+        {
+            if (u.Operand != operand || u.Type != resultType || u.Method != method)
+            {
+                return Expression.MakeUnary(u.NodeType, operand, resultType, method);
+            }
+            return u;
+        }
+
+        protected BinaryExpression UpdateBinary(BinaryExpression b, Expression left, Expression right, Expression conversion, bool isLiftedToNull, MethodInfo method)
+        {
+            if (left != b.Left || right != b.Right || conversion != b.Conversion || method != b.Method || isLiftedToNull != b.IsLiftedToNull)
+            {
+                if (b.NodeType == ExpressionType.Coalesce && b.Conversion != null)
+                {
+                    return Expression.Coalesce(left, right, conversion as LambdaExpression);
+                }
+                else
+                {
+                    return Expression.MakeBinary(b.NodeType, left, right, isLiftedToNull, method);
+                }
+            }
+            return b;
+        }
+
+        protected TypeBinaryExpression UpdateTypeIs(TypeBinaryExpression b, Expression expression, Type typeOperand)
+        {
+            if (expression != b.Expression || typeOperand != b.TypeOperand)
+            {
+                return Expression.TypeIs(expression, typeOperand);
+            }
+            return b;
+        }
+
+        protected ConditionalExpression UpdateConditional(ConditionalExpression c, Expression test, Expression ifTrue, Expression ifFalse)
+        {
+            if (test != c.Test || ifTrue != c.IfTrue || ifFalse != c.IfFalse)
+            {
+                return Expression.Condition(test, ifTrue, ifFalse);
+            }
+            return c;
+        }
+
+        protected MemberExpression UpdateMemberAccess(MemberExpression m, Expression expression, MemberInfo member)
+        {
+            if (expression != m.Expression || member != m.Member)
+            {
+                return Expression.MakeMemberAccess(expression, member);
+            }
+            return m;
+        }
+
+        protected MethodCallExpression UpdateMethodCall(MethodCallExpression m, Expression obj, MethodInfo method, IEnumerable<Expression> args)
+        {
+            if (obj != m.Object || method != m.Method || args != m.Arguments)
+            {
+                return Expression.Call(obj, method, args);
+            }
+            return m;
+        }
+
+        protected MemberAssignment UpdateMemberAssignment(MemberAssignment assignment, MemberInfo member, Expression expression)
+        {
+            if (expression != assignment.Expression || member != assignment.Member)
+            {
+                return Expression.Bind(member, expression);
+            }
+            return assignment;
+        }
+
+        protected MemberMemberBinding UpdateMemberMemberBinding(MemberMemberBinding binding, MemberInfo member, IEnumerable<MemberBinding> bindings)
+        {
+            if (bindings != binding.Bindings || member != binding.Member)
+            {
+                return Expression.MemberBind(member, bindings);
+            }
+            return binding;
+        }
+
+        protected MemberListBinding UpdateMemberListBinding(MemberListBinding binding, MemberInfo member, IEnumerable<ElementInit> initializers)
+        {
+            if (initializers != binding.Initializers || member != binding.Member)
+            {
+                return Expression.ListBind(member, initializers);
+            }
+            return binding;
+        }
+
+        protected LambdaExpression UpdateLambda(LambdaExpression lambda, Type delegateType, Expression body, IEnumerable<ParameterExpression> parameters)
+        {
+            if (body != lambda.Body || parameters != lambda.Parameters || delegateType != lambda.Type)
+            {
+                return Expression.Lambda(delegateType, body, parameters);
+            }
+            return lambda;
+        }
+
+        protected NewExpression UpdateNew(NewExpression nex, ConstructorInfo constructor, IEnumerable<Expression> args, IEnumerable<MemberInfo> members)
+        {
+            if (args != nex.Arguments || constructor != nex.Constructor || members != nex.Members)
+            {
+                if (nex.Members != null)
+                {
+                    return Expression.New(constructor, args, members);
+                }
+                else
+                {
+                    return Expression.New(constructor, args);
+                }
+            }
+            return nex;
+        }
+
+        protected MemberInitExpression UpdateMemberInit(MemberInitExpression init, NewExpression nex, IEnumerable<MemberBinding> bindings)
+        {
+            if (nex != init.NewExpression || bindings != init.Bindings)
+            {
+                return Expression.MemberInit(nex, bindings);
+            }
+            return init;
+        }
+
+        protected ListInitExpression UpdateListInit(ListInitExpression init, NewExpression nex, IEnumerable<ElementInit> initializers)
+        {
+            if (nex != init.NewExpression || initializers != init.Initializers)
+            {
+                return Expression.ListInit(nex, initializers);
+            }
+            return init;
+        }
+
+        protected NewArrayExpression UpdateNewArray(NewArrayExpression na, Type arrayType, IEnumerable<Expression> expressions)
+        {
+            if (expressions != na.Expressions || na.Type != arrayType)
+            {
+                if (na.NodeType == ExpressionType.NewArrayInit)
+                {
+                    return Expression.NewArrayInit(arrayType.GetElementType(), expressions);
+                }
+                else
+                {
+                    return Expression.NewArrayBounds(arrayType.GetElementType(), expressions);
+                }
+            }
+            return na;
+        }
+
+        protected InvocationExpression UpdateInvocation(InvocationExpression iv, Expression expression, IEnumerable<Expression> args)
+        {
+            if (args != iv.Arguments || expression != iv.Expression)
+            {
+                return Expression.Invoke(expression, args);
+            }
+            return iv;
+        }
+        #endregion
+
+        #region Visits
         protected virtual Expression Visit(Expression exp)
         {
             if (exp == null)
@@ -998,6 +1157,12 @@ namespace NostreetsExtensions.Helpers.QueryProvider
             }
         }
 
+        protected virtual Expression VisitLambda(LambdaExpression lambda)
+        {
+            Expression body = this.Visit(lambda.Body);
+            return this.UpdateLambda(lambda, lambda.Type, body, lambda.Parameters);
+        }
+
         protected virtual Expression VisitUnknown(Expression expression)
         {
             throw new Exception(string.Format("Unhandled expression type: '{0}'", expression.NodeType));
@@ -1034,15 +1199,6 @@ namespace NostreetsExtensions.Helpers.QueryProvider
             return this.UpdateUnary(u, operand, u.Type, u.Method);
         }
 
-        protected UnaryExpression UpdateUnary(UnaryExpression u, Expression operand, Type resultType, MethodInfo method)
-        {
-            if (u.Operand != operand || u.Type != resultType || u.Method != method)
-            {
-                return Expression.MakeUnary(u.NodeType, operand, resultType, method);
-            }
-            return u;
-        }
-
         protected virtual Expression VisitBinary(BinaryExpression b)
         {
             Expression left = this.Visit(b.Left);
@@ -1051,35 +1207,10 @@ namespace NostreetsExtensions.Helpers.QueryProvider
             return this.UpdateBinary(b, left, right, conversion, b.IsLiftedToNull, b.Method);
         }
 
-        protected BinaryExpression UpdateBinary(BinaryExpression b, Expression left, Expression right, Expression conversion, bool isLiftedToNull, MethodInfo method)
-        {
-            if (left != b.Left || right != b.Right || conversion != b.Conversion || method != b.Method || isLiftedToNull != b.IsLiftedToNull)
-            {
-                if (b.NodeType == ExpressionType.Coalesce && b.Conversion != null)
-                {
-                    return Expression.Coalesce(left, right, conversion as LambdaExpression);
-                }
-                else
-                {
-                    return Expression.MakeBinary(b.NodeType, left, right, isLiftedToNull, method);
-                }
-            }
-            return b;
-        }
-
         protected virtual Expression VisitTypeIs(TypeBinaryExpression b)
         {
             Expression expr = this.Visit(b.Expression);
             return this.UpdateTypeIs(b, expr, b.TypeOperand);
-        }
-
-        protected TypeBinaryExpression UpdateTypeIs(TypeBinaryExpression b, Expression expression, Type typeOperand)
-        {
-            if (expression != b.Expression || typeOperand != b.TypeOperand)
-            {
-                return Expression.TypeIs(expression, typeOperand);
-            }
-            return b;
         }
 
         protected virtual Expression VisitConstant(ConstantExpression c)
@@ -1095,15 +1226,6 @@ namespace NostreetsExtensions.Helpers.QueryProvider
             return this.UpdateConditional(c, test, ifTrue, ifFalse);
         }
 
-        protected ConditionalExpression UpdateConditional(ConditionalExpression c, Expression test, Expression ifTrue, Expression ifFalse)
-        {
-            if (test != c.Test || ifTrue != c.IfTrue || ifFalse != c.IfFalse)
-            {
-                return Expression.Condition(test, ifTrue, ifFalse);
-            }
-            return c;
-        }
-
         protected virtual Expression VisitParameter(ParameterExpression p)
         {
             return p;
@@ -1115,29 +1237,11 @@ namespace NostreetsExtensions.Helpers.QueryProvider
             return this.UpdateMemberAccess(m, exp, m.Member);
         }
 
-        protected MemberExpression UpdateMemberAccess(MemberExpression m, Expression expression, MemberInfo member)
-        {
-            if (expression != m.Expression || member != m.Member)
-            {
-                return Expression.MakeMemberAccess(expression, member);
-            }
-            return m;
-        }
-
         protected virtual Expression VisitMethodCall(MethodCallExpression m)
         {
             Expression obj = this.Visit(m.Object);
             IEnumerable<Expression> args = this.VisitExpressionList(m.Arguments);
             return this.UpdateMethodCall(m, obj, m.Method, args);
-        }
-
-        protected MethodCallExpression UpdateMethodCall(MethodCallExpression m, Expression obj, MethodInfo method, IEnumerable<Expression> args)
-        {
-            if (obj != m.Object || method != m.Method || args != m.Arguments)
-            {
-                return Expression.Call(obj, method, args);
-            }
-            return m;
         }
 
         protected virtual ReadOnlyCollection<Expression> VisitExpressionList(ReadOnlyCollection<Expression> original)
@@ -1211,43 +1315,16 @@ namespace NostreetsExtensions.Helpers.QueryProvider
             return this.UpdateMemberAssignment(assignment, assignment.Member, e);
         }
 
-        protected MemberAssignment UpdateMemberAssignment(MemberAssignment assignment, MemberInfo member, Expression expression)
-        {
-            if (expression != assignment.Expression || member != assignment.Member)
-            {
-                return Expression.Bind(member, expression);
-            }
-            return assignment;
-        }
-
         protected virtual MemberMemberBinding VisitMemberMemberBinding(MemberMemberBinding binding)
         {
             IEnumerable<MemberBinding> bindings = this.VisitBindingList(binding.Bindings);
             return this.UpdateMemberMemberBinding(binding, binding.Member, bindings);
         }
 
-        protected MemberMemberBinding UpdateMemberMemberBinding(MemberMemberBinding binding, MemberInfo member, IEnumerable<MemberBinding> bindings)
-        {
-            if (bindings != binding.Bindings || member != binding.Member)
-            {
-                return Expression.MemberBind(member, bindings);
-            }
-            return binding;
-        }
-
         protected virtual MemberListBinding VisitMemberListBinding(MemberListBinding binding)
         {
             IEnumerable<ElementInit> initializers = this.VisitElementInitializerList(binding.Initializers);
             return this.UpdateMemberListBinding(binding, binding.Member, initializers);
-        }
-
-        protected MemberListBinding UpdateMemberListBinding(MemberListBinding binding, MemberInfo member, IEnumerable<ElementInit> initializers)
-        {
-            if (initializers != binding.Initializers || member != binding.Member)
-            {
-                return Expression.ListBind(member, initializers);
-            }
-            return binding;
         }
 
         protected virtual IEnumerable<MemberBinding> VisitBindingList(ReadOnlyCollection<MemberBinding> original)
@@ -1300,41 +1377,10 @@ namespace NostreetsExtensions.Helpers.QueryProvider
             return original;
         }
 
-        protected virtual Expression VisitLambda(LambdaExpression lambda)
-        {
-            Expression body = this.Visit(lambda.Body);
-            return this.UpdateLambda(lambda, lambda.Type, body, lambda.Parameters);
-        }
-
-        protected LambdaExpression UpdateLambda(LambdaExpression lambda, Type delegateType, Expression body, IEnumerable<ParameterExpression> parameters)
-        {
-            if (body != lambda.Body || parameters != lambda.Parameters || delegateType != lambda.Type)
-            {
-                return Expression.Lambda(delegateType, body, parameters);
-            }
-            return lambda;
-        }
-
         protected virtual NewExpression VisitNew(NewExpression nex)
         {
             IEnumerable<Expression> args = this.VisitMemberAndExpressionList(nex.Members, nex.Arguments);
             return this.UpdateNew(nex, nex.Constructor, args, nex.Members);
-        }
-
-        protected NewExpression UpdateNew(NewExpression nex, ConstructorInfo constructor, IEnumerable<Expression> args, IEnumerable<MemberInfo> members)
-        {
-            if (args != nex.Arguments || constructor != nex.Constructor || members != nex.Members)
-            {
-                if (nex.Members != null)
-                {
-                    return Expression.New(constructor, args, members);
-                }
-                else
-                {
-                    return Expression.New(constructor, args);
-                }
-            }
-            return nex;
         }
 
         protected virtual Expression VisitMemberInit(MemberInitExpression init)
@@ -1344,29 +1390,11 @@ namespace NostreetsExtensions.Helpers.QueryProvider
             return this.UpdateMemberInit(init, n, bindings);
         }
 
-        protected MemberInitExpression UpdateMemberInit(MemberInitExpression init, NewExpression nex, IEnumerable<MemberBinding> bindings)
-        {
-            if (nex != init.NewExpression || bindings != init.Bindings)
-            {
-                return Expression.MemberInit(nex, bindings);
-            }
-            return init;
-        }
-
         protected virtual Expression VisitListInit(ListInitExpression init)
         {
             NewExpression n = this.VisitNew(init.NewExpression);
             IEnumerable<ElementInit> initializers = this.VisitElementInitializerList(init.Initializers);
             return this.UpdateListInit(init, n, initializers);
-        }
-
-        protected ListInitExpression UpdateListInit(ListInitExpression init, NewExpression nex, IEnumerable<ElementInit> initializers)
-        {
-            if (nex != init.NewExpression || initializers != init.Initializers)
-            {
-                return Expression.ListInit(nex, initializers);
-            }
-            return init;
         }
 
         protected virtual Expression VisitNewArray(NewArrayExpression na)
@@ -1375,36 +1403,13 @@ namespace NostreetsExtensions.Helpers.QueryProvider
             return this.UpdateNewArray(na, na.Type, exprs);
         }
 
-        protected NewArrayExpression UpdateNewArray(NewArrayExpression na, Type arrayType, IEnumerable<Expression> expressions)
-        {
-            if (expressions != na.Expressions || na.Type != arrayType)
-            {
-                if (na.NodeType == ExpressionType.NewArrayInit)
-                {
-                    return Expression.NewArrayInit(arrayType.GetElementType(), expressions);
-                }
-                else
-                {
-                    return Expression.NewArrayBounds(arrayType.GetElementType(), expressions);
-                }
-            }
-            return na;
-        }
-
         protected virtual Expression VisitInvocation(InvocationExpression iv)
         {
             IEnumerable<Expression> args = this.VisitExpressionList(iv.Arguments);
             Expression expr = this.Visit(iv.Expression);
             return this.UpdateInvocation(iv, expr, args);
-        }
+        } 
+        #endregion
 
-        protected InvocationExpression UpdateInvocation(InvocationExpression iv, Expression expression, IEnumerable<Expression> args)
-        {
-            if (args != iv.Arguments || expression != iv.Expression)
-            {
-                return Expression.Invoke(expression, args);
-            }
-            return iv;
-        }
     }
 }
