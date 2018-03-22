@@ -1777,9 +1777,9 @@ namespace NostreetsExtensions
         /// </summary>
         /// <param name="time">The time.</param>
         /// <returns></returns>
-        public static string Timestamp(this DateTime time)
+        public static string Timestamp(this DateTime time, string format = null)
         {
-            return time.ToString("hh.mm.ss.tt_MMM-yy");
+            return time.ToString(format ?? "hh.mm.ss.tt MMM/dd/yy");
         }
 
         /// <summary>
@@ -1807,6 +1807,14 @@ namespace NostreetsExtensions
             return obj.GetType().GetProperties().Single(pi => pi.Name == propertyName).GetValue(obj);
         }
 
+        public static object GetPropertyValue(this object obj, int ordinal)
+        {
+            if (obj.GetType() == typeof(Type).GetType())
+                throw new Exception("obj cannot be a Type its self to be able to GetPropertyValue...");
+
+            return obj.GetType().GetProperties().Where((a, b) => b == ordinal).Single().GetValue(obj);
+        }
+
 
         /// <summary>
         /// Sets the property value.
@@ -1814,10 +1822,16 @@ namespace NostreetsExtensions
         /// <param name="obj">The object.</param>
         /// <param name="propertyName">Name of the property.</param>
         /// <param name="value">The value.</param>
+        public static void SetPropertyValue(this object obj, int ordinal, object value)
+        {
+            if (obj.GetType().GetProperties().Where((a, b) => b == ordinal).Single().GetSetMethod() != null)
+                obj.GetType().GetProperties().Where((a, b) => b == ordinal).Single().SetValue(obj, value);
+        }
+
         public static void SetPropertyValue(this object obj, string propertyName, object value)
         {
-            if (obj.GetType().GetProperties().First(pi => pi.Name == propertyName).GetSetMethod() != null)
-                obj.GetType().GetProperties().First(pi => pi.Name == propertyName).SetValue(obj, value);
+            if (obj.GetType().GetProperties().Single(pi => pi.Name == propertyName).GetSetMethod() != null)
+                obj.GetType().GetProperties().Single(pi => pi.Name == propertyName).SetValue(obj, value);
         }
 
         /// <summary>
@@ -1938,6 +1952,8 @@ namespace NostreetsExtensions
         /// dataSouce param must not be null or return null...</exception>
         public static List<string> GetSchema(this ISqlExecutor srv, Func<SqlConnection> dataSouce, string tableName)
         {
+
+
             SqlDataReader reader = null;
             SqlCommand cmd = null;
             SqlConnection conn = null;
@@ -1994,7 +2010,7 @@ namespace NostreetsExtensions
         /// <returns></returns>
         public static string[] GetSchema(this IDataReader reader)
         {
-            return reader.GetSchemaTable().Rows.Cast<DataRow>().Select(c => c["ColumnName"].ToString()).ToArray();
+            return GetSchema(reader).ToArray();
         }
 
         /// <summary>
@@ -2699,7 +2715,7 @@ namespace NostreetsExtensions
 
         public static string JsonSerialize(this object obj)
         {
-            return JsonConvert.SerializeObject(obj);
+            return JsonConvert.SerializeObject(obj, new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() });
         }
 
         public static object JsonDeserialize(this string obj)
@@ -2810,6 +2826,12 @@ namespace NostreetsExtensions
                     return false;
             }
         }
+
+        public static bool IsNumeric(this object obj)
+        {
+            return (obj == null) ? false : obj.GetType().IsNumeric();
+        }
+
         #endregion
     }
 }
