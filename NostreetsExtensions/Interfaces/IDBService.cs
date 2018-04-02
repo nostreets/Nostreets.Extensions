@@ -7,6 +7,7 @@ namespace NostreetsExtensions.Interfaces
     {
         List<object> GetAll();
         object Get(object id);
+        object Get(object id, Converter<object, object> converter);
         object Insert(object model);
         void Delete(object id);
         void Update(object model);
@@ -19,6 +20,7 @@ namespace NostreetsExtensions.Interfaces
     {
         List<T> GetAll();
         T Get(object id);
+        T Get(object id, Converter<T, T> converter);
         object Insert(T model);
         void Delete(object id);
         void Update(T model);
@@ -31,6 +33,7 @@ namespace NostreetsExtensions.Interfaces
 
         List<T> GetAll();
         T Get(IdType id);
+        T Get(IdType id, Converter<T, T> converter);
         IdType Insert(T model);
         void Delete(IdType id);
         void Update(T model);
@@ -43,6 +46,7 @@ namespace NostreetsExtensions.Interfaces
 
         List<T> GetAll();
         T Get(IdType id);
+        T Get(IdType id, Converter<T, T> converter);
         IdType Insert(T model);
         IdType Insert(AddType model, Converter<AddType, T> converter);
         void Delete(IdType id);

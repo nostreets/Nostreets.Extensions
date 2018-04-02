@@ -59,6 +59,128 @@ namespace NostreetsExtensions
             return addr;
         }
 
+        /// <summary>
+        /// Gets the objects with attribute.
+        /// </summary>
+        /// <typeparam name="TAttribute">The type of the attribute.</typeparam>
+        /// <param name="obj">The object.</param>
+        /// <param name="types">The types.</param>
+        /// <param name="assembliesToSkip">The assemblies to skip.</param>
+        /// <returns></returns>
+        public static List<Tuple<TAttribute, object, Assembly>> GetObjectsWithAttribute<TAttribute>(ClassTypes section, Func<Assembly, bool> assembliesToSkip = null) where TAttribute : Attribute
+        {
+            List<Tuple<TAttribute, object, Assembly>> result = new List<Tuple<TAttribute, object, Assembly>>();
+            using (AttributeScanner<TAttribute> scanner = new AttributeScanner<TAttribute>())
+                foreach (var item in scanner.ScanAssembliesForAttributes(section, null, assembliesToSkip))
+                    result.Add(new Tuple<TAttribute, object, Assembly>(item.Item1, item.Item2, item.Item4));
+
+            return result;
+        }
+
+        /// <summary>
+        /// Gets the objects by attribute.
+        /// </summary>
+        /// <typeparam name="TAttribute">The type of the attribute.</typeparam>
+        /// <param name="obj">The object.</param>
+        /// <param name="section">The section.</param>
+        /// <param name="type">The type.</param>
+        /// <param name="assembliesToSkip">The assemblies to skip.</param>
+        /// <returns></returns>
+        public static List<object> GetObjectsByAttribute<TAttribute>(ClassTypes section, Type type, Func<Assembly, bool> assembliesToSkip = null) where TAttribute : Attribute
+        {
+            List<object> result = new List<object>();
+            using (AttributeScanner<TAttribute> scanner = new AttributeScanner<TAttribute>())
+            {
+                foreach (var item in scanner.ScanAssembliesForAttributes(section, type, assembliesToSkip))
+                    result.Add(item.Item2);
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Gets the methods by attribute.
+        /// </summary>
+        /// <typeparam name="TAttribute">The type of the attribute.</typeparam>
+        /// <param name="obj">The object.</param>
+        /// <param name="type">The type.</param>
+        /// <param name="assembliesToSkip">The assemblies to skip.</param>
+        /// <returns></returns>
+        public static List<MethodInfo> GetMethodsByAttribute<TAttribute>(Type type = null, Func<Assembly, bool> assembliesToSkip = null) where TAttribute : Attribute
+        {
+            List<MethodInfo> result = new List<MethodInfo>();
+            IEnumerable<Tuple<TAttribute, object>> list = null;
+
+            using (AttributeScanner<TAttribute> scanner = new AttributeScanner<TAttribute>())
+            {
+                foreach (var item in scanner.ScanAssembliesForAttributes(ClassTypes.Methods, type, assembliesToSkip))
+                    result.Add((MethodInfo)item.Item2);
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Gets the types by attribute.
+        /// </summary>
+        /// <typeparam name="TAttribute">The type of the attribute.</typeparam>
+        /// <param name="obj">The object.</param>
+        /// <param name="type">The type.</param>
+        /// <param name="assembliesToSkip">The assemblies to skip.</param>
+        /// <returns></returns>
+        public static List<Type> GetTypesByAttribute<TAttribute>(Type type = null, Func<Assembly, bool> assembliesToSkip = null) where TAttribute : Attribute
+        {
+            List<Type> result = new List<Type>();
+
+            using (AttributeScanner<TAttribute> scanner = new AttributeScanner<TAttribute>())
+            {
+                foreach (var item in scanner.ScanAssembliesForAttributes(ClassTypes.Type, type, assembliesToSkip))
+                    result.Add((Type)item.Item2);
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Gets the assemblies by attribute.
+        /// </summary>
+        /// <typeparam name="TAttribute">The type of the attribute.</typeparam>
+        /// <param name="obj">The object.</param>
+        /// <param name="assembliesToSkip">The assemblies to skip.</param>
+        /// <returns></returns>
+        public static List<Assembly> GetAssembliesByAttribute<TAttribute>(Func<Assembly, bool> assembliesToSkip = null) where TAttribute : Attribute
+        {
+            List<Assembly> result = new List<Assembly>();
+
+            using (AttributeScanner<TAttribute> scanner = new AttributeScanner<TAttribute>())
+            {
+                foreach (var item in scanner.ScanAssembliesForAttributes(ClassTypes.Assembly, null, assembliesToSkip))
+                    result.Add((Assembly)item.Item2);
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Gets the properties by attribute.
+        /// </summary>
+        /// <typeparam name="TAttribute">The type of the attribute.</typeparam>
+        /// <param name="obj">The object.</param>
+        /// <param name="type">The type.</param>
+        /// <param name="assembliesToSkip">The assemblies to skip.</param>
+        /// <returns></returns>
+        public static List<PropertyInfo> GetPropertiesByAttribute<TAttribute>(Type type = null, Func<Assembly, bool> assembliesToSkip = null) where TAttribute : Attribute
+        {
+            List<PropertyInfo> result = null;
+
+            using (AttributeScanner<TAttribute> scanner = new AttributeScanner<TAttribute>())
+            {
+                foreach (var item in scanner.ScanAssembliesForAttributes(ClassTypes.Properties, type, assembliesToSkip))
+                    result.Add((PropertyInfo)item.Item2);
+            }
+
+            return result.ToList();
+        }
         #endregion
 
         #region Extension Methods
@@ -1133,29 +1255,11 @@ namespace NostreetsExtensions
             return (MethodInfo)fullMethodName.ScanAssembliesForObject();
         }
 
-        /// <summary>
-        /// Gets the objects with attribute.
-        /// </summary>
-        /// <typeparam name="TAttribute">The type of the attribute.</typeparam>
-        /// <param name="obj">The object.</param>
-        /// <param name="types">The types.</param>
-        /// <param name="assembliesToSkip">The assemblies to skip.</param>
-        /// <returns></returns>
-        public static List<Tuple<TAttribute, object>> GetObjectsWithAttribute<TAttribute>(this IList<Tuple<TAttribute, object>> obj, ClassTypes section, Func<Assembly, bool> assembliesToSkip = null) where TAttribute : Attribute
-        {
-            List<Tuple<TAttribute, object>> result = new List<Tuple<TAttribute, object>>();
-            using (AttributeScanner<TAttribute> scanner = new AttributeScanner<TAttribute>())
-                foreach (var item in scanner.ScanAssembliesForAttributes(section, null, assembliesToSkip))
-                    result.Add(new Tuple<TAttribute, object>(item.Item1, item.Item2));
-
-            return result;
-        }
-
-        public static List<Tuple<TAttribute, object, Assembly>> GetObjectsWithAttribute<TAttribute>(this IList<Tuple<TAttribute, object, Assembly>> obj, ClassTypes section, Func<Assembly, bool> assembliesToSkip = null) where TAttribute : Attribute
+        public static List<Tuple<TAttribute, object, Assembly>> GetObjectsWithAttribute<TAttribute>(this Assembly assembly, ClassTypes section) where TAttribute : Attribute
         {
             List<Tuple<TAttribute, object, Assembly>> result = new List<Tuple<TAttribute, object, Assembly>>();
             using (AttributeScanner<TAttribute> scanner = new AttributeScanner<TAttribute>())
-                foreach (var item in scanner.ScanAssembliesForAttributes(section, null, assembliesToSkip))
+                foreach (var item in scanner.ScanAssembliesForAttributes(section, null, a => a != assembly))
                     result.Add(new Tuple<TAttribute, object, Assembly>(item.Item1, item.Item2, item.Item4));
 
             return result;
@@ -1170,37 +1274,12 @@ namespace NostreetsExtensions
         /// <param name="type">The type.</param>
         /// <param name="assembliesToSkip">The assemblies to skip.</param>
         /// <returns></returns>
-        public static List<object> GetObjectsByAttribute<TAttribute>(this IList<TAttribute> obj, ClassTypes section, Type type = null, Func<Assembly, bool> assembliesToSkip = null) where TAttribute : Attribute
+        public static List<object> GetObjectsByAttribute<TAttribute>(this Assembly assembly, ClassTypes section, Type type = null) where TAttribute : Attribute
         {
             List<object> result = new List<object>();
-            IEnumerable<Tuple<TAttribute, object>> list = null;
-
             using (AttributeScanner<TAttribute> scanner = new AttributeScanner<TAttribute>())
             {
-                foreach (var item in scanner.ScanAssembliesForAttributes(section, type, assembliesToSkip))
-                    result.Add(item.Item2);
-            }
-
-            return result;
-        }
-
-        /// <summary>
-        /// Gets the objects by attribute.
-        /// </summary>
-        /// <typeparam name="TAttribute">The type of the attribute.</typeparam>
-        /// <param name="obj">The object.</param>
-        /// <param name="section">The section.</param>
-        /// <param name="type">The type.</param>
-        /// <param name="assembliesToSkip">The assemblies to skip.</param>
-        /// <returns></returns>
-        public static List<object> GetObjectsByAttribute<TAttribute>(this IList<object> obj, ClassTypes section, Type type = null, Func<Assembly, bool> assembliesToSkip = null) where TAttribute : Attribute
-        {
-            List<object> result = new List<object>();
-            IEnumerable<Tuple<TAttribute, object>> list = null;
-
-            using (AttributeScanner<TAttribute> scanner = new AttributeScanner<TAttribute>())
-            {
-                foreach (var item in scanner.ScanAssembliesForAttributes(section, type, assembliesToSkip))
+                foreach (var item in scanner.ScanAssembliesForAttributes(section, type, a => a != assembly))
                     result.Add(item.Item2);
             }
 
@@ -1215,36 +1294,57 @@ namespace NostreetsExtensions
         /// <param name="type">The type.</param>
         /// <param name="assembliesToSkip">The assemblies to skip.</param>
         /// <returns></returns>
-        public static List<MethodInfo> GetMethodsByAttribute<TAttribute>(this IList<TAttribute> obj, Type type = null, Func<Assembly, bool> assembliesToSkip = null) where TAttribute : Attribute
+        public static List<MethodInfo> GetMethodsByAttribute<TAttribute>(this Assembly assembly, Type type = null) where TAttribute : Attribute
         {
             List<MethodInfo> result = new List<MethodInfo>();
-
             using (AttributeScanner<TAttribute> scanner = new AttributeScanner<TAttribute>())
             {
-                foreach (var item in scanner.ScanAssembliesForAttributes(ClassTypes.Methods, type, assembliesToSkip))
+                foreach (var item in scanner.ScanAssembliesForAttributes(ClassTypes.Methods, type, a => a != assembly))
                     result.Add((MethodInfo)item.Item2);
             }
 
             return result;
         }
 
-        /// <summary>
-        /// Gets the methods by attribute.
-        /// </summary>
-        /// <typeparam name="TAttribute">The type of the attribute.</typeparam>
-        /// <param name="obj">The object.</param>
-        /// <param name="type">The type.</param>
-        /// <param name="assembliesToSkip">The assemblies to skip.</param>
-        /// <returns></returns>
-        public static List<MethodInfo> GetMethodsByAttribute<TAttribute>(this IList<MethodInfo> obj, Type type = null, Func<Assembly, bool> assembliesToSkip = null) where TAttribute : Attribute
+        public static List<MethodInfo> GetMethodsByAttribute<TAttribute>(this Assembly assembly, IEnumerable<Type> types = null) where TAttribute : Attribute
         {
             List<MethodInfo> result = new List<MethodInfo>();
-            IEnumerable<Tuple<TAttribute, object>> list = null;
-
             using (AttributeScanner<TAttribute> scanner = new AttributeScanner<TAttribute>())
             {
-                foreach (var item in scanner.ScanAssembliesForAttributes(ClassTypes.Methods, type, assembliesToSkip))
+                if (types != null)
+                {
+                    foreach (Type type in types)
+                        foreach (var item in scanner.ScanAssembliesForAttributes(ClassTypes.Methods, type, a => a != assembly))
+                            result.Add((MethodInfo)item.Item2);  
+                }
+                else
+                    foreach (var item in scanner.ScanAssembliesForAttributes(ClassTypes.Methods, null, a => a != assembly))
+                        result.Add((MethodInfo)item.Item2);
+            }
+
+            return result;
+        }
+
+        public static List<MethodInfo> GetMethodsByAttribute<TAttribute>(this Type type) where TAttribute : Attribute
+        {
+            List<MethodInfo> result = new List<MethodInfo>();
+            using (AttributeScanner<TAttribute> scanner = new AttributeScanner<TAttribute>())
+            {
+                foreach (var item in scanner.ScanAssembliesForAttributes(ClassTypes.Methods, type, a => a != Assembly.GetCallingAssembly()))
                     result.Add((MethodInfo)item.Item2);
+            }
+
+            return result;
+        }
+
+        public static List<MethodInfo> GetMethodsByAttribute<TAttribute>(this IEnumerable<Type> types) where TAttribute : Attribute
+        {
+            List<MethodInfo> result = new List<MethodInfo>();
+            using (AttributeScanner<TAttribute> scanner = new AttributeScanner<TAttribute>())
+            {
+                foreach (Type type in types)
+                    foreach (var item in scanner.ScanAssembliesForAttributes(ClassTypes.Methods, type, a => a != Assembly.GetCallingAssembly()))
+                        result.Add((MethodInfo)item.Item2); 
             }
 
             return result;
@@ -1258,75 +1358,14 @@ namespace NostreetsExtensions
         /// <param name="type">The type.</param>
         /// <param name="assembliesToSkip">The assemblies to skip.</param>
         /// <returns></returns>
-        public static List<Type> GetTypesByAttribute<TAttribute>(this IList<TAttribute> obj, Type type = null, Func<Assembly, bool> assembliesToSkip = null) where TAttribute : Attribute
+        public static List<Type> GetTypesByAttribute<TAttribute>(this Assembly assembly, Type type = null) where TAttribute : Attribute
         {
             List<Type> result = new List<Type>();
 
             using (AttributeScanner<TAttribute> scanner = new AttributeScanner<TAttribute>())
             {
-                foreach (var item in scanner.ScanAssembliesForAttributes(ClassTypes.Type, type, assembliesToSkip))
+                foreach (var item in scanner.ScanAssembliesForAttributes(ClassTypes.Type, type, a => a != assembly))
                     result.Add((Type)item.Item2);
-            }
-
-            return result;
-        }
-
-        /// <summary>
-        /// Gets the types by attribute.
-        /// </summary>
-        /// <typeparam name="TAttribute">The type of the attribute.</typeparam>
-        /// <param name="obj">The object.</param>
-        /// <param name="type">The type.</param>
-        /// <param name="assembliesToSkip">The assemblies to skip.</param>
-        /// <returns></returns>
-        public static List<Type> GetTypesByAttribute<TAttribute>(this IList<Type> obj, Type type = null, Func<Assembly, bool> assembliesToSkip = null) where TAttribute : Attribute
-        {
-            List<Type> result = new List<Type>();
-
-            using (AttributeScanner<TAttribute> scanner = new AttributeScanner<TAttribute>())
-            {
-                foreach (var item in scanner.ScanAssembliesForAttributes(ClassTypes.Type, type, assembliesToSkip))
-                    result.Add((Type)item.Item2);
-            }
-
-            return result;
-        }
-
-        /// <summary>
-        /// Gets the assemblies by attribute.
-        /// </summary>
-        /// <typeparam name="TAttribute">The type of the attribute.</typeparam>
-        /// <param name="obj">The object.</param>
-        /// <param name="assembliesToSkip">The assemblies to skip.</param>
-        /// <returns></returns>
-        public static List<Assembly> GetAssembliesByAttribute<TAttribute>(this IList<TAttribute> obj, Func<Assembly, bool> assembliesToSkip = null) where TAttribute : Attribute
-        {
-            List<Assembly> result = new List<Assembly>();
-
-            using (AttributeScanner<TAttribute> scanner = new AttributeScanner<TAttribute>())
-            {
-                foreach (var item in scanner.ScanAssembliesForAttributes(ClassTypes.Assembly, null, assembliesToSkip))
-                    result.Add((Assembly)item.Item2);
-            }
-
-            return result;
-        }
-
-        /// <summary>
-        /// Gets the assemblies by attribute.
-        /// </summary>
-        /// <typeparam name="TAttribute">The type of the attribute.</typeparam>
-        /// <param name="obj">The object.</param>
-        /// <param name="assembliesToSkip">The assemblies to skip.</param>
-        /// <returns></returns>
-        public static List<Assembly> GetAssembliesByAttribute<TAttribute>(this IList<Assembly> obj, Func<Assembly, bool> assembliesToSkip = null) where TAttribute : Attribute
-        {
-            List<Assembly> result = new List<Assembly>();
-
-            using (AttributeScanner<TAttribute> scanner = new AttributeScanner<TAttribute>())
-            {
-                foreach (var item in scanner.ScanAssembliesForAttributes(ClassTypes.Assembly, null, assembliesToSkip))
-                    result.Add((Assembly)item.Item2);
             }
 
             return result;
@@ -1340,13 +1379,13 @@ namespace NostreetsExtensions
         /// <param name="type">The type.</param>
         /// <param name="assembliesToSkip">The assemblies to skip.</param>
         /// <returns></returns>
-        public static List<PropertyInfo> GetPropertiesByAttribute<TAttribute>(this IList<TAttribute> obj, Type type = null, Func<Assembly, bool> assembliesToSkip = null) where TAttribute : Attribute
+        public static List<PropertyInfo> GetPropertiesByAttribute<TAttribute>(this Assembly assembly, Type type = null) where TAttribute : Attribute
         {
             List<PropertyInfo> result = new List<PropertyInfo>();
 
             using (AttributeScanner<TAttribute> scanner = new AttributeScanner<TAttribute>())
             {
-                foreach (var item in scanner.ScanAssembliesForAttributes(ClassTypes.Properties, type, assembliesToSkip))
+                foreach (var item in scanner.ScanAssembliesForAttributes(ClassTypes.Properties, type, a => a != assembly))
                     result.Add((PropertyInfo)item.Item2);
             }
 
@@ -1361,35 +1400,14 @@ namespace NostreetsExtensions
         /// <param name="type">The type.</param>
         /// <param name="assembliesToSkip">The assemblies to skip.</param>
         /// <returns></returns>
-        public static List<PropertyInfo> GetPropertiesByAttribute<TAttribute>(this IList<PropertyInfo> obj, Type type = null, Func<Assembly, bool> assembliesToSkip = null) where TAttribute : Attribute
-        {
-            List<PropertyInfo> result = null;
-
-            using (AttributeScanner<TAttribute> scanner = new AttributeScanner<TAttribute>())
-            {
-                foreach (var item in scanner.ScanAssembliesForAttributes(ClassTypes.Properties, type, assembliesToSkip))
-                    result.Add((PropertyInfo)item.Item2);
-            }
-
-            return result.ToList();
-        }
-
-        /// <summary>
-        /// Gets the properties by attribute.
-        /// </summary>
-        /// <typeparam name="TAttribute">The type of the attribute.</typeparam>
-        /// <param name="obj">The object.</param>
-        /// <param name="type">The type.</param>
-        /// <param name="assembliesToSkip">The assemblies to skip.</param>
-        /// <returns></returns>
-        public static List<PropertyInfo> GetPropertiesByAttribute<TAttribute>(this Type type, Func<Assembly, bool> assembliesToSkip = null) where TAttribute : Attribute
+        public static List<PropertyInfo> GetPropertiesByAttribute<TAttribute>(this Type type) where TAttribute : Attribute
         {
             List<PropertyInfo> result = null;
 
             using (AttributeScanner<TAttribute> scanner = new AttributeScanner<TAttribute>())
             {
 
-                foreach (var item in scanner.ScanAssembliesForAttributes(ClassTypes.Properties, type, assembliesToSkip))
+                foreach (var item in scanner.ScanAssembliesForAttributes(ClassTypes.Properties, type, a => a != Assembly.GetCallingAssembly()))
                 {
                     if (result == null)
                         result = new List<PropertyInfo>();
@@ -2830,6 +2848,20 @@ namespace NostreetsExtensions
         public static bool IsNumeric(this object obj)
         {
             return (obj == null) ? false : obj.GetType().IsNumeric();
+        }
+
+        public static bool HasProperty(this Type type, PropertyInfo prop) {
+            return type.GetProperties().FirstOrDefault(a => a == prop) == null ? false : true;
+        }
+
+        public static bool HasMethod(this Type type, MethodInfo method)
+        {
+            return type.GetMethods().FirstOrDefault(a => a == method) == null ? false : true;
+        }
+
+        public static bool HasField(this Type type, FieldInfo field)
+        {
+            return type.GetFields().FirstOrDefault(a => a == field) == null ? false : true;
         }
 
         #endregion
