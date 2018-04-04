@@ -1315,7 +1315,7 @@ namespace NostreetsExtensions
                 {
                     foreach (Type type in types)
                         foreach (var item in scanner.ScanAssembliesForAttributes(ClassTypes.Methods, type, a => a != assembly))
-                            result.Add((MethodInfo)item.Item2);  
+                            result.Add((MethodInfo)item.Item2);
                 }
                 else
                     foreach (var item in scanner.ScanAssembliesForAttributes(ClassTypes.Methods, null, a => a != assembly))
@@ -1344,7 +1344,7 @@ namespace NostreetsExtensions
             {
                 foreach (Type type in types)
                     foreach (var item in scanner.ScanAssembliesForAttributes(ClassTypes.Methods, type, a => a != Assembly.GetCallingAssembly()))
-                        result.Add((MethodInfo)item.Item2); 
+                        result.Add((MethodInfo)item.Item2);
             }
 
             return result;
@@ -2850,7 +2850,8 @@ namespace NostreetsExtensions
             return (obj == null) ? false : obj.GetType().IsNumeric();
         }
 
-        public static bool HasProperty(this Type type, PropertyInfo prop) {
+        public static bool HasProperty(this Type type, PropertyInfo prop)
+        {
             return type.GetProperties().FirstOrDefault(a => a == prop) == null ? false : true;
         }
 
@@ -2862,6 +2863,18 @@ namespace NostreetsExtensions
         public static bool HasField(this Type type, FieldInfo field)
         {
             return type.GetFields().FirstOrDefault(a => a == field) == null ? false : true;
+        }
+
+        public static string RandomString(this Random ran, int length, bool includeNumbers = true)
+        {
+            string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0" + (includeNumbers ? "123456789" : "");
+            return new string(Enumerable.Repeat(chars, length)
+              .Select(s => s[ran.Next(s.Length)]).ToArray());
+        }
+
+        public static int RandomNumber(this Random ran, int length)
+        {
+            return ran.Next(length);
         }
 
         #endregion
