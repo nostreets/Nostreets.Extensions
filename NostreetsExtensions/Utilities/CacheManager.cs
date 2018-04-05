@@ -11,7 +11,7 @@ namespace NostreetsExtensions.Utilities
 
         public static bool Contains(string key)
         {
-            return (_instance.Contains(key)) ? true : false;
+            return (key != null && _instance.Contains(key)) ? true : false;
         }
 
         public static T GetItem<T>(string key)

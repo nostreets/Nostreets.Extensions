@@ -1808,7 +1808,14 @@ namespace NostreetsExtensions
         /// <returns></returns>
         public static string FormatString(this string template, params string[] txt)
         {
-            return String.Format(template, txt);
+            try { return String.Format(template, txt); }
+            catch (Exception)
+            {
+                for (int i = 0; i < txt.Length; i++)
+                    template.Replace("{" + i + "}", txt[i]);
+
+                return template;
+            }
         }
 
         /// <summary>
@@ -2255,18 +2262,24 @@ namespace NostreetsExtensions
         /// <returns></returns>
         public static string GetIPAddress(this HttpContext context)
         {
-            string ipAddress = context.Request.ServerVariables["HTTP_X_FORWARDED_FOR"];
-
-            if (!string.IsNullOrEmpty(ipAddress))
+            string result = null;
+            if (context != null)
             {
-                string[] addresses = ipAddress.Split(',');
-                if (addresses.Length != 0)
+                string ipAddress = context.Request.ServerVariables["HTTP_X_FORWARDED_FOR"];
+
+                if (!string.IsNullOrEmpty(ipAddress))
                 {
-                    return addresses[0];
+                    string[] addresses = ipAddress.Split(',');
+                    if (addresses.Length != 0)
+                    {
+                        return addresses[0];
+                    }
                 }
+
+                result = context.Request.ServerVariables["REMOTE_ADDR"]; 
             }
 
-            return context.Request.ServerVariables["REMOTE_ADDR"];
+            return result;
         }
 
         /// <summary>
