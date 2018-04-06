@@ -26,21 +26,21 @@ namespace NostreetsExtensions.Utilities
                 throw new ArgumentException("Secret Message Required!", "secretMessage");
 
             byte[] encodedText = Encoding.UTF8.GetBytes(secret);
-            byte[] cipherText = SimpleEncryptWithPassword(encodedText, key, nonSecretPayload);
+            byte[] cipherText = Encrypt(encodedText, key, nonSecretPayload);
             return Convert.ToBase64String(cipherText);
         }
 
-        public static string SimpleDecryptWithPassword(string encryptedMessage, string key, int nonSecretPayloadLength = 0)
+        public static string SimpleDecryptWithPassword(string encryptedMessage, string key,  int nonSecretPayloadLength = 0)
         {
             if (string.IsNullOrWhiteSpace(encryptedMessage))
                 throw new ArgumentException("Encrypted Message Required!", "encryptedMessage");
 
             var cipherText = Convert.FromBase64String(encryptedMessage);
-            var plainText = SimpleDecryptWithPassword(cipherText, key, nonSecretPayloadLength);
+            var plainText = Decrypt(cipherText, key, nonSecretPayloadLength);
             return plainText == null ? null : Encoding.UTF8.GetString(plainText);
         }
 
-        public static byte[] SimpleEncryptWithPassword(byte[] encodedSecret, string key, byte[] nonSecretPayload = null)
+        public static byte[] Encrypt(byte[] encodedSecret, string key, byte[] nonSecretPayload = null)
         {
             nonSecretPayload = nonSecretPayload ?? new byte[] { };
 
@@ -87,7 +87,7 @@ namespace NostreetsExtensions.Utilities
             return SimpleEncrypt(encodedSecret, cryptKey, authKey, payload);
         }
 
-        public static byte[] SimpleDecryptWithPassword(byte[] encryptedMessage, string key, int nonSecretPayloadLength = 0)
+        public static byte[] Decrypt(byte[] encryptedMessage, string key, int nonSecretPayloadLength = 0)
         {
             //User Error Checks
             if (string.IsNullOrWhiteSpace(key) || key.Length < MinPasswordLength)

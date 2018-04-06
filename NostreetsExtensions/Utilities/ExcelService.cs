@@ -35,7 +35,7 @@ namespace NostreetsExtensions.Utilities
                         excelSchema = reader.GetSchema().ToArray();
 
                     if (schemaTypes == null)
-                        schemaTypes = reader.GetSchemaTypes().ToArray();
+                        schemaTypes = reader.GetColumnTypes().ToArray();
 
                     if (dynamicType == null)
                         dynamicType = ClassBuilder.CreateType("DynamicModel", excelSchema, schemaTypes);
@@ -94,7 +94,7 @@ namespace NostreetsExtensions.Utilities
 
                     if (schemaTypes == null)
                     {
-                        List<Type> types = reader.GetSchemaTypes().Where(a => a != typeof(DBNull)).ToList();
+                        List<Type> types = reader.GetColumnTypes().Where(a => a != typeof(DBNull)).ToList();
                         types.AddRange(new[] { typeof(string), typeof(string), typeof(string) });
 
                         if (excelSchema.Contains(carrierColumn))

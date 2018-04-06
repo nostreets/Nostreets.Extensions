@@ -34,6 +34,8 @@ using Castle.Windsor;
 using NostreetsExtensions.Helpers;
 using System.Threading.Tasks;
 using System.Xml;
+using System.Configuration;
+using System.Web.Configuration;
 
 namespace NostreetsExtensions
 {
@@ -180,6 +182,26 @@ namespace NostreetsExtensions
             }
 
             return result.ToList();
+        }
+
+        public static void UpdateWebConfig(string key, string value)
+        {
+            // Get the configuration.
+            Configuration config = WebConfigurationManager.OpenWebConfiguration("~");
+            bool doesKeyExist = false;
+
+            foreach (KeyValueConfigurationElement item in config.AppSettings.Settings)
+                if (item.Key == key)
+                    doesKeyExist = true;
+
+
+            if (!doesKeyExist)
+                config.AppSettings.Settings.Add(key, value);
+            else
+                config.AppSettings.Settings[key].Value = value;
+
+            // Save to the file,
+            config.Save(ConfigurationSaveMode.Minimal);
         }
         #endregion
 
@@ -1975,14 +1997,12 @@ namespace NostreetsExtensions
         /// <exception cref="Exception">dataSouce param must not be null or return null...
         /// or
         /// dataSouce param must not be null or return null...</exception>
-        public static List<string> GetSchema(this ISqlExecutor srv, Func<SqlConnection> dataSouce, string tableName)
+        public static KeyValuePair<string, Type>[] GetSchema(this ISqlExecutor srv, Func<SqlConnection> dataSouce, string tableName)
         {
-
-
             SqlDataReader reader = null;
             SqlCommand cmd = null;
             SqlConnection conn = null;
-            List<string> result = null;
+            KeyValuePair<string, Type>[] result = null;
 
             try
             {
@@ -2007,7 +2027,10 @@ namespace NostreetsExtensions
                     {
                         reader = cmd.ExecuteReader();
 
-                        result = reader.GetSchemaTable().Rows.Cast<DataRow>().Select(c => c["ColumnName"].ToString()).ToList();
+
+                        result = reader.GetSchemaTable().Rows.Cast<DataRow>().Select(
+                                    c => new KeyValuePair<string, Type>(c["ColumnName"].ToString(), (Type)c["DataType"]))
+                                .ToArray();
 
                         reader.Close();
                     }
@@ -2033,9 +2056,10 @@ namespace NostreetsExtensions
         /// </summary>
         /// <param name="reader">The reader.</param>
         /// <returns></returns>
-        public static string[] GetSchema(this IDataReader reader)
+        public static string[] GetColumnNames(this ISqlExecutor reader, Func<SqlConnection> dataSouce, string tableName)
         {
-            return GetSchema(reader).ToArray();
+            KeyValuePair<string, Type>[] result = GetSchema(reader, dataSouce, tableName);
+            return result.Select(a => a.Key).ToArray();
         }
 
         /// <summary>
@@ -2043,16 +2067,10 @@ namespace NostreetsExtensions
         /// </summary>
         /// <param name="reader">The reader.</param>
         /// <returns></returns>
-        public static Type[] GetSchemaTypes(this IDataReader reader)
+        public static Type[] GetColumnTypes(this ISqlExecutor reader, Func<SqlConnection> dataSouce, string tableName)
         {
-            List<Type> result = new List<Type>();
-            string[] columns = reader.GetSchema();
-            for (int i = 0; i < columns.Length; i++)
-            {
-                result.Add(reader.GetValue(i).GetType());
-            }
-
-            return result.ToArray();
+            KeyValuePair<string, Type>[] result = GetSchema(reader, dataSouce, tableName);
+            return result.Select(a => a.Value).ToArray();
         }
 
         /// <summary>
@@ -2276,7 +2294,7 @@ namespace NostreetsExtensions
                     }
                 }
 
-                result = context.Request.ServerVariables["REMOTE_ADDR"]; 
+                result = context.Request.ServerVariables["REMOTE_ADDR"];
             }
 
             return result;
@@ -2885,9 +2903,42 @@ namespace NostreetsExtensions
               .Select(s => s[ran.Next(s.Length)]).ToArray());
         }
 
-        public static int RandomNumber(this Random ran, int length)
+        public static int RandomNumber(this Random ran, int min, int max)
         {
-            return ran.Next(length);
+
+            return ran.Next(min, max);
+        }
+
+        public static string Encrypt(this string data, string key, Encoding encoding = null)
+        {
+            if (key == null)
+                throw new Exception("key cannot be null to be able to Encrypt...");
+
+            if (data == null)
+                throw new Exception("this cannot be null to be able to Encrypt...");
+
+            if (encoding == null)
+                encoding = Encoding.Unicode;
+
+            byte[] encryptedBytes = Encryption.Encrypt(encoding.GetBytes(data), key);
+
+            return encoding.GetString(encryptedBytes);
+        }
+
+        public static string Decrypt(this string data, string key, Encoding encoding = null)
+        {
+            if (key == null)
+                throw new Exception("key cannot be null to be able to Decrypt...");
+
+            if (data == null)
+                throw new Exception("this cannot be null to be able to Decrypt...");
+
+            if (encoding == null)
+                encoding = Encoding.Unicode;
+
+            byte[] encryptedBytes = Encryption.Decrypt(encoding.GetBytes(data), key);
+
+            return encoding.GetString(encryptedBytes);
         }
 
         #endregion
