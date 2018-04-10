@@ -11,13 +11,16 @@ namespace NostreetsExtensions.Helpers.QueryProvider
     public class EntityMap
     {
         public EntityMap() { }
-        public EntityMap(EntityTable table, EntityColumn[] column, EntityAssociation[] association, string id)
+        public EntityMap(Type type, EntityTable table, EntityColumn[] column, EntityAssociation[] association, string id)
         {
             Table = table ?? throw new ArgumentNullException(nameof(table));
             Column = column ?? throw new ArgumentNullException(nameof(column));
             Association = association ?? throw new ArgumentNullException(nameof(association));
             Id = id ?? throw new ArgumentNullException(nameof(id));
+            Type = type ?? throw new ArgumentNullException(nameof(type));
         }
+
+        public Type Type { get; set; }
 
         public EntityTable Table { get; set; }
 
@@ -83,13 +86,16 @@ namespace NostreetsExtensions.Helpers.QueryProvider
     public class EntityAssociation
     {
         public EntityAssociation() { }
-        public EntityAssociation(string member, string keyMember, string relatedEntityID, string relatedKeyMembers)
+        public EntityAssociation(Type type, string member, string keyMember, string relatedEntityID, string relatedKeyMembers)
         {
             Member = member ?? throw new ArgumentNullException(nameof(member));
-            KeyMembers = keyMember;
-            RelatedEntityID = relatedEntityID;
-            RelatedKeyMembers = relatedKeyMembers;
+            KeyMembers = keyMember ?? throw new ArgumentNullException(nameof(keyMember));
+            RelatedEntityID = relatedEntityID ?? throw new ArgumentNullException(nameof(relatedEntityID));
+            RelatedKeyMembers = relatedKeyMembers ?? throw new ArgumentNullException(nameof(relatedKeyMembers));
+            Type = type ?? throw new ArgumentNullException(nameof(type));
         }
+
+        public Type Type { get; set; }
 
         [XmlAttribute()]
         public string Member { get; set; }

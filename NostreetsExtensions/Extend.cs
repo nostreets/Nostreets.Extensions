@@ -2927,9 +2927,7 @@ namespace NostreetsExtensions
             if (encoding == null)
                 encoding = Encoding.Unicode;
 
-            byte[] encryptedBytes = Encryption.Encrypt(encoding.GetBytes(data), key);
-
-            return encoding.GetString(encryptedBytes);
+            return Encryption.Encrypt(data, key);
         }
 
         public static string Decrypt(this string data, string key, Encoding encoding = null)
@@ -2943,9 +2941,7 @@ namespace NostreetsExtensions
             if (encoding == null)
                 encoding = Encoding.Unicode;
 
-            byte[] encryptedBytes = Encryption.Decrypt(encoding.GetBytes(data), key);
-
-            return encoding.GetString(encryptedBytes);
+            return Encryption.Decrypt(data, key);
         }
 
         public static bool In<T>(this T obj, params T[] args)
