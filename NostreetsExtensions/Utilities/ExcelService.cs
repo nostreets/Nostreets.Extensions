@@ -32,10 +32,10 @@ namespace NostreetsExtensions.Utilities
                         result = new List<object>();
 
                     if (excelSchema == null)
-                        excelSchema = reader.GetColumnNames().ToArray();
+                        excelSchema = reader.GetColumnNames();
 
                     if (schemaTypes == null)
-                        schemaTypes = reader.GetColumnTypes().ToArray();
+                        schemaTypes = reader.GetColumnTypes();
 
                     if (dynamicType == null)
                         dynamicType = ClassBuilder.CreateType("DynamicModel", excelSchema, schemaTypes);
