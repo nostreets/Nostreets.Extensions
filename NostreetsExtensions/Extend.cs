@@ -45,166 +45,6 @@ namespace NostreetsExtensions
     /// </summary>
     public static class Extend
     {
-        #region Static Methods
-
-        /// <summary>
-        /// Gets the local ip addresses.
-        /// </summary>
-        /// <returns></returns>
-        public static IPAddress[] GetLocalIPAddresses()
-        {
-            string hostName = Dns.GetHostName();
-            IPHostEntry ipEntry = Dns.GetHostEntry(hostName);
-
-            IPAddress[] addr = ipEntry.AddressList;
-
-            return addr;
-        }
-
-        /// <summary>
-        /// Gets the objects with attribute.
-        /// </summary>
-        /// <typeparam name="TAttribute">The type of the attribute.</typeparam>
-        /// <param name="obj">The object.</param>
-        /// <param name="types">The types.</param>
-        /// <param name="assembliesToSkip">The assemblies to skip.</param>
-        /// <returns></returns>
-        public static List<Tuple<TAttribute, object, Assembly>> GetObjectsWithAttribute<TAttribute>(ClassTypes section, Func<Assembly, bool> assembliesToSkip = null) where TAttribute : Attribute
-        {
-            List<Tuple<TAttribute, object, Assembly>> result = new List<Tuple<TAttribute, object, Assembly>>();
-            using (AttributeScanner<TAttribute> scanner = new AttributeScanner<TAttribute>())
-                foreach (var item in scanner.ScanAssembliesForAttributes(section, null, assembliesToSkip))
-                    result.Add(new Tuple<TAttribute, object, Assembly>(item.Item1, item.Item2, item.Item4));
-
-            return result;
-        }
-
-        /// <summary>
-        /// Gets the objects by attribute.
-        /// </summary>
-        /// <typeparam name="TAttribute">The type of the attribute.</typeparam>
-        /// <param name="obj">The object.</param>
-        /// <param name="section">The section.</param>
-        /// <param name="type">The type.</param>
-        /// <param name="assembliesToSkip">The assemblies to skip.</param>
-        /// <returns></returns>
-        public static List<object> GetObjectsByAttribute<TAttribute>(ClassTypes section, Type type, Func<Assembly, bool> assembliesToSkip = null) where TAttribute : Attribute
-        {
-            List<object> result = new List<object>();
-            using (AttributeScanner<TAttribute> scanner = new AttributeScanner<TAttribute>())
-            {
-                foreach (var item in scanner.ScanAssembliesForAttributes(section, type, assembliesToSkip))
-                    result.Add(item.Item2);
-            }
-
-            return result;
-        }
-
-        /// <summary>
-        /// Gets the methods by attribute.
-        /// </summary>
-        /// <typeparam name="TAttribute">The type of the attribute.</typeparam>
-        /// <param name="obj">The object.</param>
-        /// <param name="type">The type.</param>
-        /// <param name="assembliesToSkip">The assemblies to skip.</param>
-        /// <returns></returns>
-        public static List<MethodInfo> GetMethodsByAttribute<TAttribute>(Type type = null, Func<Assembly, bool> assembliesToSkip = null) where TAttribute : Attribute
-        {
-            List<MethodInfo> result = new List<MethodInfo>();
-            IEnumerable<Tuple<TAttribute, object>> list = null;
-
-            using (AttributeScanner<TAttribute> scanner = new AttributeScanner<TAttribute>())
-            {
-                foreach (var item in scanner.ScanAssembliesForAttributes(ClassTypes.Methods, type, assembliesToSkip))
-                    result.Add((MethodInfo)item.Item2);
-            }
-
-            return result;
-        }
-
-        /// <summary>
-        /// Gets the types by attribute.
-        /// </summary>
-        /// <typeparam name="TAttribute">The type of the attribute.</typeparam>
-        /// <param name="obj">The object.</param>
-        /// <param name="type">The type.</param>
-        /// <param name="assembliesToSkip">The assemblies to skip.</param>
-        /// <returns></returns>
-        public static List<Type> GetTypesByAttribute<TAttribute>(Type type = null, Func<Assembly, bool> assembliesToSkip = null) where TAttribute : Attribute
-        {
-            List<Type> result = new List<Type>();
-
-            using (AttributeScanner<TAttribute> scanner = new AttributeScanner<TAttribute>())
-            {
-                foreach (var item in scanner.ScanAssembliesForAttributes(ClassTypes.Type, type, assembliesToSkip))
-                    result.Add((Type)item.Item2);
-            }
-
-            return result;
-        }
-
-        /// <summary>
-        /// Gets the assemblies by attribute.
-        /// </summary>
-        /// <typeparam name="TAttribute">The type of the attribute.</typeparam>
-        /// <param name="obj">The object.</param>
-        /// <param name="assembliesToSkip">The assemblies to skip.</param>
-        /// <returns></returns>
-        public static List<Assembly> GetAssembliesByAttribute<TAttribute>(Func<Assembly, bool> assembliesToSkip = null) where TAttribute : Attribute
-        {
-            List<Assembly> result = new List<Assembly>();
-
-            using (AttributeScanner<TAttribute> scanner = new AttributeScanner<TAttribute>())
-            {
-                foreach (var item in scanner.ScanAssembliesForAttributes(ClassTypes.Assembly, null, assembliesToSkip))
-                    result.Add((Assembly)item.Item2);
-            }
-
-            return result;
-        }
-
-        /// <summary>
-        /// Gets the properties by attribute.
-        /// </summary>
-        /// <typeparam name="TAttribute">The type of the attribute.</typeparam>
-        /// <param name="obj">The object.</param>
-        /// <param name="type">The type.</param>
-        /// <param name="assembliesToSkip">The assemblies to skip.</param>
-        /// <returns></returns>
-        public static List<PropertyInfo> GetPropertiesByAttribute<TAttribute>(Type type = null, Func<Assembly, bool> assembliesToSkip = null) where TAttribute : Attribute
-        {
-            List<PropertyInfo> result = null;
-
-            using (AttributeScanner<TAttribute> scanner = new AttributeScanner<TAttribute>())
-            {
-                foreach (var item in scanner.ScanAssembliesForAttributes(ClassTypes.Properties, type, assembliesToSkip))
-                    result.Add((PropertyInfo)item.Item2);
-            }
-
-            return result.ToList();
-        }
-
-        public static void UpdateWebConfig(string key, string value)
-        {
-            // Get the configuration.
-            Configuration config = WebConfigurationManager.OpenWebConfiguration("~");
-            bool doesKeyExist = false;
-
-            foreach (KeyValueConfigurationElement item in config.AppSettings.Settings)
-                if (item.Key == key)
-                    doesKeyExist = true;
-
-
-            if (!doesKeyExist)
-                config.AppSettings.Settings.Add(key, value);
-            else
-                config.AppSettings.Settings[key].Value = value;
-
-            // Save to the file,
-            config.Save(ConfigurationSaveMode.Minimal);
-        }
-        #endregion
-
         #region Extension Methods
 
         /// <summary>
@@ -1281,7 +1121,7 @@ namespace NostreetsExtensions
         {
             List<Tuple<TAttribute, object, Assembly>> result = new List<Tuple<TAttribute, object, Assembly>>();
             using (AttributeScanner<TAttribute> scanner = new AttributeScanner<TAttribute>())
-                foreach (var item in scanner.ScanAssembliesForAttributes(section, null, a => a != assembly))
+                foreach (var item in scanner.ScanForAttributes(assembly, section))
                     result.Add(new Tuple<TAttribute, object, Assembly>(item.Item1, item.Item2, item.Item4));
 
             return result;
@@ -1301,7 +1141,7 @@ namespace NostreetsExtensions
             List<object> result = new List<object>();
             using (AttributeScanner<TAttribute> scanner = new AttributeScanner<TAttribute>())
             {
-                foreach (var item in scanner.ScanAssembliesForAttributes(section, type, a => a != assembly))
+                foreach (var item in scanner.ScanForAttributes(assembly, section, type))
                     result.Add(item.Item2);
             }
 
@@ -1318,10 +1158,11 @@ namespace NostreetsExtensions
         /// <returns></returns>
         public static List<MethodInfo> GetMethodsByAttribute<TAttribute>(this Assembly assembly, Type type = null) where TAttribute : Attribute
         {
+
             List<MethodInfo> result = new List<MethodInfo>();
             using (AttributeScanner<TAttribute> scanner = new AttributeScanner<TAttribute>())
             {
-                foreach (var item in scanner.ScanAssembliesForAttributes(ClassTypes.Methods, type, a => a != assembly))
+                foreach (var item in scanner.ScanForAttributes(assembly, ClassTypes.Methods, type))
                     result.Add((MethodInfo)item.Item2);
             }
 
@@ -1336,11 +1177,11 @@ namespace NostreetsExtensions
                 if (types != null)
                 {
                     foreach (Type type in types)
-                        foreach (var item in scanner.ScanAssembliesForAttributes(ClassTypes.Methods, type, a => a != assembly))
+                        foreach (var item in scanner.ScanForAttributes(assembly, ClassTypes.Methods))
                             result.Add((MethodInfo)item.Item2);
                 }
                 else
-                    foreach (var item in scanner.ScanAssembliesForAttributes(ClassTypes.Methods, null, a => a != assembly))
+                    foreach (var item in scanner.ScanForAttributes(Assembly.GetCallingAssembly(), ClassTypes.Methods))
                         result.Add((MethodInfo)item.Item2);
             }
 
@@ -1352,7 +1193,7 @@ namespace NostreetsExtensions
             List<MethodInfo> result = new List<MethodInfo>();
             using (AttributeScanner<TAttribute> scanner = new AttributeScanner<TAttribute>())
             {
-                foreach (var item in scanner.ScanAssembliesForAttributes(ClassTypes.Methods, type, a => a != Assembly.GetCallingAssembly()))
+                foreach (var item in scanner.ScanForAttributes(Assembly.GetCallingAssembly(), ClassTypes.Methods, type))
                     result.Add((MethodInfo)item.Item2);
             }
 
@@ -1365,7 +1206,7 @@ namespace NostreetsExtensions
             using (AttributeScanner<TAttribute> scanner = new AttributeScanner<TAttribute>())
             {
                 foreach (Type type in types)
-                    foreach (var item in scanner.ScanAssembliesForAttributes(ClassTypes.Methods, type, a => a != Assembly.GetCallingAssembly()))
+                    foreach (var item in scanner.ScanForAttributes(Assembly.GetCallingAssembly(), ClassTypes.Methods, type))
                         result.Add((MethodInfo)item.Item2);
             }
 
@@ -1386,7 +1227,7 @@ namespace NostreetsExtensions
 
             using (AttributeScanner<TAttribute> scanner = new AttributeScanner<TAttribute>())
             {
-                foreach (var item in scanner.ScanAssembliesForAttributes(ClassTypes.Type, type, a => a != assembly))
+                foreach (var item in scanner.ScanForAttributes(assembly, ClassTypes.Type, type))
                     result.Add((Type)item.Item2);
             }
 
@@ -1407,7 +1248,7 @@ namespace NostreetsExtensions
 
             using (AttributeScanner<TAttribute> scanner = new AttributeScanner<TAttribute>())
             {
-                foreach (var item in scanner.ScanAssembliesForAttributes(ClassTypes.Properties, type, a => a != assembly))
+                foreach (var item in scanner.ScanForAttributes(assembly, ClassTypes.Properties, type))
                     result.Add((PropertyInfo)item.Item2);
             }
 
@@ -1428,8 +1269,7 @@ namespace NostreetsExtensions
 
             using (AttributeScanner<TAttribute> scanner = new AttributeScanner<TAttribute>())
             {
-
-                foreach (var item in scanner.ScanAssembliesForAttributes(ClassTypes.Properties, type, a => a != Assembly.GetCallingAssembly()))
+                foreach (var item in scanner.ScanForAttributes(Assembly.GetCallingAssembly(), ClassTypes.Properties, type))
                 {
                     if (result == null)
                         result = new List<PropertyInfo>();
@@ -1549,7 +1389,9 @@ namespace NostreetsExtensions
                 instance = containter.Resolve(type);
                 result = true;
             }
+#pragma warning disable CS0168 // Variable is declared but never used
             catch (Exception ex)
+#pragma warning restore CS0168 // Variable is declared but never used
             {
                 instance = null;
             }
@@ -1641,29 +1483,57 @@ namespace NostreetsExtensions
             return Path.GetFullPath(Path.Combine(path, extension));
         }
 
-        /// <summary>
-        /// Steps the into directory.
-        /// </summary>
-        /// <param name="path">The path.</param>
-        /// <param name="pathExt">The path ext.</param>
-        /// <param name="recursively">if set to <c>true</c> [recursively].</param>
-        /// <returns></returns>
-        public static string StepIntoDirectory(this string path, string pathExt, bool recursively = false)
+        public static FileInfo ScanForFile(this string fileName, string dirPath, string fileExtension)
         {
+            if (fileName == null)
+                throw new ArgumentException(nameof(fileName));
+
+            FileInfo result = null;
+
+            using (var scanner = new DirectoryScanner())
+                result = scanner.SearchForFile(fileName, dirPath, fileExtension);
+
+
+            return result;
+        }
+
+        public static string ScanForFilePath(this string fileName, string directory, string fileExtension)
+        {
+            if (fileName == null)
+                throw new ArgumentException(nameof(fileName));
+
+            FileInfo result = null;
+
+            using (var scanner = new DirectoryScanner())
+                result = scanner.SearchForFile(fileName, directory, fileExtension);
+
+            return result.FullName;
+        }
+
+        public static string StepIntoDirectory(this string path, string targetFile, bool recursively = false)
+        {
+            if (path == null)
+                throw new ArgumentException(nameof(path));
+
+
+            string result = Path.GetDirectoryName(path);
 
             do
             {
-                string[] subDirectories = Directory.GetDirectories(path);
-                foreach (string dir in subDirectories)
-                {
-                    if (dir.Contains(pathExt)) { return dir; }
-                }
+                string[] subDirectories = Directory.GetDirectories(path),
+                         filesInFolder = Directory.GetFiles(path),
+                         folder = filesInFolder.Concat(subDirectories).ToArray();
+
+
+                foreach (string file in folder)
+                    if (file.Contains(targetFile))
+                        return file;
 
                 if (recursively && subDirectories.Length > 0)
                 {
                     foreach (string dir in subDirectories)
                     {
-                        dir.StepIntoDirectory(pathExt, true);
+                        dir.StepIntoDirectory(targetFile, true);
                     }
                 }
                 else
@@ -1673,7 +1543,7 @@ namespace NostreetsExtensions
             }
             while (recursively);
 
-            return null;
+            return result;
         }
 
         /// <summary>
@@ -1684,14 +1554,33 @@ namespace NostreetsExtensions
         /// <returns></returns>
         public static string StepOutOfDirectory(this string path, int foldersBack = 1)
         {
-            string modifiedPath = path;
+            Uri uri = null;
+            string p = path;
+
+            if (path.Substring(0, 8) == "file:///")
+                path = path.Substring(8);
+
 
             for (var i = 0; i < foldersBack; i++)
-            {
-                modifiedPath = Directory.GetParent(modifiedPath).FullName;
-            }
+                p = Directory.GetParent(p.IsUri(out uri) ? uri.LocalPath : p).FullName;
 
-            return modifiedPath;
+
+            return p;
+        }
+
+        public static bool IsUri(this string path, out Uri uri)
+        {
+            bool result = false;
+            if (Uri.TryCreate(path, UriKind.Absolute, out uri))
+                result = true;
+
+            return result;
+        }
+
+        public static string FileExtention(this string path)
+        {
+            string[] split = path.Split('.');
+            return split[split.Length - 1];
         }
 
         /// <summary>
@@ -1767,7 +1656,12 @@ namespace NostreetsExtensions
         /// <param name="contentType">Type of the content.</param>
         /// <param name="resolver">The resolver.</param>
         /// <param name="encoding">The encoding.</param>
-        public static void CreateResponse(this HttpApplication app, HttpStatusCode statusCode, object obj, string contentType = "application/json", IContractResolver resolver = null, Encoding encoding = null)
+        public static void CreateResponse(this HttpApplication app
+                                            , HttpStatusCode statusCode
+                                            , object obj
+                                            , string contentType = "application/json"
+                                            , IContractResolver resolver = null
+                                            , Encoding encoding = null)
         {
             if (encoding == null) { encoding = Encoding.UTF8; }
             if (resolver == null) { resolver = new CamelCasePropertyNamesContractResolver(); }
@@ -1862,7 +1756,6 @@ namespace NostreetsExtensions
             return obj.GetType().GetProperties().Where((a, b) => b == ordinal).Single().GetValue(obj);
         }
 
-
         /// <summary>
         /// Sets the property value.
         /// </summary>
@@ -1894,25 +1787,25 @@ namespace NostreetsExtensions
             return result.ToList();
         }
 
-        /// <summary>
-        /// Gets the registrations.
-        /// </summary>
-        /// <param name="theContainer">The container.</param>
-        /// <returns></returns>
-        public static List<ContainerRegistration> GetRegistrations(this IUnityContainer theContainer)
-        {
-            List<ContainerRegistration> result = null;
+        ///// <summary>
+        ///// Gets the registrations.
+        ///// </summary>
+        ///// <param name="theContainer">The container.</param>
+        ///// <returns></returns>
+        //public static List<ContainerRegistration> GetRegistrations(this IUnityContainer theContainer)
+        //{
+        //    List<ContainerRegistration> result = null;
 
-            foreach (ContainerRegistration item in theContainer.Registrations)
-            {
-                if (result == null)
-                    result = new List<ContainerRegistration>();
+        //    foreach (ContainerRegistration item in theContainer.Registrations)
+        //    {
+        //        if (result == null)
+        //            result = new List<ContainerRegistration>();
 
-                result.Add(item);
-            }
+        //        result.Add(item);
+        //    }
 
-            return result;
-        }
+        //    return result;
+        //}
 
         /// <summary>
         /// Adds the specified values.
@@ -2948,6 +2841,7 @@ namespace NostreetsExtensions
         {
             return args.Contains(obj);
         }
+
 
         #endregion
     }

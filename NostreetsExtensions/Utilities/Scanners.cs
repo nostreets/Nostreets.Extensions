@@ -32,6 +32,146 @@ namespace NostreetsExtensions.Utilities
         private List<string> _checkedDirectories = new List<string>();
         private Dictionary<string, Assembly> _backedUpAssemblies = new Dictionary<string, Assembly>();
 
+
+
+        private List<string> ScanFolder(string path, string fileExtension, bool searchRecursively, int numOfBckstps, params string[] fileNames)
+        {
+            List<string> result = new List<string>();
+            string targetedDirectory = BaseDirectory,
+                   startingDirectory = null;
+
+
+            if (numOfBckstps > 0) { targetedDirectory = BaseDirectory.StepOutOfDirectory(numOfBckstps); }
+            targetedDirectory = targetedDirectory.StepIntoDirectory(path, true);
+            startingDirectory = targetedDirectory;
+
+            do
+            {
+                string[] filesInFolder = Directory.GetFiles(targetedDirectory),
+                         subDirectories = Directory.GetDirectories(targetedDirectory);
+
+                if (fileNames.Length > 0)
+                {
+                    foreach (string name in fileNames)
+
+                        if (fileExtension != null)
+                        {
+                            if (filesInFolder.Any(file => file.Contains(name + fileExtension)))
+                                result.AddRange(
+                                    filesInFolder.Where(
+                                        file => file.Contains(name + fileExtension) || (file.Contains(name) && file.Contains(fileExtension))
+                                    )
+                                );
+                        }
+                        else if (filesInFolder.Any(file => file.Contains(name)))
+                            result.AddRange(filesInFolder.Where(file => file.Contains(name)));
+                }
+                else
+                    foreach (string file in filesInFolder)
+                        if (file.FileExtention() == fileExtension)
+                            result.Add(file);
+
+
+                if (searchRecursively)
+                {
+                    if (subDirectories.Length > 0)
+                    {
+                        string intialDirectory = targetedDirectory;
+
+                        foreach (string dir in subDirectories)
+                            if (!CheckedDirectories.Contains(dir))
+                            {
+                                targetedDirectory = targetedDirectory.StepIntoDirectory(dir);
+                                CheckedDirectories.Add(targetedDirectory);
+                                break;
+                            }
+                            else
+                                continue;
+
+                        if (intialDirectory == targetedDirectory)
+                            if (targetedDirectory == startingDirectory)
+                                searchRecursively = false;
+                            else
+                                targetedDirectory = targetedDirectory.StepOutOfDirectory(1);
+                    }
+                    else
+                        targetedDirectory = targetedDirectory.StepOutOfDirectory(1);
+                }
+                else
+                    searchRecursively = false;
+
+            }
+            while (searchRecursively);
+
+            return result;
+        }
+
+        private void LoadBackupAssemblies(params string[] assemblies)
+        {
+            Dictionary<string, Assembly> result = new Dictionary<string, Assembly>();
+            List<string> list = ScanFolder("BACKUP", ".dll", true, 2, assemblies);
+
+            foreach (string backup in assemblies)
+            {
+                if (list.Any(file => file.Contains(backup + ".dll")))
+                {
+                    string assemblyPath = list.FirstOrDefault(file => file.Contains(backup + ".dll"));
+                    Assembly assembly = Assembly.LoadFile(assemblyPath);
+                    result.Add(assembly.GetName().Name, assembly);
+                }
+            }
+
+            _backedUpAssemblies = result;
+        }
+
+        private bool HasBackupFolder()
+        {
+            throw new NotImplementedException();
+        }
+
+
+        public FileInfo SearchForFiles(params string[] fileNames)
+        {
+            string filePath = ScanFolder(null, null, true, 0, fileNames).SingleOrDefault();
+            return (filePath == null) ? null : new FileInfo(filePath);
+        }
+
+        public FileInfo SearchForFiles(string fileExtension)
+        {
+            if (fileExtension == null)
+                throw new ArgumentNullException(nameof(fileExtension));
+
+            string filePath = ScanFolder(null, fileExtension, true, 0, null).SingleOrDefault();
+            return (filePath == null) ? null : new FileInfo(filePath);
+        }
+
+        public FileInfo SearchForFile(string fileName)
+        {
+            if (fileName == null)
+                throw new ArgumentNullException(nameof(fileName));
+
+            string filePath = ScanFolder(null, null, true, 0, fileName).SingleOrDefault();
+            return (filePath == null) ? null : new FileInfo(filePath);
+        }
+
+        public FileInfo SearchForFile(string fileName, string dirPath)
+        {
+            if (fileName == null)
+                throw new ArgumentNullException(nameof(fileName));
+
+            string filePath = ScanFolder(dirPath, null, true, 0, fileName).SingleOrDefault();
+            return (filePath == null) ? null : new FileInfo(filePath);
+        }
+
+        public FileInfo SearchForFile(string fileName, string dirPath, string fileExtension)
+        {
+            if (fileName == null)
+                throw new ArgumentNullException(nameof(fileName));
+
+            string filePath = ScanFolder(dirPath, fileExtension, true, 0, fileName).SingleOrDefault();
+            return (filePath == null) ? null : new FileInfo(filePath);
+        }
+
         public Assembly GetBackedUpAssembly(Assembly assembly)
         {
             return BackedUpAssemblies.FirstOrDefault(a => a.Value == assembly).Value;
@@ -52,107 +192,6 @@ namespace NostreetsExtensions.Utilities
                         return AppDomain.CurrentDomain.GetAssembly(assembly);
                     });
         }
-
-        private void LoadBackupAssemblies(params string[] assemblies)
-        {
-            Dictionary<string, Assembly> result = new Dictionary<string, Assembly>();
-            List<string> list = ScanFolderForKeywords("BACKUP", ".dll", true, 2, assemblies);
-
-            foreach (string backup in assemblies)
-            {
-                if (list.Any(file => file.Contains(backup + ".dll")))
-                {
-                    string assemblyPath = list.FirstOrDefault(file => file.Contains(backup + ".dll"));
-                    Assembly assembly = Assembly.LoadFile(assemblyPath);
-                    result.Add(assembly.GetName().Name, assembly);
-                }
-            }
-
-            _backedUpAssemblies = result;
-        }
-
-        private List<string> ScanFolderForKeywords(string pathExt = null, string fileExt = null, bool searchRecursively = false, int numOfBckstps = 0, params string[] keys)
-        {
-            List<string> result = new List<string>();
-            string targetedDirectory = BaseDirectory,
-                   startingDirectory = null;
-
-
-            if (numOfBckstps > 0) { targetedDirectory = BaseDirectory.StepOutOfDirectory(numOfBckstps); }
-            targetedDirectory = targetedDirectory.StepIntoDirectory(pathExt, true);
-            startingDirectory = targetedDirectory;
-
-            do
-            {
-                string[] filesInFolder = Directory.GetFiles(targetedDirectory);
-                string[] subDirectories = Directory.GetDirectories(targetedDirectory);
-
-                if (keys.Length > 0)
-                {
-                    foreach (string key in keys)
-                    {
-                        if (fileExt != null)
-                        {
-                            if (filesInFolder.Any(file => file.Contains(key + fileExt)))
-                            {
-                                result.AddRange(filesInFolder.Where(file => file.Contains(key + fileExt) || (file.Contains(key) && file.Contains(fileExt))));
-                            }
-                        }
-                        else if (filesInFolder.Any(file => file.Contains(key)))
-                        {
-                            result.AddRange(filesInFolder.Where(file => file.Contains(key)));
-                        }
-                    }
-                }
-
-                if (searchRecursively)
-                {
-                    if (subDirectories.Length > 0)
-                    {
-                        string intialDirectory = targetedDirectory;
-
-                        foreach (string dir in subDirectories)
-                        {
-                            if (!CheckedDirectories.Contains(dir))
-                            {
-                                targetedDirectory = targetedDirectory.StepIntoDirectory(dir);
-                                CheckedDirectories.Add(targetedDirectory);
-                                break;
-                            }
-                            else
-                            {
-                                continue;
-                            }
-                        }
-
-                        if (intialDirectory == targetedDirectory)
-                        {
-                            if (targetedDirectory == startingDirectory)
-                            {
-                                searchRecursively = false;
-                            }
-                            else
-                            {
-                                targetedDirectory = targetedDirectory.StepOutOfDirectory(1);
-                            }
-                        }
-                    }
-                    else
-                    {
-                        targetedDirectory = targetedDirectory.StepOutOfDirectory(1);
-                    }
-                }
-                else
-                {
-                    searchRecursively = false;
-                }
-
-            }
-            while (searchRecursively);
-
-            return result;
-        }
-
     }
 
     public class AssemblyScanner : Disposable
@@ -261,7 +300,9 @@ namespace NostreetsExtensions.Utilities
             foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
             {
                 SearchForObject(assembly, nameToCheckFor, out result, assembliesToLookFor, assembliesToSkip, classType);
-                if (result != null) { break; }
+
+                if (result != null)
+                    break;
             }
 
             return result;
@@ -272,43 +313,36 @@ namespace NostreetsExtensions.Utilities
     public class AttributeScanner<TAttribute> : Disposable where TAttribute : Attribute
     {
         private List<Tuple<TAttribute, object, Type, Assembly>> _targetMap;
-        private List<string> _skipAssemblies;
-        private Func<Assembly, bool> _assembliesToSkip;
 
         public AttributeScanner()
         {
             _targetMap = new List<Tuple<TAttribute, object, Type, Assembly>>();
-            _skipAssemblies = new List<string>(typeof(TAttribute).Assembly.GetReferencedAssemblies().Select(c => c.FullName));
-
         }
 
-        public IEnumerable<Tuple<TAttribute, object, Type, Assembly>> ScanAssembliesForAttributes(ClassTypes section = ClassTypes.Any, Type type = null, Func<Assembly, bool> assembliesToSkip = null)
+        public IEnumerable<Tuple<TAttribute, object, Type, Assembly>> ScanForAttributes(Assembly assembly
+                                                                                        , ClassTypes section = ClassTypes.Any
+                                                                                        , Type type = null)
         {
+            if (assembly == null)
+                throw new ArgumentException(nameof(assembly));
+
             var props = _targetMap.Where(a => type != null && a.Item3 == type);
-            _assembliesToSkip = assembliesToSkip;
 
             if (props.Count() == 0)
                 if (type == null)
-                    ScanAllAssemblies(section);
+                    ScanAssembly(assembly, section);
 
                 else
                     ScanType(type, section);
 
-            return (props.Count() == 0) ? _targetMap : _targetMap.Where(a => type != null && a.Item3 == type);
+            return (props.Count() == 0)
+                   ? _targetMap
+                   : _targetMap.Where(a => type != null && a.Item3 == type);
         }
 
         private void Add(TAttribute attribute, object item, Type type, Assembly assembly)
         {
             _targetMap.Add(new Tuple<TAttribute, object, Type, Assembly>(attribute, item, type, assembly));
-        }
-
-        private void AddSkippedAssemblies()
-        {
-            foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
-            {
-                if (_assembliesToSkip != null && _assembliesToSkip(assembly)) { _skipAssemblies.Add(assembly.FullName); }
-            }
-
         }
 
         private void ScanType(Type typeToScan, ClassTypes classPart)
@@ -341,14 +375,12 @@ namespace NostreetsExtensions.Utilities
             }
         }
 
-        private void ScanAllAssemblies(ClassTypes classPart = ClassTypes.Any)
+        private void ScanAssembly(Assembly assembly, ClassTypes classPart = ClassTypes.Any)
         {
-            AddSkippedAssemblies();
+            if (assembly == null)
+                throw new ArgumentException(nameof(assembly));
 
-            foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
-            {
-                SearchForAttributes(assembly, classPart);
-            }
+            SearchForAttributes(assembly, classPart);
         }
 
         private void SearchForAttributes(Assembly assembly, ClassTypes classPart = ClassTypes.Any, Type typeToCheck = null)
@@ -357,24 +389,17 @@ namespace NostreetsExtensions.Utilities
 
             try
             {
-                foreach (string skippedAssembly in _skipAssemblies) { if (assembly.FullName.Contains(skippedAssembly)) { shouldSkip = true; } }
-
                 if (typeToCheck != null)
-                {
                     ScanType(typeToCheck, classPart);
-                }
+
                 else if (!shouldSkip)
                 {
                     if (classPart == ClassTypes.Any || classPart == ClassTypes.Assembly)
-                    {
                         foreach (TAttribute attr in assembly.GetCustomAttributes(typeof(TAttribute), false))
-                        { Add(attr, assembly, typeof(Assembly), assembly); }
-                    }
+                            Add(attr, assembly, typeof(Assembly), assembly);
 
                     foreach (Type type in assembly.GetTypes())
-                    {
                         ScanType(type, classPart);
-                    }
                 }
             }
             catch (Exception ex)
