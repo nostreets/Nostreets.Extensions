@@ -2051,26 +2051,33 @@ namespace NostreetsExtensions
 
         }
 
-        /// <summary>
-        /// Gets the schema.
-        /// </summary>
-        /// <param name="reader">The reader.</param>
-        /// <returns></returns>
         public static string[] GetColumnNames(this ISqlExecutor reader, Func<SqlConnection> dataSouce, string tableName)
         {
             KeyValuePair<string, Type>[] result = GetSchema(reader, dataSouce, tableName);
             return result.Select(a => a.Key).ToArray();
         }
 
-        /// <summary>
-        /// Gets the schema types.
-        /// </summary>
-        /// <param name="reader">The reader.</param>
-        /// <returns></returns>
         public static Type[] GetColumnTypes(this ISqlExecutor reader, Func<SqlConnection> dataSouce, string tableName)
         {
             KeyValuePair<string, Type>[] result = GetSchema(reader, dataSouce, tableName);
             return result.Select(a => a.Value).ToArray();
+        }
+
+        public static string[] GetColumnNames(this IDataReader reader)
+        {
+            return reader.GetSchemaTable().Rows.Cast<DataRow>().Select(c => c["ColumnName"].ToString()).ToArray();
+        }
+
+        public static Type[] GetColumnTypes(this IDataReader reader)
+        {
+            List<Type> result = new List<Type>();
+            string[] columns = reader.GetColumnNames();
+            for (int i = 0; i < columns.Length; i++)
+            {
+                result.Add(reader.GetValue(i).GetType());
+            }
+
+            return result.ToArray();
         }
 
         /// <summary>
@@ -2939,6 +2946,11 @@ namespace NostreetsExtensions
             byte[] encryptedBytes = Encryption.Decrypt(encoding.GetBytes(data), key);
 
             return encoding.GetString(encryptedBytes);
+        }
+
+        public static bool In<T>(this T obj, params T[] args)
+        {
+            return args.Contains(obj);
         }
 
         #endregion
