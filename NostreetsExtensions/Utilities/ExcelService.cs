@@ -32,7 +32,7 @@ namespace NostreetsExtensions.Utilities
                         result = new List<object>();
 
                     if (excelSchema == null)
-                        excelSchema = reader.GetSchema().ToArray();
+                        excelSchema = reader.GetColumnNames().ToArray();
 
                     if (schemaTypes == null)
                         schemaTypes = reader.GetColumnTypes().ToArray();
@@ -83,7 +83,7 @@ namespace NostreetsExtensions.Utilities
 
                     if (excelSchema == null)
                     {
-                        List<string> schema = reader.GetSchema().Where(a => a[0] != 'F' && !int.TryParse(a.Substring(1), out int ordinal)).ToList();
+                        List<string> schema = reader.GetColumnNames().Where(a => a[0] != 'F' && !int.TryParse(a.Substring(1), out int ordinal)).ToList();
 
                         schema.AddRange(new[] { "StatusText", "StatusDate", "ScheduledDelivery", "StatusLocation" });
                         if (!schema.Contains(carrierColumn))
