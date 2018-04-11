@@ -632,11 +632,11 @@ namespace NostreetsExtensions
         /// <typeparam name="T"></typeparam>
         /// <param name="enumType">Type of the enum.</param>
         /// <returns></returns>
-        /// <exception cref="ArgumentException">Type must be an enum</exception>
+        /// <exception cref="ArgumentNullException">Type must be an enum</exception>
         public static Dictionary<int, string> ToDictionary<T>(this Type enumType) where T : struct, IConvertible
         {
             if (!typeof(T).IsEnum)
-                throw new ArgumentException("Type must be an enum");
+                throw new ArgumentNullException("Type must be an enum");
 
             return Enum.GetValues(typeof(T)).Cast<T>().ToDictionary(t => (int)(object)t, t => t.ToString());
         }
@@ -646,12 +646,12 @@ namespace NostreetsExtensions
         /// </summary>
         /// <param name="enumType">Type of the enum.</param>
         /// <returns></returns>
-        /// <exception cref="ArgumentException">Type must be an enum</exception>
+        /// <exception cref="ArgumentNullException">Type must be an enum</exception>
         public static Dictionary<int, string> ToDictionary(this Type enumType)
         {
             Dictionary<int, string> result = null;
             if (!enumType.IsEnum)
-                throw new ArgumentException("Type must be an enum");
+                throw new ArgumentNullException("Type must be an enum");
 
             string[] arr = Enum.GetNames(enumType);
 
@@ -1055,7 +1055,7 @@ namespace NostreetsExtensions
         /// <typeparam name="T2">The type of the 2.</typeparam>
         /// <param name="expression">The expression.</param>
         /// <returns></returns>
-        /// <exception cref="ArgumentException">Expression is not a method - expression</exception>
+        /// <exception cref="ArgumentNullException">Expression is not a method - expression</exception>
         public static MethodInfo GetMethodInfo<T, T2>(this Expression<Func<T, T2>> expression)
         {
             var member = expression.Body as MethodCallExpression;
@@ -1063,7 +1063,7 @@ namespace NostreetsExtensions
             if (member != null)
                 return member.Method;
 
-            throw new ArgumentException("Expression is not a method", "expression");
+            throw new ArgumentNullException("Expression is not a method", "expression");
         }
 
         /// <summary>
@@ -1072,7 +1072,7 @@ namespace NostreetsExtensions
         /// <typeparam name="T"></typeparam>
         /// <param name="expression">The expression.</param>
         /// <returns></returns>
-        /// <exception cref="ArgumentException">Expression is not a method - expression</exception>
+        /// <exception cref="ArgumentNullException">Expression is not a method - expression</exception>
         public static MethodInfo GetMethodInfo<T>(this Expression<Action<T>> expression)
         {
             var member = expression.Body as MethodCallExpression;
@@ -1080,7 +1080,7 @@ namespace NostreetsExtensions
             if (member != null)
                 return member.Method;
 
-            throw new ArgumentException("Expression is not a method", "expression");
+            throw new ArgumentNullException("Expression is not a method", "expression");
         }
 
         /// <summary>
@@ -1483,29 +1483,69 @@ namespace NostreetsExtensions
             return Path.GetFullPath(Path.Combine(path, extension));
         }
 
-        public static FileInfo ScanForFile(this string fileName, string dirPath, string fileExtension)
+        public static string[] ScanForFilePaths(this string dirPath, string fileExtension, params string[] fileNames)
+        {
+            if (fileNames == null && fileExtension == null)
+                if (fileExtension == null)
+                    throw new ArgumentNullException(nameof(fileExtension));
+
+                else
+                    throw new ArgumentNullException(nameof(fileNames));
+
+            List<string> result = new List<string>();
+            FileInfo[] files = ScanForFiles(dirPath, fileExtension, fileNames);
+
+            foreach (FileInfo f in files)
+                result.Add(f.FullName);
+
+            return result.ToArray();
+
+        }
+
+        public static FileInfo[] ScanForFiles(this string dirPath, string fileExtension, params string[] fileNames)
+        {
+            if (fileNames == null && fileExtension == null)
+                if (fileExtension == null)
+                    throw new ArgumentNullException(nameof(fileExtension));
+
+                else
+                    throw new ArgumentNullException(nameof(fileNames));
+
+
+            FileInfo[] result = null;
+            using (DirectoryScanner scanner = new DirectoryScanner())
+                result = scanner.SearchForFiles(dirPath, fileExtension, fileNames);
+
+
+            return result;
+        }
+
+        public static FileInfo ScanForFile(this string dirPath, string fileName, string fileExtension)
         {
             if (fileName == null)
-                throw new ArgumentException(nameof(fileName));
+                throw new ArgumentNullException(nameof(fileName));
 
             FileInfo result = null;
 
-            using (var scanner = new DirectoryScanner())
+            using (DirectoryScanner scanner = new DirectoryScanner())
                 result = scanner.SearchForFile(fileName, dirPath, fileExtension);
 
 
             return result;
         }
 
-        public static string ScanForFilePath(this string fileName, string directory, string fileExtension)
+        public static string ScanForFilePath(this string dirPath, string fileName, string fileExtension)
         {
-            if (fileName == null)
-                throw new ArgumentException(nameof(fileName));
+            if (fileName == null && fileExtension == null)
+                if (fileExtension == null)
+                    throw new ArgumentNullException(nameof(fileExtension));
+                else
+                    throw new ArgumentNullException(nameof(fileName));
 
             FileInfo result = null;
 
-            using (var scanner = new DirectoryScanner())
-                result = scanner.SearchForFile(fileName, directory, fileExtension);
+            using (DirectoryScanner scanner = new DirectoryScanner())
+                result = scanner.SearchForFile(fileName, dirPath, fileExtension);
 
             return result.FullName;
         }
@@ -1513,7 +1553,7 @@ namespace NostreetsExtensions
         public static string StepIntoDirectory(this string path, string targetFile, bool recursively = false)
         {
             if (path == null)
-                throw new ArgumentException(nameof(path));
+                throw new ArgumentNullException(nameof(path));
 
 
             string result = Path.GetDirectoryName(path);
@@ -1521,13 +1561,16 @@ namespace NostreetsExtensions
             do
             {
                 string[] subDirectories = Directory.GetDirectories(path),
-                         filesInFolder = Directory.GetFiles(path),
-                         folder = filesInFolder.Concat(subDirectories).ToArray();
+                         filesInFolder = Directory.GetFiles(path);
 
 
-                foreach (string file in folder)
+                foreach (string file in filesInFolder)
                     if (file.Contains(targetFile))
                         return file;
+
+                foreach (string dir in subDirectories)
+                    if (dir == targetFile)
+                        return dir;
 
                 if (recursively && subDirectories.Length > 0)
                 {
@@ -2842,6 +2885,14 @@ namespace NostreetsExtensions
             return args.Contains(obj);
         }
 
+        public static int Index<T>(this IEnumerable<T> coll, Func<T, bool> predicate)
+        {
+            for (int i = 0; i < coll.Count(); i++)
+                if (predicate(coll.ElementAt(i)))
+                    return i;
+
+            return -1;
+        }
 
         #endregion
     }

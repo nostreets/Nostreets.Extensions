@@ -160,9 +160,8 @@ namespace NostreetsExtensions
         public static string SolutionPath()
         {
             string solutionDirPath = Assembly.GetCallingAssembly().CodeBase.StepOutOfDirectory(3);
-            solutionDirPath.s
 
-            return 
+            return solutionDirPath.ScanForFilePath(null, "sln");
         }
 
         public static Solution GetSolution()

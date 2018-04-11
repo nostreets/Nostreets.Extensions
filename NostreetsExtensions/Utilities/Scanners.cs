@@ -34,15 +34,31 @@ namespace NostreetsExtensions.Utilities
 
 
 
-        private List<string> ScanFolder(string path, string fileExtension, bool searchRecursively, int numOfBckstps, params string[] fileNames)
+        #region Private Methods
+        private List<string> ScanFolder(string path, string fileExtension, bool searchRecursively, params string[] fileNames)
         {
+            if (fileNames == null)
+                throw new ArgumentNullException(nameof(fileNames));
+
+            if (path == null)
+                throw new ArgumentNullException(nameof(path));
+
+
             List<string> result = new List<string>();
+            bool extendHasDot = (fileExtension != null && fileExtension.Contains('.')) ? true : false;
             string targetedDirectory = BaseDirectory,
                    startingDirectory = null;
+            Tuple<string, bool>[] filePairs = (fileNames.Length < 0)
+                                               ? null
+                                               : fileNames.Select(a => new Tuple<string, bool>(a, false)).ToArray();
 
 
-            if (numOfBckstps > 0) { targetedDirectory = BaseDirectory.StepOutOfDirectory(numOfBckstps); }
-            targetedDirectory = targetedDirectory.StepIntoDirectory(path, true);
+
+            if (!path.IsUri(out Uri uri))
+                targetedDirectory = targetedDirectory.StepIntoDirectory(path, true);
+            else
+                targetedDirectory = uri.LocalPath;
+
             startingDirectory = targetedDirectory;
 
             do
@@ -57,18 +73,25 @@ namespace NostreetsExtensions.Utilities
                         if (fileExtension != null)
                         {
                             if (filesInFolder.Any(file => file.Contains(name + fileExtension)))
+                            {
                                 result.AddRange(
                                     filesInFolder.Where(
                                         file => file.Contains(name + fileExtension) || (file.Contains(name) && file.Contains(fileExtension))
-                                    )
-                                );
+                                    ));
+
+                                filePairs[filePairs.Index(a => a.Item1 == name)] = new Tuple<string, bool>(name, true);
+                            }
                         }
                         else if (filesInFolder.Any(file => file.Contains(name)))
+                        {
                             result.AddRange(filesInFolder.Where(file => file.Contains(name)));
+
+                            filePairs[filePairs.Index(a => a.Item1 == name)] = new Tuple<string, bool>(name, true);
+                        }
                 }
                 else
                     foreach (string file in filesInFolder)
-                        if (file.FileExtention() == fileExtension)
+                        if ((extendHasDot ? ('.' + file.FileExtention()) : file.FileExtention()) == fileExtension)
                             result.Add(file);
 
 
@@ -97,8 +120,16 @@ namespace NostreetsExtensions.Utilities
                     else
                         targetedDirectory = targetedDirectory.StepOutOfDirectory(1);
                 }
-                else
-                    searchRecursively = false;
+                //else
+                //    searchRecursively = false;
+
+
+                if (result.Count > 0)
+                    if (fileNames.Length == 0)
+                        searchRecursively = false;
+                    else
+                        searchRecursively = filePairs.All(a => a.Item2 == true);
+
 
             }
             while (searchRecursively);
@@ -109,7 +140,7 @@ namespace NostreetsExtensions.Utilities
         private void LoadBackupAssemblies(params string[] assemblies)
         {
             Dictionary<string, Assembly> result = new Dictionary<string, Assembly>();
-            List<string> list = ScanFolder("BACKUP", ".dll", true, 2, assemblies);
+            List<string> list = ScanFolder("BACKUP", ".dll", true, assemblies);
 
             foreach (string backup in assemblies)
             {
@@ -128,21 +159,50 @@ namespace NostreetsExtensions.Utilities
         {
             throw new NotImplementedException();
         }
+        #endregion
 
-
-        public FileInfo SearchForFiles(params string[] fileNames)
+        #region Public Methods
+        public FileInfo[] SearchForFiles(string dirPath, string fileExtension, params string[] fileNames)
         {
-            string filePath = ScanFolder(null, null, true, 0, fileNames).SingleOrDefault();
-            return (filePath == null) ? null : new FileInfo(filePath);
+            if (fileExtension == null && fileNames == null)
+                if (fileNames == null)
+                    throw new ArgumentNullException(nameof(fileNames));
+                else
+                    throw new ArgumentNullException(nameof(fileExtension));
+
+
+            List<FileInfo> result = new List<FileInfo>();
+            List<string> filePaths = ScanFolder(dirPath, fileExtension, true, fileNames);
+            foreach (string path in filePaths)
+                result.Add(new FileInfo(path));
+
+            return result.ToArray();
         }
 
-        public FileInfo SearchForFiles(string fileExtension)
+        public FileInfo[] SearchForFiles(params string[] fileNames)
+        {
+            if (fileNames == null)
+                throw new ArgumentNullException(nameof(fileNames));
+
+            List<FileInfo> result = new List<FileInfo>();
+            List<string> filePaths = ScanFolder(null, null, true, fileNames);
+            foreach (string path in filePaths)
+                result.Add(new FileInfo(path));
+
+            return result.ToArray();
+        }
+
+        public FileInfo[] SearchForFiles(string fileExtension)
         {
             if (fileExtension == null)
                 throw new ArgumentNullException(nameof(fileExtension));
 
-            string filePath = ScanFolder(null, fileExtension, true, 0, null).SingleOrDefault();
-            return (filePath == null) ? null : new FileInfo(filePath);
+            List<FileInfo> result = new List<FileInfo>();
+            List<string> filePaths = ScanFolder(null, fileExtension, true, null);
+            foreach (string path in filePaths)
+                result.Add(new FileInfo(path));
+
+            return result.ToArray();
         }
 
         public FileInfo SearchForFile(string fileName)
@@ -150,7 +210,7 @@ namespace NostreetsExtensions.Utilities
             if (fileName == null)
                 throw new ArgumentNullException(nameof(fileName));
 
-            string filePath = ScanFolder(null, null, true, 0, fileName).SingleOrDefault();
+            string filePath = ScanFolder(null, null, true, (fileName == null) ? new string[0] : new[] { fileName }).SingleOrDefault();
             return (filePath == null) ? null : new FileInfo(filePath);
         }
 
@@ -159,16 +219,19 @@ namespace NostreetsExtensions.Utilities
             if (fileName == null)
                 throw new ArgumentNullException(nameof(fileName));
 
-            string filePath = ScanFolder(dirPath, null, true, 0, fileName).SingleOrDefault();
+            string filePath = ScanFolder(dirPath, null, true, (fileName == null) ? new string[0] : new[] { fileName }).SingleOrDefault();
             return (filePath == null) ? null : new FileInfo(filePath);
         }
 
         public FileInfo SearchForFile(string fileName, string dirPath, string fileExtension)
         {
-            if (fileName == null)
-                throw new ArgumentNullException(nameof(fileName));
+            if (fileName == null && fileExtension == null)
+                if (fileName == null)
+                    throw new ArgumentNullException(nameof(fileName));
+                else
+                    throw new ArgumentNullException(nameof(fileExtension));
 
-            string filePath = ScanFolder(dirPath, fileExtension, true, 0, fileName).SingleOrDefault();
+            string filePath = ScanFolder(dirPath, fileExtension, true, (fileName == null) ? new string[0] : new[] { fileName }).SingleOrDefault();
             return (filePath == null) ? null : new FileInfo(filePath);
         }
 
@@ -192,6 +255,7 @@ namespace NostreetsExtensions.Utilities
                         return AppDomain.CurrentDomain.GetAssembly(assembly);
                     });
         }
+        #endregion
     }
 
     public class AssemblyScanner : Disposable
