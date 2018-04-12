@@ -35,17 +35,20 @@ namespace NostreetsExtensions
         /// <param name="types">The types.</param>
         /// <param name="assembliesToSkip">The assemblies to skip.</param>
         /// <returns></returns>
-        public static List<Tuple<TAttribute, object, Assembly>> GetObjectsWithAttribute<TAttribute>(ClassTypes section) where TAttribute : Attribute
+        public static List<Tuple<TAttribute, object, Assembly>> GetObjectsWithAttribute<TAttribute>(Func<Assembly, bool> predicate, ClassTypes section) where TAttribute : Attribute
         {
+            if (predicate == null)
+                throw new ArgumentNullException(nameof(predicate));
+
             List<Tuple<TAttribute, object, Assembly>> result = new List<Tuple<TAttribute, object, Assembly>>();
-            List<Project> projects = GetSolutionProjects();
+            IEnumerable<Assembly> assemblies = AppDomain.CurrentDomain.GetAssemblies().Where(predicate);
 
             using (AttributeScanner<TAttribute> scanner = new AttributeScanner<TAttribute>())
-                foreach (Project proj in projects)
-                    foreach (var item in scanner.ScanForAttributes(Assembly.Load(proj.ProjectName), section))
+                foreach (Assembly ass in assemblies)
+                    foreach (var item in scanner.ScanForAttributes(ass, section))
                         result.Add(new Tuple<TAttribute, object, Assembly>(item.Item1, item.Item2, item.Item4));
 
-            return result;
+            return result.Distinct().ToList();
         }
 
         /// <summary>
@@ -57,17 +60,20 @@ namespace NostreetsExtensions
         /// <param name="type">The type.</param>
         /// <param name="assembliesToSkip">The assemblies to skip.</param>
         /// <returns></returns>
-        public static List<object> GetObjectsByAttribute<TAttribute>(ClassTypes section) where TAttribute : Attribute
+        public static List<object> GetObjectsByAttribute<TAttribute>(Func<Assembly, bool> predicate, ClassTypes section) where TAttribute : Attribute
         {
+            if (predicate == null)
+                throw new ArgumentNullException(nameof(predicate));
+
             List<object> result = new List<object>();
-            List<Project> projects = GetSolutionProjects();
+            IEnumerable<Assembly> assemblies = AppDomain.CurrentDomain.GetAssemblies().Where(predicate);
 
             using (AttributeScanner<TAttribute> scanner = new AttributeScanner<TAttribute>())
-                foreach (Project proj in projects)
-                    foreach (var item in scanner.ScanForAttributes(Assembly.Load(proj.ProjectName), section))
+                foreach (Assembly ass in assemblies)
+                    foreach (var item in scanner.ScanForAttributes(ass, section))
                         result.Add(item.Item2);
 
-            return result;
+            return result.Distinct().ToList();
         }
 
         /// <summary>
@@ -78,17 +84,20 @@ namespace NostreetsExtensions
         /// <param name="type">The type.</param>
         /// <param name="assembliesToSkip">The assemblies to skip.</param>
         /// <returns></returns>
-        public static List<MethodInfo> GetMethodsByAttribute<TAttribute>() where TAttribute : Attribute
+        public static List<MethodInfo> GetMethodsByAttribute<TAttribute>(Func<Assembly, bool> predicate) where TAttribute : Attribute
         {
+            if (predicate == null)
+                throw new ArgumentNullException(nameof(predicate));
+
             List<MethodInfo> result = new List<MethodInfo>();
-            List<Project> projects = GetSolutionProjects();
+            IEnumerable<Assembly> assemblies = AppDomain.CurrentDomain.GetAssemblies().Where(predicate);
 
             using (AttributeScanner<TAttribute> scanner = new AttributeScanner<TAttribute>())
-                foreach (Project proj in projects)
-                    foreach (var item in scanner.ScanForAttributes(Assembly.Load(proj.ProjectName), ClassTypes.Methods))
+                foreach (Assembly ass in assemblies)
+                    foreach (var item in scanner.ScanForAttributes(ass, ClassTypes.Methods))
                         result.Add((MethodInfo)item.Item2);
 
-            return result;
+            return result.Distinct().ToList();
         }
 
         /// <summary>
@@ -99,17 +108,20 @@ namespace NostreetsExtensions
         /// <param name="type">The type.</param>
         /// <param name="assembliesToSkip">The assemblies to skip.</param>
         /// <returns></returns>
-        public static List<Type> GetTypesByAttribute<TAttribute>() where TAttribute : Attribute
+        public static List<Type> GetTypesByAttribute<TAttribute>(Func<Assembly, bool> predicate) where TAttribute : Attribute
         {
+            if (predicate == null)
+                throw new ArgumentNullException(nameof(predicate));
+
             List<Type> result = new List<Type>();
-            List<Project> projects = GetSolutionProjects();
+            IEnumerable<Assembly> assemblies = AppDomain.CurrentDomain.GetAssemblies().Where(predicate);
 
             using (AttributeScanner<TAttribute> scanner = new AttributeScanner<TAttribute>())
-                foreach (Project proj in projects)
-                    foreach (var item in scanner.ScanForAttributes(Assembly.Load(proj.ProjectName), ClassTypes.Type))
+                foreach (Assembly ass in assemblies)
+                    foreach (var item in scanner.ScanForAttributes(ass, ClassTypes.Type))
                         result.Add((Type)item.Item2);
 
-            return result;
+            return result.Distinct().ToList();
         }
 
         /// <summary>
@@ -120,17 +132,20 @@ namespace NostreetsExtensions
         /// <param name="type">The type.</param>
         /// <param name="assembliesToSkip">The assemblies to skip.</param>
         /// <returns></returns>
-        public static List<PropertyInfo> GetPropertiesByAttribute<TAttribute>() where TAttribute : Attribute
+        public static List<PropertyInfo> GetPropertiesByAttribute<TAttribute>(Func<Assembly, bool> predicate) where TAttribute : Attribute
         {
+            if (predicate == null)
+                throw new ArgumentNullException(nameof(predicate));
+
             List<PropertyInfo> result = null;
-            List<Project> projects = GetSolutionProjects();
+            IEnumerable<Assembly> assemblies = AppDomain.CurrentDomain.GetAssemblies().Where(predicate);
 
             using (AttributeScanner<TAttribute> scanner = new AttributeScanner<TAttribute>())
-                foreach (Project proj in projects)
-                    foreach (var item in scanner.ScanForAttributes(Assembly.Load(proj.ProjectName), ClassTypes.Properties))
+                foreach (Assembly ass in assemblies)
+                    foreach (var item in scanner.ScanForAttributes(ass, ClassTypes.Properties))
                         result.Add((PropertyInfo)item.Item2);
 
-            return result.ToList();
+            return result.Distinct().ToList();
         }
 
         public static void UpdateWebConfig(string key, string value)
