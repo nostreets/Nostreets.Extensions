@@ -1796,7 +1796,7 @@ namespace NostreetsExtensions
             if (obj.GetType() == typeof(Type).GetType())
                 throw new Exception("obj cannot be a Type its self to be able to GetPropertyValue...");
 
-            return obj.GetType().GetProperties().Where((a, b) => b == ordinal).Single().GetValue(obj);
+            return obj.GetType().GetProperties().Where((a, b) => b == ordinal).First().GetValue(obj);
         }
 
         /// <summary>
