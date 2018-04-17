@@ -1830,26 +1830,6 @@ namespace NostreetsExtensions
             return result.ToList();
         }
 
-        ///// <summary>
-        ///// Gets the registrations.
-        ///// </summary>
-        ///// <param name="theContainer">The container.</param>
-        ///// <returns></returns>
-        //public static List<ContainerRegistration> GetRegistrations(this IUnityContainer theContainer)
-        //{
-        //    List<ContainerRegistration> result = null;
-
-        //    foreach (ContainerRegistration item in theContainer.Registrations)
-        //    {
-        //        if (result == null)
-        //            result = new List<ContainerRegistration>();
-
-        //        result.Add(item);
-        //    }
-
-        //    return result;
-        //}
-
         /// <summary>
         /// Adds the specified values.
         /// </summary>
@@ -2892,6 +2872,53 @@ namespace NostreetsExtensions
                     return i;
 
             return -1;
+        }
+
+        public static DateTime SemiMonthDate(this DateTime date)
+        {
+            int daysInMonth = DateTime.DaysInMonth(date.Year, date.Month);
+
+            DateTime halfTimeDate = new DateTime(date.Year, date.Month, daysInMonth / 2),
+                     endDate = new DateTime(date.Year, date.Month, daysInMonth);
+
+            while (!halfTimeDate.IsWeekDay() || !endDate.IsWeekDay())
+            {
+                if (!halfTimeDate.IsWeekDay())
+                    halfTimeDate = halfTimeDate.AddDays(-1);
+
+                if (!endDate.IsWeekDay())
+                    endDate = endDate.AddDays(-1);
+            }
+
+            return (date.Day <= halfTimeDate.Day)
+                   ? halfTimeDate
+                   : endDate;
+
+        }
+
+        public static bool IsWeekDay(this DateTime date)
+        {
+            return ((date.DayOfWeek == DayOfWeek.Saturday) || (date.DayOfWeek == DayOfWeek.Sunday)) ? false : true;
+        }
+
+        public static int NumberOfDaysInMonth(this DateTime date, DayOfWeek dayOfWeek)
+        {
+            DateTime start = new DateTime(date.Year, date.Month, 1),
+                     end = new DateTime(date.Year, date.Month, DateTime.DaysInMonth(date.Year, date.Month));
+
+            TimeSpan ts = end - start;                      
+
+            int totalDays = (int)Math.Floor(ts.TotalDays / 7);   
+            int remainder = (int)ts.TotalDays % 7;         
+            int sinceLastDay = end.DayOfWeek - dayOfWeek;
+
+            if (sinceLastDay < 0)
+                sinceLastDay += 7;         
+
+            if (remainder >= sinceLastDay)
+                totalDays++;
+
+            return totalDays;
         }
 
         #endregion
