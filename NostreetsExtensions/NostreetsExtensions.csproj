@@ -59,10 +59,14 @@
     <Reference Include="RestSharp, Version=106.2.1.0, Culture=neutral, PublicKeyToken=598062e77f915f75, processorArchitecture=MSIL">
       <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\RestSharp.106.2.1\lib\net452\RestSharp.dll</HintPath>
     </Reference>
+    <Reference Include="StackExchange.Redis, Version=1.2.6.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\StackExchange.Redis.1.2.6\lib\net46\StackExchange.Redis.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.ComponentModel.DataAnnotations" />
     <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
+    <Reference Include="System.IO.Compression" />
     <Reference Include="System.Management.Automation, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\System.Management.Automation.dll.10.0.10586.0\lib\net40\System.Management.Automation.dll</HintPath>
       <Private>True</Private>
@@ -173,14 +177,14 @@
     <Compile Include="Interfaces\IDataReaderExt.cs" />
     <Compile Include="Interfaces\IDBService.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Utilities\CacheManager.cs" />
+    <Compile Include="Utilities\Managers\CacheManager.cs" />
     <Compile Include="Utilities\CustomSerializer.cs" />
     <Compile Include="Utilities\ExpressionBuilder.cs" />
     <Compile Include="Utilities\FileManager.cs" />
+    <Compile Include="Utilities\Managers\ConfigManager.cs" />
     <Compile Include="Utilities\Scanners.cs" />
-    <Compile Include="Utilities\SessionManager.cs" />
+    <Compile Include="Utilities\Managers\SessionManager.cs" />
     <Compile Include="Utilities\Solution.cs" />
-    <Compile Include="Utilities\TimeOut.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

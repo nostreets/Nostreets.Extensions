@@ -5,6 +5,7 @@ using System.Configuration;
 using System.Linq;
 using System.Net;
 using System.Reflection;
+using System.Threading;
 using System.Web.Configuration;
 
 namespace NostreetsExtensions
@@ -183,6 +184,18 @@ namespace NostreetsExtensions
         public static List<Project> GetSolutionProjects()
         {
             return GetSolution().Projects;
+        }
+
+        public static T Wait<T>(int miliseconds, Func<T> func)
+        {
+            Thread.Sleep(miliseconds);
+            return func();
+        }
+
+        public static void Wait(int miliseconds, Action func)
+        {
+            Thread.Sleep(miliseconds);
+            func();
         }
 
         #endregion
