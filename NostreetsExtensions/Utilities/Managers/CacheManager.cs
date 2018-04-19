@@ -15,24 +15,17 @@ namespace NostreetsExtensions.Utilities
             _instance = MemoryCache.Default;
 
             if (WebConfigurationManager.AppSettings["Redis.Host"] != null)
-            {
-                _hasRedisCache = true;
-                _reconnectLock = new object();
-                _redisConfig = GetRedisConfigurationOptions();
-                _multiplexer = CreateMultiplexer();
-            }
+                _redisCache = new RedisCache(RedisCache.GetConfigurationOptions());
 
         }
 
         private static MemoryCache _instance = null;
-        private static ConfigurationOptions _redisConfig = null;
-        private static bool _hasRedisCache = false;
-
+        private static RedisCache _redisCache = null;
 
         private static void Contains(string key, out bool instanceContains, out bool redisContains)
         {
             instanceContains = _instance.Contains(key);
-            redisContains = RedisContains(key);
+            redisContains = (_redisCache != null) ? _redisCache.Contains(key) : false;
 
 
             if (key != null)
@@ -40,15 +33,15 @@ namespace NostreetsExtensions.Utilities
                 {
                     object data = _instance.Get(key);
 
-                    if (_hasRedisCache && !redisContains)
+                    if (_redisCache != null && !redisContains)
                     {
-                        RedisSet(key, data, TimeSpan.FromMinutes(180));
+                        _redisCache.Set(key, data, TimeSpan.FromMinutes(180));
                         redisContains = true;
                     }
                 }
-                else if (_hasRedisCache && redisContains)
+                else if (_redisCache != null && redisContains)
                 {
-                    object data = RedisGet(key);
+                    object data = _redisCache.Get(key);
                     _instance.Add(key, data, new CacheItemPolicy { AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(180) });
                     instanceContains = true;
                 }
@@ -73,13 +66,12 @@ namespace NostreetsExtensions.Utilities
                         result = (T)obj;
 
 
-                    if (_hasRedisCache && !redisContains)
-                        RedisSet(key, result, TimeSpan.FromMinutes(180));
+                    if (_redisCache != null && !redisContains)
+                        _redisCache.Set(key, result, TimeSpan.FromMinutes(180));
                 }
 
-                if (_hasRedisCache && redisContains && result.Equals(default(T)))
                 {
-                    result = RedisGet<T>(key);
+                    result = _redisCache.Get<T>(key);
                     if (!instanceContains)
                         _instance.Add(key, result, new CacheItemPolicy { AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(180) });
                 }
@@ -93,8 +85,8 @@ namespace NostreetsExtensions.Utilities
             Contains(key, out bool instanceContains, out bool redisContains);
 
 
-            if (_hasRedisCache)
-                RedisSet(key, data, TimeSpan.FromMinutes(minsTillExp));
+            if (_redisCache != null)
+                _redisCache.Set(key, data, TimeSpan.FromMinutes(minsTillExp));
 
 
             if (!instanceContains)
@@ -112,8 +104,8 @@ namespace NostreetsExtensions.Utilities
             if (instanceContains)
                 _instance.Remove(key);
 
-            if (_hasRedisCache && redisContains)
-                RedisRemove(key);
+            if (_redisCache != null && redisContains)
+                _redisCache.Remove(key);
         }
 
         public static bool Contains(string key)
@@ -123,9 +115,27 @@ namespace NostreetsExtensions.Utilities
             return instanceContains || redisContains;
         }
 
+    }
 
-        #region Redis Logic
+    #region Redis Cache
+    public class RedisCache
+    {
+        public RedisCache(ConfigurationOptions configurationOptions)
+        {
+            _redisConfig = configurationOptions ?? throw new ArgumentNullException(nameof(configurationOptions));
 
+            _multiplexer = CreateMultiplexer(_redisConfig);
+        }
+
+        public RedisCache(string connectionString)
+        {
+            _connectionString = connectionString ?? throw new ArgumentNullException(nameof(connectionString));
+
+            _multiplexer = CreateMultiplexer(_connectionString);
+        }
+
+        public IDatabase Cache => GetCache();
+        public IServer Server => GetServer();
         public static ConnectionMultiplexer Connection
         {
             get
@@ -134,50 +144,34 @@ namespace NostreetsExtensions.Utilities
             }
         }
 
-        #region Redis Fields
         private static Lazy<ConnectionMultiplexer> _multiplexer = null;
-        private static DateTimeOffset _lastReconnectTime = DateTimeOffset.MinValue,
-                                      _firstError = DateTimeOffset.MinValue,
-                                      _previousError = DateTimeOffset.MinValue;
-        private static TimeSpan _reconnectMinFrequency = TimeSpan.FromSeconds(60),
-                                _reconnectErrorThreshold = TimeSpan.FromSeconds(30);
-        private static object _reconnectLock = null;
-        #endregion
+        private static ConfigurationOptions _redisConfig = null;
+        private static string _connectionString = null;
 
-        #region Redis Methods
-        private static T RedisGet<T>(string key)
+        public T Get<T>(string key)
         {
             T result = default(T);
 
-            if (_hasRedisCache)
-            {
-                IDatabase db = Connection.GetDatabase(-1);
-                RedisValue value = db.StringGet(key);
+            RedisValue value = Cache.StringGet(key);
 
-                if (value.HasValue)
-                    result = ((string)value).JsonDeserialize<T>();
-            }
+            if (value.HasValue)
+                result = ((string)value).JsonDeserialize<T>();
 
             return result;
         }
 
-        private static object RedisGet(string key)
+        public object Get(string key)
         {
             object result = null;
 
-            if (_hasRedisCache)
-            {
-                IDatabase db = Connection.GetDatabase(-1);
-                RedisValue value = db.StringGet(key);
-
-                if (value.HasValue)
-                    result = ((string)value).JsonDeserialize();
-            }
+            RedisValue value = Cache.StringGet(key);
+            if (value.HasValue)
+                result = ((string)value).JsonDeserialize();
 
             return result;
         }
 
-        private static void RedisSet(string key, object data, TimeSpan cacheTime)
+        public void Set(string key, object data, TimeSpan cacheTime)
         {
             if (key == null)
                 throw new ArgumentNullException(nameof(key));
@@ -188,63 +182,42 @@ namespace NostreetsExtensions.Utilities
             if (data == null)
                 return;
 
-            if (_hasRedisCache)
-            {
-                IDatabase db = Connection.GetDatabase(-1);
-                db.StringSet(key, data.JsonSerialize(), cacheTime);
-            }
+            Cache.StringSet(key, data.JsonSerialize(), cacheTime);
         }
 
-        private static bool RedisContains(string key)
+        public bool Contains(string key)
         {
             bool result = false;
-            if (_hasRedisCache)
-            {
-                IDatabase db = Connection.GetDatabase(-1);
-                result = db.KeyExists(key);
-            }
-
+            result = Cache.KeyExists(key);
             return result;
         }
 
-        private static void RedisRemove(string key)
+        public void Remove(string key)
         {
-            if (_hasRedisCache)
-            {
-                IDatabase db = Connection.GetDatabase(-1);
-                db.KeyDelete(key);
-            }
+            Cache.KeyDelete(key);
         }
 
-        private static void RedisRemoveByPattern(string pattern)
+        public void RemoveByPattern(string pattern)
         {
             if (int.TryParse(WebConfigurationManager.AppSettings["Redis.Port"], out int redisPort))
                 throw new ArgumentException("Redis.Port needs to equal an int to be able to RemoveByPatternRedis()");
 
-            if (_hasRedisCache)
-            {
-                IServer server = Connection.GetServer(_redisConfig.SslHost, redisPort);
-                var keysToRemove = server.Keys(pattern: "*" + pattern + "*");
-                foreach (var key in keysToRemove)
-                    Remove(key);
-            }
+            var keysToRemove = Server.Keys(pattern: "*" + pattern + "*");
+            foreach (var key in keysToRemove)
+                Remove(key);
         }
 
-        private static void RedisClear()
+        public void Clear()
         {
             if (int.TryParse(WebConfigurationManager.AppSettings["Redis.Port"], out int redisPort))
                 throw new ArgumentException("Redis.Port needs to equal an int to be able to ClearRedis()");
 
-            if (_hasRedisCache)
-            {
-                IServer server = Connection.GetServer(_redisConfig.SslHost, redisPort);
-                var keysToRemove = server.Keys();
-                foreach (var key in keysToRemove)
-                    RedisRemove(key);
-            }
+            var keysToRemove = Server.Keys();
+            foreach (var key in keysToRemove)
+                Remove(key);
         }
 
-        private static ConfigurationOptions GetRedisConfigurationOptions()
+        public static ConfigurationOptions GetConfigurationOptions()
         {
             if (!int.TryParse(WebConfigurationManager.AppSettings["Redis.Port"], out int redisPort))
                 throw new ArgumentException("Redis.Port needs to equal an int to be able to GetRedisConfigurationOptions()");
@@ -271,22 +244,51 @@ namespace NostreetsExtensions.Utilities
 
         private static ConnectionMultiplexer GetRedisConnection()
         {
-            return _multiplexer.Value; 
+            return _multiplexer.Value;
         }
 
-        private static Lazy<ConnectionMultiplexer> CreateMultiplexer()
+        private Lazy<ConnectionMultiplexer> CreateMultiplexer(ConfigurationOptions options)
         {
+            if (options == null)
+                throw new ArgumentNullException(nameof(options));
+
             return new Lazy<ConnectionMultiplexer>(
                 () =>
                 {
-                    return ConnectionMultiplexer.ConnectAsync(_redisConfig).Complete();
+                    return ConnectionMultiplexer.Connect(options);
+                    //return ConnectionMultiplexer.ConnectAsync(_redisConfig).Complete();
                 }
             );
         }
-        #endregion
 
-        #endregion
+        private Lazy<ConnectionMultiplexer> CreateMultiplexer(string connectionString)
+        {
+            if (connectionString == null)
+                throw new ArgumentNullException(nameof(connectionString));
 
-    }
+            return new Lazy<ConnectionMultiplexer>(
+                () =>
+                {
+                    return ConnectionMultiplexer.Connect(_connectionString);
+                }
+            );
+        }
+
+        private IDatabase GetCache()
+        {
+            return Connection.GetDatabase();
+        }
+
+        private IServer GetServer()
+        {
+            if (int.TryParse(WebConfigurationManager.AppSettings["Redis.Port"], out int redisPort))
+                throw new ArgumentException("Redis.Port needs to equal an int to be able to ClearRedis()");
+
+            IServer server = Connection.GetServer(_redisConfig.SslHost, redisPort);
+            return server;
+        }
+    } 
+    #endregion
+
 
 }
