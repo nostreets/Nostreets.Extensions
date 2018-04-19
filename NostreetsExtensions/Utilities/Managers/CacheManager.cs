@@ -64,7 +64,7 @@ namespace NostreetsExtensions.Utilities
 
             if (instanceContains || redisContains)
             {
-                AddOrSet(key, result);
+                if (instanceContains)
                 {
                     result = (T)_instance.Get(key);
                     if (_hasRedisCache && !redisContains)
