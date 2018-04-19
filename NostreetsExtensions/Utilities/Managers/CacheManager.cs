@@ -24,6 +24,7 @@ namespace NostreetsExtensions.Utilities
         static ConfigurationOptions _redisConfig = null;
         static bool _hasRedisCache = false;
 
+
         public static bool Contains(string key)
         {
             return (key != null && (_instance.Contains(key) || (_hasRedisCache && RedisContains(key)))) ? true : false;
@@ -36,28 +37,27 @@ namespace NostreetsExtensions.Utilities
             if (Contains(key))
                 result = (T)_instance.Get(key);
 
-            else if (RedisContains(key))
+            /*else*/
+            if (RedisContains(key))
             {
                 result = RedisGet<T>(key);
-                AddOrSet(key, result);
+                //_instance.Add(key, result, new CacheItemPolicy { AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(180) });
             }
 
             return result;
 
         }
 
-        public static void AddOrSet(string key, object data, DateTimeOffset? timespan = null)
+        public static void Set(string key, object data, int minsTillExp = 180)
         {
-            DateTimeOffset offset = (timespan == null) ? DateTimeOffset.Now.AddHours(6) : timespan.Value;
-
             if (_hasRedisCache)
-                RedisSet(key, data, new TimeSpan(offset.Ticks));
+                RedisSet(key, data, TimeSpan.FromMinutes(minsTillExp));
 
             if (!Contains(key))
-                _instance.Add(key, data, new CacheItemPolicy { AbsoluteExpiration = offset });
+                _instance.Add(key, data, new CacheItemPolicy { AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(minsTillExp) });
 
             else
-                _instance.Set(key, data, new CacheItemPolicy { AbsoluteExpiration = offset });
+                _instance.Set(key, data, new CacheItemPolicy { AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(minsTillExp) });
 
 
 
@@ -77,12 +77,9 @@ namespace NostreetsExtensions.Utilities
         private static T RedisGet<T>(string key)
         {
             T result;
-            using (var connection = ConnectionMultiplexer.Connect(_redisConfig))
-            {
-                var db = connection.GetDatabase(-1);
-                var value = db.StringGet(key);
-                result = value.HasValue ? ((string)value).JsonDeserialize<T>() : default(T);
-            }
+            var db = Connection().GetDatabase(-1);
+            var value = db.StringGet(key);
+            result = value.HasValue ? ((string)value).JsonDeserialize<T>() : default(T);
 
             return result;
         }
@@ -98,35 +95,20 @@ namespace NostreetsExtensions.Utilities
             if (data == null)
                 return;
 
-            RedisValue value = (RedisValue)data;
-
-            using (var connection = ConnectionMultiplexer.Connect(_redisConfig))
-            {
-                var db = connection.GetDatabase(-1);
-                db.StringSet(key, value, cacheTime);
-            }
+            IDatabase db = Connection().GetDatabase();
+            db.StringSet(key, data.JsonSerialize(), cacheTime);
         }
 
         private static bool RedisContains(string key)
         {
-            bool result = false;
-            using (var connection = ConnectionMultiplexer.Connect(_redisConfig))
-            {
-                var db = connection.GetDatabase(-1);
-                result = db.KeyExists(key);
-            }
-
-
-            return result;
+            IDatabase db = Connection().GetDatabase();
+            return db.KeyExists(key);
         }
 
         private static void RedisRemove(string key)
         {
-            using (var connection = ConnectionMultiplexer.Connect(_redisConfig))
-            {
-                var db = connection.GetDatabase(-1);
-                db.KeyDelete(key);
-            }
+            IDatabase db = Connection().GetDatabase(-1);
+            db.KeyDelete(key);
         }
 
         private static void RedisRemoveByPattern(string pattern)
@@ -134,13 +116,10 @@ namespace NostreetsExtensions.Utilities
             if (int.TryParse(WebConfigurationManager.AppSettings["Redis.Port"], out int redisPort))
                 throw new ArgumentException("Redis.Port needs to equal an int to be able to RemoveByPatternRedis()");
 
-            using (var connection = ConnectionMultiplexer.Connect(_redisConfig))
-            {
-                var server = connection.GetServer(_redisConfig.SslHost, redisPort);
-                var keysToRemove = server.Keys(pattern: "*" + pattern + "*");
-                foreach (var key in keysToRemove)
-                    Remove(key);
-            }
+            IServer server = Connection().GetServer(_redisConfig.SslHost, redisPort);
+            var keysToRemove = server.Keys(pattern: "*" + pattern + "*");
+            foreach (var key in keysToRemove)
+                Remove(key);
         }
 
         private static void RedisClear()
@@ -148,13 +127,16 @@ namespace NostreetsExtensions.Utilities
             if (int.TryParse(WebConfigurationManager.AppSettings["Redis.Port"], out int redisPort))
                 throw new ArgumentException("Redis.Port needs to equal an int to be able to ClearRedis()");
 
-            using (var connection = ConnectionMultiplexer.Connect(_redisConfig))
-            {
-                var server = connection.GetServer(_redisConfig.SslHost, redisPort);
-                var keysToRemove = server.Keys();
-                foreach (var key in keysToRemove)
-                    RedisRemove(key);
-            }
+            IServer server = Connection().GetServer(_redisConfig.SslHost, redisPort);
+            var keysToRemove = server.Keys();
+            foreach (var key in keysToRemove)
+                RedisRemove(key);
+        }
+
+        private static ConnectionMultiplexer Connection()
+        {
+            return ConnectionMultiplexer.Connect(_redisConfig);
+
         }
 
         private static ConfigurationOptions GetRedisConfigurationOptions()
@@ -176,6 +158,8 @@ namespace NostreetsExtensions.Utilities
             options.SyncTimeout = int.MaxValue;
             options.WriteBuffer = 10000000;
             options.KeepAlive = 180;
+            options.ConnectRetry = 5;
+            options.ConnectTimeout = 10000;
 
             return options;
         }
