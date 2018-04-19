@@ -2909,19 +2909,36 @@ namespace NostreetsExtensions
             DateTime start = new DateTime(date.Year, date.Month, 1),
                      end = new DateTime(date.Year, date.Month, DateTime.DaysInMonth(date.Year, date.Month));
 
-            TimeSpan ts = end - start;                      
+            TimeSpan ts = end - start;
 
-            int totalDays = (int)Math.Floor(ts.TotalDays / 7);   
-            int remainder = (int)ts.TotalDays % 7;         
+            int totalDays = (int)Math.Floor(ts.TotalDays / 7);
+            int remainder = (int)ts.TotalDays % 7;
             int sinceLastDay = end.DayOfWeek - dayOfWeek;
 
             if (sinceLastDay < 0)
-                sinceLastDay += 7;         
+                sinceLastDay += 7;
 
             if (remainder >= sinceLastDay)
                 totalDays++;
 
             return totalDays;
+        }
+
+        public static T Complete<T>(this Task<T> task)
+        {
+            task.Wait();
+            return task.Result;
+        }
+
+        public static T[] Complete<T>(this IEnumerable<Task<T>> tasks)
+        {
+            List<T> list = new List<T>();
+            Task.WaitAll();
+
+            foreach (Task<T> task in tasks)
+                list.Add(task.Result);
+
+            return list.ToArray();
         }
 
         #endregion

@@ -3,6 +3,7 @@ using StackExchange.Redis;
 using System;
 using System.Linq;
 using System.Runtime.Caching;
+using System.Threading.Tasks;
 using System.Web.Configuration;
 
 namespace NostreetsExtensions.Utilities
@@ -28,31 +29,28 @@ namespace NostreetsExtensions.Utilities
         private static bool _hasRedisCache = false;
 
 
-        private static void Contains<T>(string key, out bool instanceContains, out bool redisContains)
+        private static void Contains(string key, out bool instanceContains, out bool redisContains)
         {
             instanceContains = _instance.Contains(key);
             redisContains = RedisContains(key);
 
 
             if (key != null)
-                if (instanceContains || redisContains)
+                if (instanceContains)
                 {
-                    if (_hasRedisCache && redisContains && !instanceContains)
-                    {
-                        T data = RedisGet<T>(key);
-                        if (data.GetType() != typeof(JObject))
-                        {
-                            _instance.Add(key, data, new CacheItemPolicy { AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(180) });
-                            instanceContains = true;
-                        }
-                    }
+                    object data = _instance.Get(key);
 
-                    if (_hasRedisCache && instanceContains && !redisContains)
+                    if (_hasRedisCache && !redisContains)
                     {
-                        object data = _instance.Get(key);
                         RedisSet(key, data, TimeSpan.FromMinutes(180));
                         redisContains = true;
                     }
+                }
+                else if (_hasRedisCache && redisContains)
+                {
+                    object data = RedisGet(key);
+                    _instance.Add(key, data, new CacheItemPolicy { AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(180) });
+                    instanceContains = true;
                 }
 
         }
@@ -60,31 +58,39 @@ namespace NostreetsExtensions.Utilities
         public static T Get<T>(string key)
         {
             T result = default(T);
-            Contains<T>(key, out bool instanceContains, out bool redisContains);
+            Contains(key, out bool instanceContains, out bool redisContains);
 
             if (instanceContains || redisContains)
             {
                 if (instanceContains)
                 {
-                    result = (T)_instance.Get(key);
+                    object obj = _instance.Get(key);
+
+                    if (obj.GetType() == typeof(JObject))
+                        result = ((JObject)obj).ToObject<T>();
+
+                    else if (obj.GetType() == typeof(T))
+                        result = (T)obj;
+
+
                     if (_hasRedisCache && !redisContains)
                         RedisSet(key, result, TimeSpan.FromMinutes(180));
                 }
 
-                if (_hasRedisCache && redisContains)
+                if (_hasRedisCache && redisContains && result.Equals(default(T)))
                 {
                     result = RedisGet<T>(key);
-
-                    _instance.Add(key, result, new CacheItemPolicy { AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(180) });
+                    if (!instanceContains)
+                        _instance.Add(key, result, new CacheItemPolicy { AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(180) });
                 }
             }
 
             return result;
         }
 
-        public static void Set<T>(string key, T data, int minsTillExp = 180)
+        public static void Set(string key, object data, int minsTillExp = 180)
         {
-            Contains<T>(key, out bool instanceContains, out bool redisContains);
+            Contains(key, out bool instanceContains, out bool redisContains);
 
 
             if (_hasRedisCache)
@@ -100,7 +106,7 @@ namespace NostreetsExtensions.Utilities
 
         public static void Remove(string key)
         {
-            Contains<object>(key, out bool instanceContains, out bool redisContains);
+            Contains(key, out bool instanceContains, out bool redisContains);
 
 
             if (instanceContains)
@@ -110,19 +116,13 @@ namespace NostreetsExtensions.Utilities
                 RedisRemove(key);
         }
 
-        public static bool Contains<T>(string key)
-        {
-            Contains<T>(key, out bool instanceContains, out bool redisContains);
-
-            return instanceContains || redisContains;
-        }
-
         public static bool Contains(string key)
         {
-            Contains<object>(key, out bool instanceContains, out bool redisContains);
+            Contains(key, out bool instanceContains, out bool redisContains);
 
             return instanceContains || redisContains;
         }
+
 
         #region Redis Logic
 
@@ -156,6 +156,22 @@ namespace NostreetsExtensions.Utilities
 
                 if (value.HasValue)
                     result = ((string)value).JsonDeserialize<T>();
+            }
+
+            return result;
+        }
+
+        private static object RedisGet(string key)
+        {
+            object result = null;
+
+            if (_hasRedisCache)
+            {
+                IDatabase db = Connection.GetDatabase(-1);
+                RedisValue value = db.StringGet(key);
+
+                if (value.HasValue)
+                    result = ((string)value).JsonDeserialize();
             }
 
             return result;
@@ -245,9 +261,9 @@ namespace NostreetsExtensions.Utilities
             options.Ssl = true;
             options.AbortOnConnectFail = false;
             options.SyncTimeout = int.MaxValue;
-            options.ConnectRetry = 5;
+            options.ConnectRetry = 10;
             options.WriteBuffer = 10000000;
-            options.ConnectTimeout = 15000;
+            options.ConnectTimeout = 30000;
             options.KeepAlive = 180;
 
             return options;
@@ -255,70 +271,7 @@ namespace NostreetsExtensions.Utilities
 
         private static ConnectionMultiplexer GetRedisConnection()
         {
-            ConnectionMultiplexer result = null;
-            try
-            {
-                result = _multiplexer.Value;
-            }
-            catch (Exception ex)
-            {
-                ForceReconnect();
-            }
-            finally
-            {
-                result = _multiplexer.Value;
-            }
-
-            return result;
-        }
-
-        private static void ForceReconnect()
-        {
-            var utcNow = DateTimeOffset.UtcNow;
-            var previousReconnect = _lastReconnectTime;
-            var elapsedSinceLastReconnect = utcNow - previousReconnect;
-
-            // If mulitple threads call ForceReconnect at the same time, we only want to honor one of them.
-            if (elapsedSinceLastReconnect > _reconnectMinFrequency)
-            {
-                lock (_reconnectLock)
-                {
-                    utcNow = DateTimeOffset.UtcNow;
-                    elapsedSinceLastReconnect = utcNow - _lastReconnectTime;
-
-                    if (_firstError == DateTimeOffset.MinValue)
-                    {
-                        // We haven't seen an error since last reconnect, so set initial values.
-                        _firstError = utcNow;
-                        _previousError = utcNow;
-                        return;
-                    }
-
-                    if (elapsedSinceLastReconnect < _reconnectMinFrequency)
-                        return; // Some other thread made it through the check and the lock, so nothing to do.
-
-                    var elapsedSinceFirstError = utcNow - _firstError;
-                    var elapsedSinceMostRecentError = utcNow - _previousError;
-
-                    var shouldReconnect =
-                        elapsedSinceFirstError >= _reconnectErrorThreshold   // make sure we gave the multiplexer enough time to reconnect on its own if it can
-                        && elapsedSinceMostRecentError <= _reconnectErrorThreshold; //make sure we aren't working on stale data (e.g. if there was a gap in errors, don't reconnect yet).
-
-                    // Update the previousError timestamp to be now (e.g. this reconnect request)
-                    _previousError = utcNow;
-
-                    if (shouldReconnect)
-                    {
-                        _firstError = DateTimeOffset.MinValue;
-                        _previousError = DateTimeOffset.MinValue;
-
-                        var oldMultiplexer = _multiplexer;
-                        CloseMultiplexer(oldMultiplexer);
-                        _multiplexer = CreateMultiplexer();
-                        _lastReconnectTime = utcNow;
-                    }
-                }
-            }
+            return _multiplexer.Value; 
         }
 
         private static Lazy<ConnectionMultiplexer> CreateMultiplexer()
@@ -326,24 +279,9 @@ namespace NostreetsExtensions.Utilities
             return new Lazy<ConnectionMultiplexer>(
                 () =>
                 {
-                    return ConnectionMultiplexer.Connect(_redisConfig);
+                    return ConnectionMultiplexer.ConnectAsync(_redisConfig).Complete();
                 }
             );
-        }
-
-        private static void CloseMultiplexer(Lazy<ConnectionMultiplexer> oldMultiplexer)
-        {
-            if (oldMultiplexer != null)
-            {
-                try
-                {
-                    oldMultiplexer.Value.Close();
-                }
-                catch (Exception)
-                {
-                    // Example error condition: if accessing old.Value causes a connection attempt and that fails.
-                }
-            }
         }
         #endregion
 
