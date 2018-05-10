@@ -69,7 +69,7 @@ namespace NostreetsExtensions.Utilities
                     if (_redisCache != null && !redisContains)
                         _redisCache.Set(key, result, TimeSpan.FromMinutes(180));
                 }
-
+                else
                 {
                     result = _redisCache.Get<T>(key);
                     if (!instanceContains)
