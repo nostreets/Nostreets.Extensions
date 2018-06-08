@@ -118,6 +118,7 @@ namespace NostreetsExtensions.Utilities
     }
 
     #region Redis Cache
+
     public class RedisCache
     {
         public RedisCache(ConfigurationOptions configurationOptions)
@@ -288,6 +289,7 @@ namespace NostreetsExtensions.Utilities
             return server;
         }
     } 
+    
     #endregion
 
 

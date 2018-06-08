@@ -28,14 +28,12 @@ using System.Diagnostics;
 using RestSharp;
 using RestSharp.Authenticators;
 using Unity;
-using Unity.Registration;
 using Unity.Resolution;
 using Castle.Windsor;
 using NostreetsExtensions.Helpers;
 using System.Threading.Tasks;
 using System.Xml;
-using System.Configuration;
-using System.Web.Configuration;
+using System.Web.Optimization;
 
 namespace NostreetsExtensions
 {
@@ -2939,6 +2937,25 @@ namespace NostreetsExtensions
                 list.Add(task.Result);
 
             return list.ToArray();
+        }
+
+        /// <summary>
+        /// Applies the CssRewriteUrlTransform to every path in the array.
+        /// </summary>      
+        public static Bundle IncludeWithCssRewriteUrlTransform(this StyleBundle bundle, params string[] virtualPaths)
+        {
+            //Ensure we add CssRewriteUrlTransform to turn relative paths (to images, etc.) in the CSS files into absolute paths.
+            //Otherwise, you end up with 404s as the bundle paths will cause the relative paths to be off and not reach the static files.
+
+            if ((virtualPaths != null) && (virtualPaths.Any()))
+            {
+                virtualPaths.ToList().ForEach(path =>
+                {
+                    bundle.Include(path, new CssRewriteUrlTransform());
+                });
+            }
+
+            return bundle;
         }
 
         #endregion
