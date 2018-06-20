@@ -1379,6 +1379,46 @@ namespace NostreetsExtensions
             return resolved ? (T)instance : default(T);
         }
 
+        public static T WindsorResolve<T>(this T obj, Assembly assembly)
+        {
+            IWindsorContainer containter = assembly.GetWindsorContainer();
+            bool resolved = typeof(T).TryWindsorResolve(containter, out object instance);
+            return resolved ? (T)instance : default(T);
+        }
+
+        public static object WindsorResolve(this Type type, Assembly assembly)
+        {
+            IWindsorContainer containter = assembly.GetWindsorContainer();
+            return containter.Resolve(type);
+        }
+
+        public static object WindsorResolve(this object obj, Assembly assembly)
+        {
+            IWindsorContainer containter = assembly.GetWindsorContainer();
+            bool resolved = obj.GetType().TryWindsorResolve(containter, out object instance);
+            return resolved ? instance : null;
+        }
+
+        public static T WindsorResolve<T>(this T obj, string assemblyName)
+        {
+            IWindsorContainer containter = assemblyName.GetWindsorContainer();
+            bool resolved = typeof(T).TryWindsorResolve(containter, out object instance);
+            return resolved ? (T)instance : default(T);
+        }
+
+        public static object WindsorResolve(this Type type, string assemblyName)
+        {
+            IWindsorContainer containter = assemblyName.GetWindsorContainer();
+            return containter.Resolve(type);
+        }
+
+        public static object WindsorResolve(this object obj, string assemblyName)
+        {
+            IWindsorContainer containter = assemblyName.GetWindsorContainer();
+            bool resolved = obj.GetType().TryWindsorResolve(containter, out object instance);
+            return resolved ? instance : null;
+        }
+
         public static bool TryWindsorResolve(this Type type, IWindsorContainer containter, out object instance)
         {
             bool result = false;
@@ -2667,7 +2707,7 @@ namespace NostreetsExtensions
 
         public static IWindsorContainer GetWindsorContainer(this string assemblyName)
         {
-            MethodInfo methodInfo = (MethodInfo)"WindsorConfig.Container".ScanAssembliesForObject(assemblyName);
+            MethodInfo methodInfo = (MethodInfo)"WindsorConfig.GetContainer".ScanAssembliesForObject(assemblyName);
             object windsorConfig = "WindsorConfig".ScanAssembliesForObject().Instantiate();
             WindsorContainer result = (WindsorContainer)methodInfo?.Invoke(windsorConfig, null);
             return result;
