@@ -2261,6 +2261,29 @@ namespace NostreetsExtensions
             return result;
         }
 
+        public static string GetIPAddress(this HttpContextBase context)
+        {
+            string result = null;
+            if (context != null)
+            {
+                string ipAddress = context.Request.ServerVariables["HTTP_X_FORWARDED_FOR"];
+
+                if (!string.IsNullOrEmpty(ipAddress))
+                {
+                    string[] addresses = ipAddress.Split(',');
+                    if (addresses.Length != 0)
+                    {
+                        return addresses[0];
+                    }
+                }
+
+                result = context.Request.ServerVariables["REMOTE_ADDR"];
+            }
+
+            return result;
+        }
+
+
         /// <summary>
         /// Parses the int.
         /// </summary>
@@ -2997,6 +3020,55 @@ namespace NostreetsExtensions
 
             return bundle;
         }
+
+        public static string GetIP4Address(this HttpContext context)
+        {
+            string result = String.Empty;
+
+            foreach (IPAddress IPA in Dns.GetHostAddresses(context.Request.UserHostAddress))
+                if (IPA.AddressFamily.ToString() == "InterNetwork")
+                {
+                    result = IPA.ToString();
+                    break;
+                }
+
+            if (result != String.Empty)
+                return result;
+
+            foreach (IPAddress IPA in Dns.GetHostAddresses(Dns.GetHostName()))
+                if (IPA.AddressFamily.ToString() == "InterNetwork")
+                {
+                    result = IPA.ToString();
+                    break;
+                }
+
+            return result;
+        }
+
+        public static string GetIP4Address(this HttpContextBase context)
+        {
+            string result = String.Empty;
+
+            foreach (IPAddress IPA in Dns.GetHostAddresses(context.Request.UserHostAddress))
+                if (IPA.AddressFamily.ToString() == "InterNetwork")
+                {
+                    result = IPA.ToString();
+                    break;
+                }
+
+            if (result != String.Empty)
+                return result;
+
+            foreach (IPAddress IPA in Dns.GetHostAddresses(Dns.GetHostName()))
+                if (IPA.AddressFamily.ToString() == "InterNetwork")
+                {
+                    result = IPA.ToString();
+                    break;
+                }
+
+            return result;
+        }
+
 
         #endregion
     }
