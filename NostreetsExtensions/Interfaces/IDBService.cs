@@ -40,6 +40,7 @@ namespace NostreetsExtensions.Interfaces
         void Delete(IEnumerable<object> ids);
         IEnumerable<T> Where(Func<T, bool> predicate);
         T FirstOrDefault(Func<T, bool> predicate);
+        void Backup(string disk = null);
     }
 
     public interface IDBService<T, IdType>
@@ -60,6 +61,7 @@ namespace NostreetsExtensions.Interfaces
         IEnumerable<T> Where(Func<T, bool> predicate);
         void Delete(IEnumerable<IdType> ids);
         T FirstOrDefault(Func<T, bool> predicate);
+        void Backup(string disk = null);
     }
 
     public interface IDBService<T, IdType, AddType, UpdateType>
@@ -82,5 +84,6 @@ namespace NostreetsExtensions.Interfaces
         void Delete(IEnumerable<IdType> ids);
         IEnumerable<T> Where(Func<T, bool> predicate);
         T FirstOrDefault(Func<T, bool> predicate);
+        void Backup(string disk = null);
     }
 }

@@ -23,6 +23,7 @@ namespace NostreetsExtensions.Helpers
         private string _connectionString = null;
         private IQueryProvider _queryProvider = null;
 
+        public SqlConnectionStringBuilder Builder => new SqlConnectionStringBuilder(_connectionString);
         public SqlConnection Connection => new SqlConnection(_connectionString);
         public static ISqlExecutor Instance => DataProvider.SqlInstance;
         public IQueryProvider QueryProvider { get => _queryProvider; set => _queryProvider = value; }

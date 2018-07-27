@@ -3069,7 +3069,13 @@ namespace NostreetsExtensions
             return result;
         }
 
+        public static void CreateFolder(this string path)
+        {
+            if (!Directory.Exists(path))
+                Directory.CreateDirectory(path);
 
+            return;
+        }
         #endregion
     }
 }

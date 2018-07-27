@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Configuration;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Reflection;
@@ -196,6 +197,24 @@ namespace NostreetsExtensions
         {
             Thread.Sleep(miliseconds);
             func();
+        }
+
+        public static string GetOSDrive()
+        {
+            return Path.GetPathRoot(Environment.SystemDirectory);
+        }
+
+        public static string GetLocalPath()
+        {
+            return Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+        }
+
+        public static void CreateFolder(string path)
+        {
+            if (!Directory.Exists(path))
+                Directory.CreateDirectory(path);
+
+            return;
         }
 
         #endregion
