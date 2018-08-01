@@ -1794,7 +1794,7 @@ namespace NostreetsExtensions
         /// <returns></returns>
         public static string Timestamp(this DateTime time, string format = null)
         {
-            return time.ToString(format ?? "hh.mm.ss.tt MMM/dd/yy");
+            return time.ToString(format ?? "hh.mm.ss.tt MMM_dd_yy");
         }
 
         /// <summary>
