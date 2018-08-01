@@ -144,6 +144,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="App_Packages\StackTraceParser\StackTraceParser.cs" />
     <Compile Include="Extend.cs" />
     <Compile Include="Static.cs" />
     <Compile Include="Utilities\Encryption.cs" />
