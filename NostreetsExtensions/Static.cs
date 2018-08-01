@@ -217,12 +217,6 @@ namespace NostreetsExtensions
             return;
         }
 
-        public static IEnumerable<T> ParseStackTrace<T>(string text,
-            Func<string, string, string, string, IEnumerable<KeyValuePair<string, string>>, string, string, T> func)
-        {
-           return StackTraceParser.Parse(text, func);
-        }
-
         #endregion
     }
 }

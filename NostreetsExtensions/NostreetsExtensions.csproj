@@ -144,7 +144,10 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="App_Packages\StackTraceParser\StackTraceParser.cs" />
+    <Compile Include="DataControl\Classes\DBObject.cs" />
+    <Compile Include="DataControl\Classes\Error.cs" />
+    <Compile Include="DataControl\Classes\Token.cs" />
+    <Compile Include="DataControl\Enums\TokenType.cs" />
     <Compile Include="Extend.cs" />
     <Compile Include="Static.cs" />
     <Compile Include="Utilities\Encryption.cs" />
