@@ -5,22 +5,26 @@ namespace NostreetsExtensions.DataControl.Classes
 {
     public class Error : DBObject
     {
+        public Error() { }
+
         public Error(Exception ex)
         {
             DateCreated = DateTime.Now;
             Message = ex.Message;
-            StackTrace = ex.StackTrace;
             Source = ex.Source;
             Message = ex.Message;
             HelpLink = ex.HelpLink;
-            Method = ex.TargetSite.ToString();
+            Class = ex.ParseStackTrace()["class"];
+            Line = int.Parse(ex.ParseStackTrace()["line"]);
+            Method = ex.TargetSite.NameWithParams();
         }
 
 
         public string Message { get; set; }
-        public string StackTrace { get; set; }
         public string Source { get; set; }
+        public string Class { get; set; }
         public string Method { get; set; }
+        public int Line { get; set; }
         public string HelpLink { get; set; }
 
         [NotMapped]
