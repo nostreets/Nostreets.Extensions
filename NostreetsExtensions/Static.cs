@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Web.Configuration;
 
@@ -215,6 +216,24 @@ namespace NostreetsExtensions
                 Directory.CreateDirectory(path);
 
             return;
+        }
+
+        public static Dictionary<string, string> ParseStackTrace(string stackTrace)
+        {
+            Dictionary<string, string> result = new Dictionary<string, string>();
+            Regex r = new Regex(@"at (?<namespace>.*)\.(?<class>.*)\.(?<method>.*(.*)) in (?<file>.*):line (?<line>\d*)");
+            Match match = r.Match(stackTrace);
+
+            if (match.Success)
+            {
+                result.Add("namespace", match.Groups["namespace"].Value.ToString());
+                result.Add("class",  match.Groups["class"].Value.ToString());
+                result.Add("method",  match.Groups["method"].Value.ToString());
+                result.Add("file", match.Groups["file"].Value.ToString());
+                result.Add("line", match.Groups["line"].Value.ToString());
+            }
+
+            return result;
         }
 
         #endregion

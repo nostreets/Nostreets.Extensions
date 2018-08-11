@@ -34,6 +34,9 @@ using NostreetsExtensions.Helpers;
 using System.Threading.Tasks;
 using System.Xml;
 using System.Web.Optimization;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.RegularExpressions;
 
 namespace NostreetsExtensions
 {
@@ -1266,6 +1269,42 @@ namespace NostreetsExtensions
             List<PropertyInfo> result = null;
 
             using (AttributeScanner<TAttribute> scanner = new AttributeScanner<TAttribute>())
+            {
+                foreach (var item in scanner.ScanForAttributes(Assembly.GetCallingAssembly(), ClassTypes.Properties, type))
+                {
+                    if (result == null)
+                        result = new List<PropertyInfo>();
+
+                    result.Add((PropertyInfo)item.Item2);
+                }
+            }
+
+            return result;
+        }
+
+        public static List<PropertyInfo> GetPropertiesByKeyAttribute(this Type type)
+        {
+            List<PropertyInfo> result = null;
+
+            using (AttributeScanner<KeyAttribute> scanner = new AttributeScanner<KeyAttribute>())
+            {
+                foreach (var item in scanner.ScanForAttributes(Assembly.GetCallingAssembly(), ClassTypes.Properties, type))
+                {
+                    if (result == null)
+                        result = new List<PropertyInfo>();
+
+                    result.Add((PropertyInfo)item.Item2);
+                }
+            }
+
+            return result;
+        }
+
+        public static List<PropertyInfo> GetPropertiesByNotMappedAttribute(this Type type)
+        {
+            List<PropertyInfo> result = null;
+
+            using (AttributeScanner<NotMappedAttribute> scanner = new AttributeScanner<NotMappedAttribute>())
             {
                 foreach (var item in scanner.ScanForAttributes(Assembly.GetCallingAssembly(), ClassTypes.Properties, type))
                 {
@@ -3084,6 +3123,24 @@ namespace NostreetsExtensions
                     method.Name,
                     string.Join(",", method.GetParameters().Select(o => string.Format("{0} {1}", o.ParameterType, o.Name)).ToArray())
                 );
+        }
+
+        public static Dictionary<string, string> ParseStackTrace(this Exception ex)
+        {
+            Dictionary<string, string> result = new Dictionary<string, string>();
+            Regex r = new Regex(@"at (?<namespace>.*)\.(?<class>.*)\.(?<method>.*(.*)) in (?<file>.*):line (?<line>\d*)");
+            Match match = r.Match(ex.StackTrace);
+
+            if (match.Success)
+            {
+                result.Add("namespace", match.Groups["namespace"].Value.ToString());
+                result.Add("class", match.Groups["class"].Value.ToString());
+                result.Add("method", match.Groups["method"].Value.ToString());
+                result.Add("file", match.Groups["file"].Value.ToString());
+                result.Add("line", match.Groups["line"].Value.ToString());
+            }
+
+            return result;
         }
 
         #endregion
