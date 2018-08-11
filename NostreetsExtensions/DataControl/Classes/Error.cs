@@ -13,7 +13,7 @@ namespace NostreetsExtensions.DataControl.Classes
             Source = ex.Source;
             Message = ex.Message;
             HelpLink = ex.HelpLink;
-            Method = ex.TargetSite.ToString();
+            Method = ex.TargetSite.NameWithParams();
         }
 
 

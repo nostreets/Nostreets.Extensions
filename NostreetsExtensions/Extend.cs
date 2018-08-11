@@ -3077,7 +3077,7 @@ namespace NostreetsExtensions
             return;
         }
 
-        public static string ToString(this MethodBase method)
+        public static string NameWithParams(this MethodBase method)
         {
             return string.Format("{0}.{1}({2})",
                     method.ReflectedType.FullName,
@@ -3085,6 +3085,7 @@ namespace NostreetsExtensions
                     string.Join(",", method.GetParameters().Select(o => string.Format("{0} {1}", o.ParameterType, o.Name)).ToArray())
                 );
         }
+
         #endregion
     }
 }
