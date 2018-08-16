@@ -1,5 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="..\..\NostreetsSandbox\Nostreets Sandbox\packages\PostSharp.6.0.25\build\PostSharp.props" Condition="Exists('..\..\NostreetsSandbox\Nostreets Sandbox\packages\PostSharp.6.0.25\build\PostSharp.props')" />
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -13,6 +14,8 @@
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
     <WebGreaseLibPath>..\..\NostreetsSandbox\Nostreets%20Sandbox\packages\WebGrease.1.5.2\lib</WebGreaseLibPath>
+    <NuGetPackageImportStamp>
+    </NuGetPackageImportStamp>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -56,6 +59,9 @@
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=11.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\Newtonsoft.Json.11.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="PostSharp, Version=6.0.25.0, Culture=neutral, PublicKeyToken=b13fd38b8f9c99d7, processorArchitecture=MSIL">
+      <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\PostSharp.Redist.6.0.25\lib\net45\PostSharp.dll</HintPath>
     </Reference>
     <Reference Include="Remotion.Linq, Version=2.2.0.0, Culture=neutral, PublicKeyToken=fee00910d6e5f53b, processorArchitecture=MSIL">
       <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\Remotion.Linq.2.2.0\lib\net45\Remotion.Linq.dll</HintPath>
@@ -144,6 +150,8 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="DataControl\Attributes\PostSharpClassesForTrace.cs" />
+    <Compile Include="DataControl\Attributes\TraceAttribute.cs" />
     <Compile Include="DataControl\Classes\DBObject.cs" />
     <Compile Include="DataControl\Classes\Error.cs" />
     <Compile Include="DataControl\Classes\Token.cs" />
@@ -206,4 +214,12 @@
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\..\NostreetsSandbox\Nostreets Sandbox\packages\PostSharp.6.0.25\build\PostSharp.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\NostreetsSandbox\Nostreets Sandbox\packages\PostSharp.6.0.25\build\PostSharp.props'))" />
+    <Error Condition="!Exists('..\..\NostreetsSandbox\Nostreets Sandbox\packages\PostSharp.6.0.25\build\PostSharp.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\NostreetsSandbox\Nostreets Sandbox\packages\PostSharp.6.0.25\build\PostSharp.targets'))" />
+  </Target>
+  <Import Project="..\..\NostreetsSandbox\Nostreets Sandbox\packages\PostSharp.6.0.25\build\PostSharp.targets" Condition="Exists('..\..\NostreetsSandbox\Nostreets Sandbox\packages\PostSharp.6.0.25\build\PostSharp.targets')" />
 </Project>

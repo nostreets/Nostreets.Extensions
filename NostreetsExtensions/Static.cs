@@ -188,18 +188,6 @@ namespace NostreetsExtensions
             return GetSolution().Projects;
         }
 
-        public static T Wait<T>(int miliseconds, Func<T> func)
-        {
-            Thread.Sleep(miliseconds);
-            return func();
-        }
-
-        public static void Wait(int miliseconds, Action func)
-        {
-            Thread.Sleep(miliseconds);
-            func();
-        }
-
         public static string GetOSDrive()
         {
             return Path.GetPathRoot(Environment.SystemDirectory);
@@ -216,24 +204,6 @@ namespace NostreetsExtensions
                 Directory.CreateDirectory(path);
 
             return;
-        }
-
-        public static Dictionary<string, string> ParseStackTrace(string stackTrace)
-        {
-            Dictionary<string, string> result = new Dictionary<string, string>();
-            Regex r = new Regex(@"at (?<namespace>.*)\.(?<class>.*)\.(?<method>.*(.*)) in (?<file>.*):line (?<line>\d*)");
-            Match match = r.Match(stackTrace);
-
-            if (match.Success)
-            {
-                result.Add("namespace", match.Groups["namespace"].Value.ToString());
-                result.Add("class",  match.Groups["class"].Value.ToString());
-                result.Add("method",  match.Groups["method"].Value.ToString());
-                result.Add("file", match.Groups["file"].Value.ToString());
-                result.Add("line", match.Groups["line"].Value.ToString());
-            }
-
-            return result;
         }
 
         #endregion

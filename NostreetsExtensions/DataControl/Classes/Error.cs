@@ -17,6 +17,9 @@ namespace NostreetsExtensions.DataControl.Classes
             Class = ex.ParseStackTrace()["class"];
             Line = int.Parse(ex.ParseStackTrace()["line"]);
             Method = ex.TargetSite.NameWithParams();
+
+
+
         }
 
 
