@@ -150,13 +150,12 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="DataControl\Attributes\PostSharpClassesForTrace.cs" />
-    <Compile Include="DataControl\Attributes\TraceAttribute.cs" />
     <Compile Include="DataControl\Classes\DBObject.cs" />
     <Compile Include="DataControl\Classes\Error.cs" />
     <Compile Include="DataControl\Classes\Token.cs" />
     <Compile Include="DataControl\Enums\TokenType.cs" />
     <Compile Include="Extend.cs" />
+    <Compile Include="Helpers\MethodLogger.cs" />
     <Compile Include="Static.cs" />
     <Compile Include="Utilities\Encryption.cs" />
     <Compile Include="Helpers\OleDbExecutor.cs" />
@@ -212,7 +211,9 @@
     <None Include="app.config" />
     <None Include="packages.config" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Folder Include="DataControl\Attributes\" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>

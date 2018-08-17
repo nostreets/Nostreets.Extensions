@@ -1,5 +1,7 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations.Schema;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace NostreetsExtensions.DataControl.Classes
 {
@@ -17,9 +19,20 @@ namespace NostreetsExtensions.DataControl.Classes
             Class = ex.ParseStackTrace()["class"];
             Line = int.Parse(ex.ParseStackTrace()["line"]);
             Method = ex.TargetSite.NameWithParams();
+        }
 
 
-
+        public Error(Exception ex, string data)
+        {
+            Data = data;
+            DateCreated = DateTime.Now;
+            Message = ex.Message;
+            Source = ex.Source;
+            Message = ex.Message;
+            HelpLink = ex.HelpLink;
+            Class = ex.ParseStackTrace()["class"];
+            Line = int.Parse(ex.ParseStackTrace()["line"]);
+            Method = ex.TargetSite.NameWithParams();
         }
 
 
@@ -29,7 +42,7 @@ namespace NostreetsExtensions.DataControl.Classes
         public string Method { get; set; }
         public int Line { get; set; }
         public string HelpLink { get; set; }
-
+        public string Data { get; set; }
         [NotMapped]
         public override string ModifiedUserId { get; set; }
         [NotMapped]
