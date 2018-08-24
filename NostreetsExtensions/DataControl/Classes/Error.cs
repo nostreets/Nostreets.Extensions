@@ -1,7 +1,6 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations.Schema;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
+using NostreetsExtensions.Extend.Basic;
 
 namespace NostreetsExtensions.DataControl.Classes
 {

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using NostreetsExtensions.Extend.Basic;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -18,23 +19,258 @@ namespace NostreetsExtensions.Utilities
         Parameters = 128
     }
 
+    public class AssemblyScanner : Disposable
+    {
+        private List<string> skipAssemblies = null;
+
+        public AssemblyScanner()
+        {
+            skipAssemblies = new List<string>();
+
+            foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                if (assembly.FullName.Contains("System") || assembly.FullName.Contains("Microsoft")) { skipAssemblies.Add(assembly.FullName); }
+            }
+
+            skipAssemblies.Add("Unity.Mvc5");
+
+        }
+        public object ScanAssembliesForObject(string nameToCheckFor, string[] assembliesToLookFor = null, string[] assembliesToSkip = null, ClassTypes classType = ClassTypes.Any)
+        {
+            object result = null;
+
+            foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                SearchForObject(assembly, nameToCheckFor, out result, assembliesToLookFor, assembliesToSkip, classType);
+
+                if (result != null)
+                    break;
+            }
+
+            return result;
+        }
+
+        private void SearchForObject(Assembly assembly, string nameToCheckFor, out object result, string[] assembliesToLookFor, string[] assembliesToSkip, ClassTypes classType = ClassTypes.Any)
+        {
+
+            result = null;
+            string[] namesToCheckFor = null;
+            const BindingFlags memberInfoBinding = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance;
+            bool shouldSkip = false;
+
+            if (assembliesToLookFor == null) { assembliesToLookFor = new string[0]; }
+            if (assembliesToSkip == null) { assembliesToSkip = new string[0]; }
+            if (assembliesToSkip != null) { foreach (var assemble in assembliesToSkip) { if (skipAssemblies.Find(a => a.Contains(assemble)) == null) { skipAssemblies.AddRange(assembliesToSkip); } } }
+            if (nameToCheckFor.Contains('.')) { namesToCheckFor = nameToCheckFor.Split('.'); }
+            else { namesToCheckFor = new[] { nameToCheckFor }; }
+
+            foreach (string skippedAssembly in skipAssemblies)
+            {
+                if (assembly.FullName.Contains(skippedAssembly)) { shouldSkip = true; }
+                else if (assembliesToLookFor != null && assembliesToLookFor.Length > 0 && assembliesToLookFor[0] != null && !assembliesToLookFor.Any(a => a.Contains(assembly.GetName().Name))) { shouldSkip = true; }
+            }
+
+            if (!shouldSkip)
+            {
+                if ((classType == ClassTypes.Assembly || classType == ClassTypes.Any) && namesToCheckFor.Any(a => assembly.FullName.Contains(a)))
+                    result = assembly;
+
+                foreach (Type type in assembly.GetTypes())
+                {
+                    if (namesToCheckFor.Any(a => a == type.Name))
+                    {
+                        if (classType == ClassTypes.Methods || classType == ClassTypes.Any)
+                            foreach (MethodInfo method in type.GetMethods(memberInfoBinding))
+                            {
+                                if (classType == ClassTypes.Parameters || classType == ClassTypes.Any)
+                                    foreach (ParameterInfo parameter in method.GetParameters())
+                                    {
+                                        if (result != null)
+                                            break;
+
+                                        if (namesToCheckFor.Any(a => a == parameter.Name))
+                                            result = parameter;
+                                    }
+
+                                if (result != null)
+                                    break;
+
+                                if (namesToCheckFor.Any(a => a == method.Name))
+                                    result = method;
+
+                            }
+
+                        if (classType == ClassTypes.Properties || classType == ClassTypes.Any)
+                            foreach (PropertyInfo prop in type.GetProperties())
+                            {
+                                if (result != null)
+                                    break;
+
+                                if (namesToCheckFor.Any(a => a == prop.Name))
+                                    result = prop;
+                            }
+
+                        if (classType == ClassTypes.Constructors || classType == ClassTypes.Any)
+                            foreach (ConstructorInfo construct in type.GetConstructors())
+                            {
+                                if (result != null)
+                                    break;
+
+                                if (namesToCheckFor.Any(a => a == construct.Name))
+                                    result = construct;
+                            }
+
+                        if (result != null) { break; }
+
+                        if (namesToCheckFor.Any(a => a == type.Name) && classType == ClassTypes.Type || classType == ClassTypes.Any)
+                        {
+                            result = type;
+                        }
+                    }
+
+                }
+            }
+        }
+    }
+
+    public class AttributeScanner<TAttribute> : Disposable where TAttribute : Attribute
+    {
+        private List<Tuple<TAttribute, object, Type, Assembly>> _targetMap;
+
+        public AttributeScanner()
+        {
+            _targetMap = new List<Tuple<TAttribute, object, Type, Assembly>>();
+        }
+
+        public IEnumerable<Tuple<TAttribute, object, Type, Assembly>> ScanForAttributes(Assembly assembly
+                                                                                        , ClassTypes section = ClassTypes.Any
+                                                                                        , Type type = null)
+        {
+            if (assembly == null)
+                throw new ArgumentException(nameof(assembly));
+
+            var props = _targetMap.Where(a => type != null && a.Item3 == type);
+
+            if (props.Count() == 0)
+                if (type == null)
+                    ScanAssembly(assembly, section);
+
+                else
+                    ScanType(type, section);
+
+            return (props.Count() == 0)
+                   ? _targetMap
+                   : _targetMap.Where(a => type != null && a.Item3 == type);
+        }
+
+        private void Add(TAttribute attribute, object item, Type type, Assembly assembly)
+        {
+            _targetMap.Add(new Tuple<TAttribute, object, Type, Assembly>(attribute, item, type, assembly));
+        }
+
+        private void ScanAssembly(Assembly assembly, ClassTypes classPart = ClassTypes.Any)
+        {
+            if (assembly == null)
+                throw new ArgumentException(nameof(assembly));
+
+            SearchForAttributes(assembly, classPart);
+        }
+
+        private void ScanType(Type typeToScan, ClassTypes classPart)
+        {
+            const BindingFlags memberInfoBinding = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance;
+
+
+            if (classPart == ClassTypes.Any || classPart == ClassTypes.Type)
+                foreach (TAttribute attr in typeToScan.GetCustomAttributes(typeof(TAttribute), false))
+                    Add(attr, typeToScan, typeToScan, typeToScan.Assembly);
+
+
+            foreach (MemberInfo member in typeToScan.GetMembers(memberInfoBinding))
+            {
+                if (member.MemberType == MemberTypes.Property && (classPart == ClassTypes.Properties | classPart == ClassTypes.Any))
+                    foreach (TAttribute attr in member.GetCustomAttributes(typeof(TAttribute), false))
+                        Add(attr, member, typeToScan, typeToScan.Assembly);
+
+
+                if (member.MemberType == MemberTypes.Method && (classPart == ClassTypes.Methods | classPart == ClassTypes.Any))
+                    foreach (TAttribute attr in member.GetCustomAttributes(typeof(TAttribute), false))
+                        Add(attr, member, typeToScan, typeToScan.Assembly);
+
+
+                if (member.MemberType == MemberTypes.Method && (classPart == ClassTypes.Parameters | classPart == ClassTypes.Any))
+                    foreach (ParameterInfo parameter in ((MethodInfo)member).GetParameters())
+                        foreach (TAttribute attr in parameter.GetCustomAttributes(typeof(TAttribute), false))
+                            Add(attr, parameter, typeToScan, typeToScan.Assembly);
+
+            }
+        }
+        private void SearchForAttributes(Assembly assembly, ClassTypes classPart = ClassTypes.Any, Type typeToCheck = null)
+        {
+            bool shouldSkip = false;
+
+            try
+            {
+                if (typeToCheck != null)
+                    ScanType(typeToCheck, classPart);
+
+                else if (!shouldSkip)
+                {
+                    if (classPart == ClassTypes.Any || classPart == ClassTypes.Assembly)
+                        foreach (TAttribute attr in assembly.GetCustomAttributes(typeof(TAttribute), false))
+                            Add(attr, assembly, typeof(Assembly), assembly);
+
+                    foreach (Type type in assembly.GetTypes())
+                        ScanType(type, classPart);
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+
+        }
+
+    }
+
     public class DirectoryScanner : Disposable
     {
+        private Dictionary<string, Assembly> _backedUpAssemblies = new Dictionary<string, Assembly>();
+
+        private List<string> _checkedDirectories = new List<string>();
+
         public DirectoryScanner()
         {
 
         }
 
+        public Dictionary<string, Assembly> BackedUpAssemblies { get { return _backedUpAssemblies; } }
         private string BaseDirectory { get { return AppDomain.CurrentDomain.BaseDirectory; } }
         private List<string> CheckedDirectories { get { return _checkedDirectories; } }
-        public Dictionary<string, Assembly> BackedUpAssemblies { get { return _backedUpAssemblies; } }
-
-        private List<string> _checkedDirectories = new List<string>();
-        private Dictionary<string, Assembly> _backedUpAssemblies = new Dictionary<string, Assembly>();
-
-
-
         #region Private Methods
+        private bool HasBackupFolder()
+        {
+            throw new NotImplementedException();
+        }
+
+        private void LoadBackupAssemblies(params string[] assemblies)
+        {
+            Dictionary<string, Assembly> result = new Dictionary<string, Assembly>();
+            List<string> list = ScanFolder("BACKUP", ".dll", true, assemblies);
+
+            foreach (string backup in assemblies)
+            {
+                if (list.Any(file => file.Contains(backup + ".dll")))
+                {
+                    string assemblyPath = list.FirstOrDefault(file => file.Contains(backup + ".dll"));
+                    Assembly assembly = Assembly.LoadFile(assemblyPath);
+                    result.Add(assembly.GetName().Name, assembly);
+                }
+            }
+
+            _backedUpAssemblies = result;
+        }
+
         private List<string> ScanFolder(string path, string fileExtension, bool searchRecursively, params string[] fileNames)
         {
             if (fileNames == null)
@@ -136,32 +372,60 @@ namespace NostreetsExtensions.Utilities
 
             return result;
         }
-
-        private void LoadBackupAssemblies(params string[] assemblies)
-        {
-            Dictionary<string, Assembly> result = new Dictionary<string, Assembly>();
-            List<string> list = ScanFolder("BACKUP", ".dll", true, assemblies);
-
-            foreach (string backup in assemblies)
-            {
-                if (list.Any(file => file.Contains(backup + ".dll")))
-                {
-                    string assemblyPath = list.FirstOrDefault(file => file.Contains(backup + ".dll"));
-                    Assembly assembly = Assembly.LoadFile(assemblyPath);
-                    result.Add(assembly.GetName().Name, assembly);
-                }
-            }
-
-            _backedUpAssemblies = result;
-        }
-
-        private bool HasBackupFolder()
-        {
-            throw new NotImplementedException();
-        }
         #endregion
 
         #region Public Methods
+        public Assembly GetBackedUpAssembly(Assembly assembly)
+        {
+            return BackedUpAssemblies.FirstOrDefault(a => a.Value == assembly).Value;
+        }
+
+        public Assembly GetBackedUpAssembly(string assemblyName)
+        {
+            return BackedUpAssemblies.FirstOrDefault(a => a.Key == assemblyName).Value;
+        }
+
+        public ResolveEventHandler LoadBackUpDirectoryOnEvent()
+        {
+            return new ResolveEventHandler(
+                (a, b) =>
+                    {
+                        string assembly = b.Name.Split(',')[0];
+                        LoadBackupAssemblies(assembly);
+                        return AppDomain.CurrentDomain.GetAssembly(assembly);
+                    });
+        }
+
+        public FileInfo SearchForFile(string fileName)
+        {
+            if (fileName == null)
+                throw new ArgumentNullException(nameof(fileName));
+
+            string filePath = ScanFolder(null, null, true, (fileName == null) ? new string[0] : new[] { fileName }).SingleOrDefault();
+            return (filePath == null) ? null : new FileInfo(filePath);
+        }
+
+        public FileInfo SearchForFile(string fileName, string dirPath)
+        {
+            if (fileName == null)
+                throw new ArgumentNullException(nameof(fileName));
+
+            string filePath = ScanFolder(dirPath, null, true, (fileName == null) ? new string[0] : new[] { fileName }).SingleOrDefault();
+            return (filePath == null) ? null : new FileInfo(filePath);
+        }
+
+        public FileInfo SearchForFile(string fileName, string dirPath, string fileExtension)
+        {
+            if (fileName == null && fileExtension == null)
+                if (fileName == null)
+                    throw new ArgumentNullException(nameof(fileName));
+                else
+                    throw new ArgumentNullException(nameof(fileExtension));
+
+            string filePath = ScanFolder(dirPath, fileExtension, true, (fileName == null) ? new string[0] : new[] { fileName }).SingleOrDefault();
+            return (filePath == null) ? null : new FileInfo(filePath);
+        }
+
         public FileInfo[] SearchForFiles(string dirPath, string fileExtension, params string[] fileNames)
         {
             if (fileExtension == null && fileNames == null)
@@ -204,277 +468,7 @@ namespace NostreetsExtensions.Utilities
 
             return result.ToArray();
         }
-
-        public FileInfo SearchForFile(string fileName)
-        {
-            if (fileName == null)
-                throw new ArgumentNullException(nameof(fileName));
-
-            string filePath = ScanFolder(null, null, true, (fileName == null) ? new string[0] : new[] { fileName }).SingleOrDefault();
-            return (filePath == null) ? null : new FileInfo(filePath);
-        }
-
-        public FileInfo SearchForFile(string fileName, string dirPath)
-        {
-            if (fileName == null)
-                throw new ArgumentNullException(nameof(fileName));
-
-            string filePath = ScanFolder(dirPath, null, true, (fileName == null) ? new string[0] : new[] { fileName }).SingleOrDefault();
-            return (filePath == null) ? null : new FileInfo(filePath);
-        }
-
-        public FileInfo SearchForFile(string fileName, string dirPath, string fileExtension)
-        {
-            if (fileName == null && fileExtension == null)
-                if (fileName == null)
-                    throw new ArgumentNullException(nameof(fileName));
-                else
-                    throw new ArgumentNullException(nameof(fileExtension));
-
-            string filePath = ScanFolder(dirPath, fileExtension, true, (fileName == null) ? new string[0] : new[] { fileName }).SingleOrDefault();
-            return (filePath == null) ? null : new FileInfo(filePath);
-        }
-
-        public Assembly GetBackedUpAssembly(Assembly assembly)
-        {
-            return BackedUpAssemblies.FirstOrDefault(a => a.Value == assembly).Value;
-        }
-
-        public Assembly GetBackedUpAssembly(string assemblyName)
-        {
-            return BackedUpAssemblies.FirstOrDefault(a => a.Key == assemblyName).Value;
-        }
-
-        public ResolveEventHandler LoadBackUpDirectoryOnEvent()
-        {
-            return new ResolveEventHandler(
-                (a, b) =>
-                    {
-                        string assembly = b.Name.Split(',')[0];
-                        LoadBackupAssemblies(assembly);
-                        return AppDomain.CurrentDomain.GetAssembly(assembly);
-                    });
-        }
         #endregion
     }
-
-    public class AssemblyScanner : Disposable
-    {
-        public AssemblyScanner()
-        {
-            skipAssemblies = new List<string>();
-
-            foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
-            {
-                if (assembly.FullName.Contains("System") || assembly.FullName.Contains("Microsoft")) { skipAssemblies.Add(assembly.FullName); }
-            }
-
-            skipAssemblies.Add("Unity.Mvc5");
-
-        }
-
-        private List<string> skipAssemblies = null;
-
-        private void SearchForObject(Assembly assembly, string nameToCheckFor, out object result, string[] assembliesToLookFor, string[] assembliesToSkip, ClassTypes classType = ClassTypes.Any)
-        {
-
-            result = null;
-            string[] namesToCheckFor = null;
-            const BindingFlags memberInfoBinding = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance;
-            bool shouldSkip = false;
-
-            if (assembliesToLookFor == null) { assembliesToLookFor = new string[0]; }
-            if (assembliesToSkip == null) { assembliesToSkip = new string[0]; }
-            if (assembliesToSkip != null) { foreach (var assemble in assembliesToSkip) { if (skipAssemblies.Find(a => a.Contains(assemble)) == null) { skipAssemblies.AddRange(assembliesToSkip); } } }
-            if (nameToCheckFor.Contains('.')) { namesToCheckFor = nameToCheckFor.Split('.'); }
-            else { namesToCheckFor = new[] { nameToCheckFor }; }
-
-            foreach (string skippedAssembly in skipAssemblies)
-            {
-                if (assembly.FullName.Contains(skippedAssembly)) { shouldSkip = true; }
-                else if (assembliesToLookFor != null && assembliesToLookFor.Length > 0 && assembliesToLookFor[0] != null && !assembliesToLookFor.Any(a => a.Contains(assembly.GetName().Name))) { shouldSkip = true; }
-            }
-
-            if (!shouldSkip)
-            {
-                if ((classType == ClassTypes.Assembly || classType == ClassTypes.Any) && namesToCheckFor.Any(a => assembly.FullName.Contains(a)))
-                    result = assembly;
-
-                foreach (Type type in assembly.GetTypes())
-                {
-                    if (namesToCheckFor.Any(a => a == type.Name))
-                    {
-                        if (classType == ClassTypes.Methods || classType == ClassTypes.Any)
-                            foreach (MethodInfo method in type.GetMethods(memberInfoBinding))
-                            {
-                                if (classType == ClassTypes.Parameters || classType == ClassTypes.Any)
-                                    foreach (ParameterInfo parameter in method.GetParameters())
-                                    {
-                                        if (result != null)
-                                            break;
-
-                                        if (namesToCheckFor.Any(a => a == parameter.Name))
-                                            result = parameter;
-                                    }
-
-                                if (result != null)
-                                    break;
-
-                                if (namesToCheckFor.Any(a => a == method.Name))
-                                    result = method;
-
-                            }
-
-                        if (classType == ClassTypes.Properties || classType == ClassTypes.Any)
-                            foreach (PropertyInfo prop in type.GetProperties())
-                            {
-                                if (result != null)
-                                    break;
-
-                                if (namesToCheckFor.Any(a => a == prop.Name))
-                                    result = prop;
-                            }
-
-                        if (classType == ClassTypes.Constructors || classType == ClassTypes.Any)
-                            foreach (ConstructorInfo construct in type.GetConstructors())
-                            {
-                                if (result != null)
-                                    break;
-
-                                if (namesToCheckFor.Any(a => a == construct.Name))
-                                    result = construct;
-                            }
-
-                        if (result != null) { break; }
-
-                        if (namesToCheckFor.Any(a => a == type.Name) && classType == ClassTypes.Type || classType == ClassTypes.Any)
-                        {
-                            result = type;
-                        }
-                    }
-
-                }
-            }
-        }
-
-        public object ScanAssembliesForObject(string nameToCheckFor, string[] assembliesToLookFor = null, string[] assembliesToSkip = null, ClassTypes classType = ClassTypes.Any)
-        {
-            object result = null;
-
-            foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
-            {
-                SearchForObject(assembly, nameToCheckFor, out result, assembliesToLookFor, assembliesToSkip, classType);
-
-                if (result != null)
-                    break;
-            }
-
-            return result;
-        }
-
-    }
-
-    public class AttributeScanner<TAttribute> : Disposable where TAttribute : Attribute
-    {
-        private List<Tuple<TAttribute, object, Type, Assembly>> _targetMap;
-
-        public AttributeScanner()
-        {
-            _targetMap = new List<Tuple<TAttribute, object, Type, Assembly>>();
-        }
-
-        public IEnumerable<Tuple<TAttribute, object, Type, Assembly>> ScanForAttributes(Assembly assembly
-                                                                                        , ClassTypes section = ClassTypes.Any
-                                                                                        , Type type = null)
-        {
-            if (assembly == null)
-                throw new ArgumentException(nameof(assembly));
-
-            var props = _targetMap.Where(a => type != null && a.Item3 == type);
-
-            if (props.Count() == 0)
-                if (type == null)
-                    ScanAssembly(assembly, section);
-
-                else
-                    ScanType(type, section);
-
-            return (props.Count() == 0)
-                   ? _targetMap
-                   : _targetMap.Where(a => type != null && a.Item3 == type);
-        }
-
-        private void Add(TAttribute attribute, object item, Type type, Assembly assembly)
-        {
-            _targetMap.Add(new Tuple<TAttribute, object, Type, Assembly>(attribute, item, type, assembly));
-        }
-
-        private void ScanType(Type typeToScan, ClassTypes classPart)
-        {
-            const BindingFlags memberInfoBinding = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance;
-
-
-            if (classPart == ClassTypes.Any || classPart == ClassTypes.Type)
-                foreach (TAttribute attr in typeToScan.GetCustomAttributes(typeof(TAttribute), false))
-                    Add(attr, typeToScan, typeToScan, typeToScan.Assembly);
-
-
-            foreach (MemberInfo member in typeToScan.GetMembers(memberInfoBinding))
-            {
-                if (member.MemberType == MemberTypes.Property && (classPart == ClassTypes.Properties | classPart == ClassTypes.Any))
-                    foreach (TAttribute attr in member.GetCustomAttributes(typeof(TAttribute), false))
-                        Add(attr, member, typeToScan, typeToScan.Assembly);
-
-
-                if (member.MemberType == MemberTypes.Method && (classPart == ClassTypes.Methods | classPart == ClassTypes.Any))
-                    foreach (TAttribute attr in member.GetCustomAttributes(typeof(TAttribute), false))
-                        Add(attr, member, typeToScan, typeToScan.Assembly);
-
-
-                if (member.MemberType == MemberTypes.Method && (classPart == ClassTypes.Parameters | classPart == ClassTypes.Any))
-                    foreach (ParameterInfo parameter in ((MethodInfo)member).GetParameters())
-                        foreach (TAttribute attr in parameter.GetCustomAttributes(typeof(TAttribute), false))
-                            Add(attr, parameter, typeToScan, typeToScan.Assembly);
-
-            }
-        }
-
-        private void ScanAssembly(Assembly assembly, ClassTypes classPart = ClassTypes.Any)
-        {
-            if (assembly == null)
-                throw new ArgumentException(nameof(assembly));
-
-            SearchForAttributes(assembly, classPart);
-        }
-
-        private void SearchForAttributes(Assembly assembly, ClassTypes classPart = ClassTypes.Any, Type typeToCheck = null)
-        {
-            bool shouldSkip = false;
-
-            try
-            {
-                if (typeToCheck != null)
-                    ScanType(typeToCheck, classPart);
-
-                else if (!shouldSkip)
-                {
-                    if (classPart == ClassTypes.Any || classPart == ClassTypes.Assembly)
-                        foreach (TAttribute attr in assembly.GetCustomAttributes(typeof(TAttribute), false))
-                            Add(attr, assembly, typeof(Assembly), assembly);
-
-                    foreach (Type type in assembly.GetTypes())
-                        ScanType(type, classPart);
-                }
-            }
-            catch (Exception ex)
-            {
-                throw ex;
-            }
-
-        }
-
-    }
-
-
 }
 

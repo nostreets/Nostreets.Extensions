@@ -154,9 +154,12 @@
     <Compile Include="DataControl\Classes\Error.cs" />
     <Compile Include="DataControl\Classes\Token.cs" />
     <Compile Include="DataControl\Enums\TokenType.cs" />
-    <Compile Include="Extend.cs" />
+    <Compile Include="Extend\Basic\BasicExtensions.cs" />
+    <Compile Include="Extend\Command\CommandExtensions.cs" />
+    <Compile Include="Extend\Data\DataExtensions.cs" />
+    <Compile Include="Extend\IOC\IOCExtensions.cs" />
+    <Compile Include="Extend\Web\WebExtensions.cs" />
     <Compile Include="Helpers\MethodLogger.cs" />
-    <Compile Include="Static.cs" />
     <Compile Include="Utilities\Encryption.cs" />
     <Compile Include="Helpers\OleDbExecutor.cs" />
     <Compile Include="Helpers\BaseServices.cs" />

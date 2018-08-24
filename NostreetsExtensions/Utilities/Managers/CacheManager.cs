@@ -1,9 +1,8 @@
 ﻿using Newtonsoft.Json.Linq;
+using NostreetsExtensions.Extend.Basic;
 using StackExchange.Redis;
 using System;
-using System.Linq;
 using System.Runtime.Caching;
-using System.Threading.Tasks;
 using System.Web.Configuration;
 
 namespace NostreetsExtensions.Utilities
