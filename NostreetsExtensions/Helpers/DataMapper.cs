@@ -1,104 +1,42 @@
-﻿using Newtonsoft.Json;
-using NostreetsExtensions.Extend.Basic;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.Data;
 using System.Linq;
 using System.Reflection;
+using Newtonsoft.Json;
+using NostreetsExtensions.Extend.Basic;
+using NostreetsExtensions.Extend.Data;
 
 namespace NostreetsExtensions.Helpers
 {
-    public class DataMapper<T>
-    {
-        private PropertyInfo[] props;
-
-        private static readonly DataMapper<T> _instance = new DataMapper<T>();
-
-        private DataMapper()
-        {
-            props = typeof(T).GetProperties();
-        }
-
-        static DataMapper() { }
-
-        public static DataMapper<T> Instance { get { return _instance; } }
-
-        public T MapToObject(IDataReader reader)
-        {
-            IEnumerable<string> colname = reader.GetSchemaTable().Rows.Cast<DataRow>().Select(c => c["ColumnName"].ToString().ToLower()).ToList();
-            T obj = default(T).Instantiate();
-
-            if (obj.GetType() == typeof(string))
-            {
-                var item = reader.GetValue(reader.GetSchemaTable().Columns[0].Ordinal);
-                if (item != null) { obj = (T)item; }
-            }
-            else if (props.Length > 1)
-            {
-                foreach (var prop in props)
-                {
-                    if (colname.Contains(prop.Name.ToLower()))
-                    {
-                        Type type = Nullable.GetUnderlyingType(prop.PropertyType) ?? prop.PropertyType;
-
-                        if (type != typeof(String) && type != typeof(Char) && type.BaseType != typeof(Enum) && type.IsClass)
-                        {
-                            object property = JsonConvert.DeserializeObject(reader.GetString(reader.GetOrdinal(prop.Name)) ?? "", type);
-
-                            if (property == null)
-                                property = Activator.CreateInstance(type);
-
-                            if (property.GetType() != type)
-                                throw new Exception("Property " + type.Name + " Does Not Equal Type in DB");
-
-                            prop.SetValue(obj, property, null);
-                        }
-                        else if (reader[prop.Name] != DBNull.Value)
-
-                            if (reader[prop.Name].GetType() == typeof(decimal))
-                                prop.SetValue(obj, (reader.GetDouble(prop.Name)), null);
-
-                            else
-                                prop.SetValue(obj, (reader.GetValue(reader.GetOrdinal(prop.Name)) ?? null), null);
-                    }
-                    else if (prop.PropertyType.BaseType == typeof(Enum))
-
-                        if (reader[prop.Name + "Id"] != DBNull.Value)
-                            prop.SetValue(obj, (reader.GetValue(reader.GetOrdinal(prop.Name + "Id")) ?? null), null);
-                }
-            }
-            else
-            {
-                var item = reader.GetValue(reader.GetSchemaTable().Columns[0].Ordinal);
-                if (item != null) { obj = (T)item; }
-            }
-
-            return obj;
-        }
-    }
-
     public class DataMapper
     {
-        public static object MapToObject(IDataReader reader, Type classType)
-        {
-            PropertyInfo[] props = classType.GetProperties();
-            IEnumerable<string> colname = reader.GetSchemaTable().Rows.Cast<DataRow>().Select(c => c["ColumnName"].ToString().ToLower()).ToList();
-            var obj = Activator.CreateInstance(classType);
 
-            if (props.Length > 1)
+        public static object MapToObject(IDataReader reader, Type type)
+        {
+            PropertyInfo[] props = type.GetProperties();
+            string[] colNames = reader.GetColumnNames();
+            var obj = type.Instantiate(); //Activator.CreateInstance(classType);
+
+            if (props.Length > 1 && colNames.Length > 1)
             {
                 foreach (PropertyInfo prop in props)
                 {
-                    if (colname.Any(a => a == prop.Name.ToLower()))
+                    if (colNames.Any(a => a.ToLower() == prop.Name.ToLower()))
                     {
                         Type propType = Nullable.GetUnderlyingType(prop.PropertyType) ?? prop.PropertyType;
 
-                        if (propType == typeof(string) && propType == typeof(char) && !propType.IsEnum && propType.IsClass)
+                        if (!propType.IsEnum && propType.IsClass && 
+                            propType == typeof(string) && propType == typeof(char))
                         {
                             object property = JsonConvert.DeserializeObject(reader.GetString(reader.GetOrdinal(prop.Name)) ?? "", propType);
                             if (property == null) { property = Activator.CreateInstance(propType); }
                             if (property.GetType() != propType) { throw new Exception("Property " + propType.Name + " Does Not Equal Type in DB"); }
                             prop.SetValue(obj, property, null);
+                        }
+                        else if (prop.PropertyType.IsEnum)
+                        {
+                            if (reader[prop.Name + "Id"] != DBNull.Value)
+                                prop.SetValue(obj, (reader.GetValue(reader.GetOrdinal(prop.Name + "Id")) ?? null), null);
                         }
                         else if (reader[prop.Name] != DBNull.Value)
                         {
@@ -113,13 +51,7 @@ namespace NostreetsExtensions.Helpers
                             }
                         }
                     }
-                    else if (prop.PropertyType.IsEnum)
-                    {
-                        if (reader[prop.Name + "Id"] != DBNull.Value)
-                        {
-                            prop.SetValue(obj, (reader.GetValue(reader.GetOrdinal(prop.Name + "Id")) ?? null), null);
-                        }
-                    }
+
                 }
             }
             else
@@ -128,7 +60,7 @@ namespace NostreetsExtensions.Helpers
                 if (item != null) { obj = item; }
             }
 
-            if (obj.GetType() != classType)
+            if (type != typeof(object) && obj.GetType() != type)
                 throw new Exception("DataMapper did not successfully map to provided type...");
 
             return obj;

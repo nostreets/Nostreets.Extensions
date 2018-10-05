@@ -6,11 +6,20 @@ using System.Threading.Tasks;
 
 namespace NostreetsExtensions.DataControl.Enums
 {
-    public enum TokenType
+    public enum TokenPurpose
     {
-        TwoFactorAuth = 1,
+        TwoFactorAuth,
         EmailValidtion,
         PhoneValidtion,
         PasswordReset
+    }
+
+    public enum State
+    {
+        Success,
+        Error,
+        Warning,
+        Info,
+        Question
     }
 }

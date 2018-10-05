@@ -3,6 +3,7 @@ using System;
 
 namespace NostreetsExtensions.DataControl.Classes
 {
+
     public class Token : DBObject<string>
     {
         public string Name { get; set; }
@@ -11,7 +12,7 @@ namespace NostreetsExtensions.DataControl.Classes
 
         public DateTime ExpirationDate { get; set; }
 
-        public TokenType Type { get; set; }
+        public TokenPurpose Purpose { get; set; }
 
         public bool IsValidated { get; set; }
     }
@@ -24,4 +25,5 @@ namespace NostreetsExtensions.DataControl.Classes
 
         public string Code { get; set; }
     }
+
 }

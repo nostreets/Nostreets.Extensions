@@ -20,7 +20,6 @@ using System.Xml.Serialization;
 
 namespace NostreetsExtensions.Extend.Basic
 {
-
     public static class Basic
     {
         /// <summary>
@@ -187,6 +186,26 @@ namespace NostreetsExtensions.Extend.Basic
         public static Type CreateClass(string name, string[] propNames, Type[] propTypes)
         {
             return ClassBuilder.CreateType(name ?? "Class" + Guid.NewGuid().ToString(), propNames, propTypes);
+        }
+
+        public static string[] GlobalStackTrace(int removeLines = 0, int trim = 6)
+        {
+            string[] stack = Environment.StackTrace.Split(
+                new string[] { Environment.NewLine },
+                StringSplitOptions.RemoveEmptyEntries
+            );
+
+            if (stack.Length <= removeLines)
+                return new string[0];
+
+            string[] actualResult = new string[stack.Length - removeLines];
+
+            for (int i = removeLines; i < stack.Length; i++)
+                // Remove 6 characters (e.g. "  at ") from the beginning of the line
+                // This might be different for other languages and platforms
+                actualResult[i - removeLines] = stack[i].Substring(trim);
+
+            return actualResult;
         }
     }
 
@@ -941,8 +960,8 @@ namespace NostreetsExtensions.Extend.Basic
             if (type == null)
                 throw new ArgumentNullException("type");
 
-            if (!type.HasInterface<IEnumerable>() || !type.HasInterface<ICollection>() || !type.HasInterface<IList>())
-                throw new InvalidDataException("type does not implements IEnumerable");
+            if (type.IsGenericType) //(!type.HasInterface<IEnumerable>() || !type.HasInterface<ICollection>() || !type.HasInterface<IList>())
+                throw new InvalidDataException("type is not a generic type...");
 
             return type.GetGenericArguments()[0];
         }
@@ -961,8 +980,8 @@ namespace NostreetsExtensions.Extend.Basic
 
             Type type = obj.GetType();
 
-            if (!type.HasInterface<IEnumerable>() || !type.HasInterface<ICollection>() || !type.HasInterface<IList>())
-                throw new InvalidDataException("obj's Type does not implements IEnumerable");
+            if (type.IsGenericType) //(!type.HasInterface<IEnumerable>() || !type.HasInterface<ICollection>() || !type.HasInterface<IList>())
+                throw new InvalidDataException("type is not a generic type...");
 
             return type.GetGenericArguments()[0];
         }
@@ -1524,7 +1543,7 @@ namespace NostreetsExtensions.Extend.Basic
         /// Logs the specified text.
         /// </summary>
         /// <param name="txt">The text.</param>
-        public static void Log(this string txt)
+        public static void LogInDebug(this string txt)
         {
             Debug.Write(txt);
         }
@@ -1588,7 +1607,7 @@ namespace NostreetsExtensions.Extend.Basic
             return short.Parse(obj);
         }
 
-        public static Dictionary<string, string> ParseStackTrace(this Exception ex)
+        public static Dictionary<string, string> StackTraceToDictionary(this Exception ex)
         {
             Dictionary<string, string> result = new Dictionary<string, string>();
             Regex r = new Regex(@"at (?<namespace>.*)\.(?<class>.*)\.(?<method>.*(.*)) in (?<file>.*):line (?<line>\d*)");
@@ -1605,6 +1624,8 @@ namespace NostreetsExtensions.Extend.Basic
 
             return result;
         }
+
+        
 
         /// <summary>
         /// Parses the u int.
@@ -1761,11 +1782,14 @@ namespace NostreetsExtensions.Extend.Basic
         /// <param name="nameToCheckFor">The name to check for.</param>
         /// <param name="assemblyToLookFor">The assembly to look for.</param>
         /// <returns></returns>
-        public static object ScanAssembliesForObject(this string nameToCheckFor, string assemblyToLookFor = null, ClassTypes classType = ClassTypes.Any)
+        public static object ScanAssembliesForObject(this string nameToCheckFor
+                                                    , string assemblyToLookFor = null
+                                                    , ClassTypes classType = ClassTypes.Any
+                                                    , Func<dynamic, bool> predicate = null)
         {
             object result = null;
             using (AssemblyScanner scanner = new AssemblyScanner())
-                result = scanner.ScanAssembliesForObject(nameToCheckFor, (assemblyToLookFor == null) ? new[] { assemblyToLookFor } : null, null, classType);
+                result = scanner.ScanAssembliesForObject(nameToCheckFor, (assemblyToLookFor == null) ? new[] { assemblyToLookFor } : null, null, classType, predicate);
             return result;
         }
 
@@ -1775,11 +1799,14 @@ namespace NostreetsExtensions.Extend.Basic
         /// <param name="nameToCheckFor">The name to check for.</param>
         /// <param name="assembliesToLookFor">The assemblies to look for.</param>
         /// <returns></returns>
-        public static object ScanAssembliesForObject(this string nameToCheckFor, string[] assembliesToLookFor, ClassTypes classType = ClassTypes.Any)
+        public static object ScanAssembliesForObject(this string nameToCheckFor
+                                                    , string[] assembliesToLookFor
+                                                    , ClassTypes classType = ClassTypes.Any
+                                                    , Func<dynamic, bool> predicate = null)
         {
             object result = null;
             using (AssemblyScanner scanner = new AssemblyScanner())
-                result = scanner.ScanAssembliesForObject(nameToCheckFor, assembliesToLookFor, null, classType);
+                result = scanner.ScanAssembliesForObject(nameToCheckFor, assembliesToLookFor, null, classType, predicate);
             return result;
         }
 
@@ -1790,11 +1817,15 @@ namespace NostreetsExtensions.Extend.Basic
         /// <param name="assembliesToSkip">The assemblies to skip.</param>
         /// <param name="assembliesToLookFor">The assemblies to look for.</param>
         /// <returns></returns>
-        public static object ScanAssembliesForObject(this string nameToCheckFor, string[] assembliesToSkip, string[] assembliesToLookFor, ClassTypes classType = ClassTypes.Any)
+        public static object ScanAssembliesForObject(this string nameToCheckFor
+                                                    , string[] assembliesToSkip
+                                                    , string[] assembliesToLookFor
+                                                    , ClassTypes classType = ClassTypes.Any
+                                                    , Func<dynamic, bool> predicate = null)
         {
             object result = null;
             using (AssemblyScanner scanner = new AssemblyScanner())
-                result = scanner.ScanAssembliesForObject(nameToCheckFor, assembliesToLookFor, assembliesToSkip, classType);
+                result = scanner.ScanAssembliesForObject(nameToCheckFor, assembliesToLookFor, assembliesToSkip, classType, predicate);
             return result;
         }
 
@@ -2070,7 +2101,7 @@ namespace NostreetsExtensions.Extend.Basic
         /// <param name="enumType">Type of the enum.</param>
         /// <returns></returns>
         /// <exception cref="ArgumentNullException">Type must be an enum</exception>
-        public static Dictionary<int, string> ToDictionary<T>(this Type enumType) where T : struct, IConvertible
+        public static Dictionary<int, string> EnumToDictionary<T>(this T enumType) where T : struct, IConvertible
         {
             if (!typeof(T).IsEnum)
                 throw new ArgumentNullException("Type must be an enum");
@@ -2084,7 +2115,7 @@ namespace NostreetsExtensions.Extend.Basic
         /// <param name="enumType">Type of the enum.</param>
         /// <returns></returns>
         /// <exception cref="ArgumentNullException">Type must be an enum</exception>
-        public static Dictionary<int, string> ToDictionary(this Type enumType)
+        public static Dictionary<int, string> EnumToDictionary(this Type enumType)
         {
             Dictionary<int, string> result = null;
             if (!enumType.IsEnum)
@@ -2201,6 +2232,33 @@ namespace NostreetsExtensions.Extend.Basic
             {
                 throw new Exception("An error occurred on XmlSerialize(this object obj)...", ex);
             }
+        }
+
+        public static bool IsNullable(this Type type)
+        {
+            return Nullable.GetUnderlyingType(type) != null;
+        }
+
+        public static char ToUpperCase(this char @char)
+        {
+            return char.ToUpper(@char);
+        }
+
+        public static string Append(this char @char, params char[] chars)
+        {
+            if (chars == null)
+                throw new ArgumentNullException("chars");
+
+            if (chars.Length == 0)
+                return @char.ToString();
+
+            List<char> arrOfChars = new List<char>();
+            arrOfChars.Add(@char);
+
+            foreach (char character in chars)
+                arrOfChars.Add(character);
+
+            return new string(arrOfChars.ToArray());
         }
     }
 }

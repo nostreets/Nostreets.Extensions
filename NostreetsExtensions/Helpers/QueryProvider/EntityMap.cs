@@ -80,6 +80,11 @@ namespace NostreetsExtensions.Helpers.QueryProvider
         [XmlAttribute()]
         public string Name { get; set; }
 
+
+        //+Custom
+        [XmlAttribute()]
+        public string IsNull { get; set; }
+
     }
 
     [Serializable(), XmlType(AnonymousType = true)]

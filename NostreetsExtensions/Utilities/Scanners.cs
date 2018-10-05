@@ -1,9 +1,10 @@
-﻿using NostreetsExtensions.Extend.Basic;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+
+using NostreetsExtensions.Extend.Basic;
 
 namespace NostreetsExtensions.Utilities
 {
@@ -33,9 +34,13 @@ namespace NostreetsExtensions.Utilities
             }
 
             skipAssemblies.Add("Unity.Mvc5");
-
         }
-        public object ScanAssembliesForObject(string nameToCheckFor, string[] assembliesToLookFor = null, string[] assembliesToSkip = null, ClassTypes classType = ClassTypes.Any)
+
+        public object ScanAssembliesForObject(string nameToCheckFor
+                                            , string[] assembliesToLookFor = null
+                                            , string[] assembliesToSkip = null
+                                            , ClassTypes classType = ClassTypes.Any
+                                            , Func<dynamic, bool> predicate = null)
         {
             object result = null;
 
@@ -50,13 +55,19 @@ namespace NostreetsExtensions.Utilities
             return result;
         }
 
-        private void SearchForObject(Assembly assembly, string nameToCheckFor, out object result, string[] assembliesToLookFor, string[] assembliesToSkip, ClassTypes classType = ClassTypes.Any)
+        private void SearchForObject(Assembly assembly
+                                    , string nameToCheckFor
+                                    , out object result
+                                    , string[] assembliesToLookFor
+                                    , string[] assembliesToSkip
+                                    , ClassTypes classType = ClassTypes.Any
+                                    , Func<dynamic, bool> predicate = null)
         {
-
             result = null;
             string[] namesToCheckFor = null;
             const BindingFlags memberInfoBinding = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance;
-            bool shouldSkip = false;
+            bool shouldSkip = false,
+                 hasPredicate = predicate != null;
 
             if (assembliesToLookFor == null) { assembliesToLookFor = new string[0]; }
             if (assembliesToSkip == null) { assembliesToSkip = new string[0]; }
@@ -72,6 +83,7 @@ namespace NostreetsExtensions.Utilities
 
             if (!shouldSkip)
             {
+                //+Find Assembly
                 if ((classType == ClassTypes.Assembly || classType == ClassTypes.Any) && namesToCheckFor.Any(a => assembly.FullName.Contains(a)))
                     result = assembly;
 
@@ -79,6 +91,7 @@ namespace NostreetsExtensions.Utilities
                 {
                     if (namesToCheckFor.Any(a => a == type.Name))
                     {
+                        #region Find Method
                         if (classType == ClassTypes.Methods || classType == ClassTypes.Any)
                             foreach (MethodInfo method in type.GetMethods(memberInfoBinding))
                             {
@@ -97,9 +110,10 @@ namespace NostreetsExtensions.Utilities
 
                                 if (namesToCheckFor.Any(a => a == method.Name))
                                     result = method;
-
                             }
+                        #endregion
 
+                        #region Find Property
                         if (classType == ClassTypes.Properties || classType == ClassTypes.Any)
                             foreach (PropertyInfo prop in type.GetProperties())
                             {
@@ -109,7 +123,9 @@ namespace NostreetsExtensions.Utilities
                                 if (namesToCheckFor.Any(a => a == prop.Name))
                                     result = prop;
                             }
+                        #endregion
 
+                        #region Find Constructor
                         if (classType == ClassTypes.Constructors || classType == ClassTypes.Any)
                             foreach (ConstructorInfo construct in type.GetConstructors())
                             {
@@ -119,16 +135,21 @@ namespace NostreetsExtensions.Utilities
                                 if (namesToCheckFor.Any(a => a == construct.Name))
                                     result = construct;
                             }
+                        #endregion
 
-                        if (result != null) { break; }
+                        if (result != null)
+                            break;
 
+                        //+Find Type
                         if (namesToCheckFor.Any(a => a == type.Name) && classType == ClassTypes.Type || classType == ClassTypes.Any)
-                        {
                             result = type;
-                        }
-                    }
 
+                    }
                 }
+
+                //+Predicate Check
+                if (result != null && hasPredicate)
+                    result = predicate(result) ? result : null;
             }
         }
     }
@@ -154,7 +175,6 @@ namespace NostreetsExtensions.Utilities
             if (props.Count() == 0)
                 if (type == null)
                     ScanAssembly(assembly, section);
-
                 else
                     ScanType(type, section);
 
@@ -180,11 +200,9 @@ namespace NostreetsExtensions.Utilities
         {
             const BindingFlags memberInfoBinding = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance;
 
-
             if (classPart == ClassTypes.Any || classPart == ClassTypes.Type)
                 foreach (TAttribute attr in typeToScan.GetCustomAttributes(typeof(TAttribute), false))
                     Add(attr, typeToScan, typeToScan, typeToScan.Assembly);
-
 
             foreach (MemberInfo member in typeToScan.GetMembers(memberInfoBinding))
             {
@@ -192,19 +210,17 @@ namespace NostreetsExtensions.Utilities
                     foreach (TAttribute attr in member.GetCustomAttributes(typeof(TAttribute), false))
                         Add(attr, member, typeToScan, typeToScan.Assembly);
 
-
                 if (member.MemberType == MemberTypes.Method && (classPart == ClassTypes.Methods | classPart == ClassTypes.Any))
                     foreach (TAttribute attr in member.GetCustomAttributes(typeof(TAttribute), false))
                         Add(attr, member, typeToScan, typeToScan.Assembly);
-
 
                 if (member.MemberType == MemberTypes.Method && (classPart == ClassTypes.Parameters | classPart == ClassTypes.Any))
                     foreach (ParameterInfo parameter in ((MethodInfo)member).GetParameters())
                         foreach (TAttribute attr in parameter.GetCustomAttributes(typeof(TAttribute), false))
                             Add(attr, parameter, typeToScan, typeToScan.Assembly);
-
             }
         }
+
         private void SearchForAttributes(Assembly assembly, ClassTypes classPart = ClassTypes.Any, Type typeToCheck = null)
         {
             bool shouldSkip = false;
@@ -213,7 +229,6 @@ namespace NostreetsExtensions.Utilities
             {
                 if (typeToCheck != null)
                     ScanType(typeToCheck, classPart);
-
                 else if (!shouldSkip)
                 {
                     if (classPart == ClassTypes.Any || classPart == ClassTypes.Assembly)
@@ -228,9 +243,7 @@ namespace NostreetsExtensions.Utilities
             {
                 throw ex;
             }
-
         }
-
     }
 
     public class DirectoryScanner : Disposable
@@ -241,13 +254,14 @@ namespace NostreetsExtensions.Utilities
 
         public DirectoryScanner()
         {
-
         }
 
         public Dictionary<string, Assembly> BackedUpAssemblies { get { return _backedUpAssemblies; } }
         private string BaseDirectory { get { return AppDomain.CurrentDomain.BaseDirectory; } }
         private List<string> CheckedDirectories { get { return _checkedDirectories; } }
+
         #region Private Methods
+
         private bool HasBackupFolder()
         {
             throw new NotImplementedException();
@@ -279,7 +293,6 @@ namespace NostreetsExtensions.Utilities
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
 
-
             List<string> result = new List<string>();
             bool extendHasDot = (fileExtension != null && fileExtension.Contains('.')) ? true : false;
             string targetedDirectory = BaseDirectory,
@@ -287,8 +300,6 @@ namespace NostreetsExtensions.Utilities
             Tuple<string, bool>[] filePairs = (fileNames.Length < 0)
                                                ? null
                                                : fileNames.Select(a => new Tuple<string, bool>(a, false)).ToArray();
-
-
 
             if (!path.IsUri(out Uri uri))
                 targetedDirectory = targetedDirectory.StepIntoDirectory(path, true);
@@ -330,7 +341,6 @@ namespace NostreetsExtensions.Utilities
                         if ((extendHasDot ? ('.' + file.FileExtention()) : file.FileExtention()) == fileExtension)
                             result.Add(file);
 
-
                 if (searchRecursively)
                 {
                     if (subDirectories.Length > 0)
@@ -359,22 +369,21 @@ namespace NostreetsExtensions.Utilities
                 //else
                 //    searchRecursively = false;
 
-
                 if (result.Count > 0)
                     if (fileNames.Length == 0)
                         searchRecursively = false;
                     else
                         searchRecursively = filePairs.All(a => a.Item2 == true);
-
-
             }
             while (searchRecursively);
 
             return result;
         }
-        #endregion
+
+        #endregion Private Methods
 
         #region Public Methods
+
         public Assembly GetBackedUpAssembly(Assembly assembly)
         {
             return BackedUpAssemblies.FirstOrDefault(a => a.Value == assembly).Value;
@@ -434,7 +443,6 @@ namespace NostreetsExtensions.Utilities
                 else
                     throw new ArgumentNullException(nameof(fileExtension));
 
-
             List<FileInfo> result = new List<FileInfo>();
             List<string> filePaths = ScanFolder(dirPath, fileExtension, true, fileNames);
             foreach (string path in filePaths)
@@ -468,7 +476,7 @@ namespace NostreetsExtensions.Utilities
 
             return result.ToArray();
         }
-        #endregion
+
+        #endregion Public Methods
     }
 }
-

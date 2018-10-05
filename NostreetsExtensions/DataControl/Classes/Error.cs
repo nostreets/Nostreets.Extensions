@@ -10,28 +10,28 @@ namespace NostreetsExtensions.DataControl.Classes
 
         public Error(Exception ex)
         {
+            Message = CombinedMessage(ex);
             DateCreated = DateTime.Now;
-            Message = ex.Message;
             Source = ex.Source;
-            Message = ex.Message;
             HelpLink = ex.HelpLink;
-            Class = ex.ParseStackTrace()["class"];
-            Line = int.Parse(ex.ParseStackTrace()["line"]);
+            Class = ex.StackTraceToDictionary()["class"];
+            Line = int.Parse(ex.StackTraceToDictionary()["line"]);
             Method = ex.TargetSite.NameWithParams();
+            Trace = ex.StackTrace;
         }
 
 
         public Error(Exception ex, string data)
         {
-            Data = data;
+            Message = CombinedMessage(ex);
             DateCreated = DateTime.Now;
-            Message = ex.Message;
             Source = ex.Source;
-            Message = ex.Message;
             HelpLink = ex.HelpLink;
-            Class = ex.ParseStackTrace()["class"];
-            Line = int.Parse(ex.ParseStackTrace()["line"]);
+            Class = ex.StackTraceToDictionary()["class"];
+            Line = int.Parse(ex.StackTraceToDictionary()["line"]);
             Method = ex.TargetSite.NameWithParams();
+            Trace = ex.StackTrace;
+            Data = data;
         }
 
 
@@ -40,6 +40,7 @@ namespace NostreetsExtensions.DataControl.Classes
         public string Class { get; set; }
         public string Method { get; set; }
         public int Line { get; set; }
+        public string Trace { get; set; }
         public string HelpLink { get; set; }
         public string Data { get; set; }
         [NotMapped]
@@ -49,6 +50,23 @@ namespace NostreetsExtensions.DataControl.Classes
         [NotMapped]
         public override DateTime? DateModified { get; set; }
 
+
+        private string CombinedMessage(Exception ex)
+        {
+            if (ex == null)
+                throw new ArgumentNullException("ex");
+
+
+            string result = ex.Message;
+
+            while (ex.InnerException != null)
+            {
+                ex = ex.InnerException;
+                result += " --> " + ex.Message;
+            }
+
+            return result;
+        }
 
     }
 }

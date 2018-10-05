@@ -233,6 +233,13 @@ namespace NostreetsExtensions.Extend.Data
             return result.Select(a => a.Value).ToArray();
         }
 
+        public static KeyValuePair<string, Type>[] GetSchema(this IDataReader reader)
+        {
+            return reader.GetSchemaTable().Rows.Cast<DataRow>().Select(
+                       c => new KeyValuePair<string, Type>(c["ColumnName"].ToString(), (Type)c["DataType"]))
+                   .ToArray();
+        }
+
         public static string[] GetColumnNames(this IDataReader reader)
         {
             return reader.GetSchemaTable().Rows.Cast<DataRow>().Select(c => c["ColumnName"].ToString()).ToArray();
@@ -254,7 +261,6 @@ namespace NostreetsExtensions.Extend.Data
         {
             return SqlHelper.GetDbType(type);
         }
-
         
     }
 }

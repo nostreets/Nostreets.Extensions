@@ -1,5 +1,6 @@
 ﻿using NostreetsExtensions.Interfaces;
 using NostreetsExtensions.Utilities;
+using System.Configuration;
 using System.Data.OleDb;
 using System.Data.SqlClient;
 using System.Linq;
@@ -11,12 +12,12 @@ namespace NostreetsExtensions.Helpers
     {
         public SqlService()
         {
-            _connectionString = WebConfigurationManager.ConnectionStrings["DefaultConnection"].ConnectionString;
+            _connectionString = ConfigurationManager.ConnectionStrings["DefaultConnection"].ConnectionString;
         }
 
         public SqlService(string connectionKey)
         {
-            _connectionString = WebConfigurationManager.ConnectionStrings[connectionKey].ConnectionString;
+            _connectionString = ConfigurationManager.ConnectionStrings[connectionKey].ConnectionString;
         }
 
 
@@ -25,7 +26,7 @@ namespace NostreetsExtensions.Helpers
 
         public SqlConnectionStringBuilder Builder => new SqlConnectionStringBuilder(_connectionString);
         public SqlConnection Connection => new SqlConnection(_connectionString);
-        public static ISqlExecutor Instance => DataProvider.SqlInstance;
+        public static ISqlExecutor Query => DataProvider.SqlInstance;
         public IQueryProvider QueryProvider { get => _queryProvider; set => _queryProvider = value; }
 
 
@@ -59,7 +60,7 @@ namespace NostreetsExtensions.Helpers
 
         public OleDbConnection ChangeSqlConnection(string connectionKey)
         {
-            _connectionString = WebConfigurationManager.ConnectionStrings[connectionKey].ConnectionString;
+            _connectionString = ConfigurationManager.ConnectionStrings[connectionKey].ConnectionString;
             return Connection;
 
         }
