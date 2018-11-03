@@ -1,6 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="..\..\NostreetsSandbox\Nostreets Sandbox\packages\PostSharp.6.0.25\build\PostSharp.props" Condition="Exists('..\..\NostreetsSandbox\Nostreets Sandbox\packages\PostSharp.6.0.25\build\PostSharp.props')" />
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -53,15 +52,27 @@
     <Reference Include="EntityFramework.SqlServer, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
       <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\EntityFramework.6.2.0\lib\net45\EntityFramework.SqlServer.dll</HintPath>
     </Reference>
+    <Reference Include="Hangfire.Core, Version=1.6.20.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\Hangfire.Core.1.6.20\lib\net45\Hangfire.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="Hangfire.SqlServer, Version=1.6.20.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\Hangfire.SqlServer.1.6.20\lib\net45\Hangfire.SqlServer.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.Build" />
+    <Reference Include="Microsoft.Owin, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\Microsoft.Owin.3.0.0\lib\net45\Microsoft.Owin.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Owin.Host.SystemWeb, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\Microsoft.Owin.Host.SystemWeb.3.0.0\lib\net45\Microsoft.Owin.Host.SystemWeb.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.Web.Infrastructure, Version=1.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\Microsoft.Web.Infrastructure.1.0.0.0\lib\net40\Microsoft.Web.Infrastructure.dll</HintPath>
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=11.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\Newtonsoft.Json.11.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
-    <Reference Include="PostSharp, Version=6.0.25.0, Culture=neutral, PublicKeyToken=b13fd38b8f9c99d7, processorArchitecture=MSIL">
-      <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\PostSharp.Redist.6.0.25\lib\net45\PostSharp.dll</HintPath>
+    <Reference Include="Owin, Version=1.0.0.0, Culture=neutral, PublicKeyToken=f0ebd12fd5e55cc5, processorArchitecture=MSIL">
+      <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\Owin.1.0\lib\net40\Owin.dll</HintPath>
     </Reference>
     <Reference Include="Remotion.Linq, Version=2.2.0.0, Culture=neutral, PublicKeyToken=fee00910d6e5f53b, processorArchitecture=MSIL">
       <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\Remotion.Linq.2.2.0\lib\net45\Remotion.Linq.dll</HintPath>
@@ -159,11 +170,10 @@
     <Compile Include="Extend\Data\DataExtensions.cs" />
     <Compile Include="Extend\IOC\IOCExtensions.cs" />
     <Compile Include="Extend\Web\WebExtensions.cs" />
-    <Compile Include="Helpers\MethodLogger.cs" />
+    <Compile Include="Helpers\HangfireHelper.cs" />
     <Compile Include="Utilities\Encryption.cs" />
     <Compile Include="Helpers\OleDbExecutor.cs" />
     <Compile Include="Helpers\BaseServices.cs" />
-    <Compile Include="Helpers\DataHelper.cs" />
     <Compile Include="Helpers\DataMapper.cs" />
     <Compile Include="Helpers\DataProvider.cs" />
     <Compile Include="Helpers\QueryProvider\AggregateChecker.cs" />
@@ -191,7 +201,6 @@
     <Compile Include="Helpers\QueryProvider\Removers.cs" />
     <Compile Include="Helpers\QueryProvider\BaseClasses.cs" />
     <Compile Include="Helpers\QueryProvider\Languages.cs" />
-    <Compile Include="Helpers\SqlHelper.cs" />
     <Compile Include="Utilities\ClassBuilder.cs" />
     <Compile Include="Utilities\DebuggerWriter.cs" />
     <Compile Include="Utilities\Disposable.cs" />
@@ -218,12 +227,4 @@
     <Folder Include="DataControl\Attributes\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
-    <PropertyGroup>
-      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
-    </PropertyGroup>
-    <Error Condition="!Exists('..\..\NostreetsSandbox\Nostreets Sandbox\packages\PostSharp.6.0.25\build\PostSharp.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\NostreetsSandbox\Nostreets Sandbox\packages\PostSharp.6.0.25\build\PostSharp.props'))" />
-    <Error Condition="!Exists('..\..\NostreetsSandbox\Nostreets Sandbox\packages\PostSharp.6.0.25\build\PostSharp.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\NostreetsSandbox\Nostreets Sandbox\packages\PostSharp.6.0.25\build\PostSharp.targets'))" />
-  </Target>
-  <Import Project="..\..\NostreetsSandbox\Nostreets Sandbox\packages\PostSharp.6.0.25\build\PostSharp.targets" Condition="Exists('..\..\NostreetsSandbox\Nostreets Sandbox\packages\PostSharp.6.0.25\build\PostSharp.targets')" />
 </Project>

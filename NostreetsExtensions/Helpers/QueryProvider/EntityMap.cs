@@ -1,8 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Reflection;
 using System.Xml.Serialization;
 
 namespace NostreetsExtensions.Helpers.QueryProvider
@@ -14,7 +11,7 @@ namespace NostreetsExtensions.Helpers.QueryProvider
         public EntityMap(Type type, EntityTable table, EntityColumn[] column, EntityAssociation[] association, string id)
         {
             Table = table ?? throw new ArgumentNullException(nameof(table));
-            Column = column ?? throw new ArgumentNullException(nameof(column));
+            Columns = column ?? throw new ArgumentNullException(nameof(column));
             Association = association ?? throw new ArgumentNullException(nameof(association));
             Id = id ?? throw new ArgumentNullException(nameof(id));
             Type = type ?? throw new ArgumentNullException(nameof(type));
@@ -26,7 +23,7 @@ namespace NostreetsExtensions.Helpers.QueryProvider
 
 
         [XmlElement("Column")]
-        public EntityColumn[] Column { get; set; }
+        public EntityColumn[] Columns { get; set; }
 
 
         [XmlElement("Association")]
@@ -54,13 +51,14 @@ namespace NostreetsExtensions.Helpers.QueryProvider
     public class EntityColumn
     {
         public EntityColumn() { }
-        public EntityColumn(string member, string columnName, bool isPrimaryKey, bool isGenerated, string dbType)
+        public EntityColumn(string propName, string columnName, bool isPrimaryKey, bool isGenerated, string dbType, PropertyInfo property = null)
         {
-            Member = member ?? throw new ArgumentNullException(nameof(member));
+            Member = propName ?? throw new ArgumentNullException(nameof(propName));
             IsPrimaryKey = isPrimaryKey;
             IsGenerated = isGenerated;
             DbType = dbType;
             Name = columnName;
+            Property = property;
         }
 
         [XmlAttribute()]
@@ -84,6 +82,8 @@ namespace NostreetsExtensions.Helpers.QueryProvider
         //+Custom
         [XmlAttribute()]
         public string IsNull { get; set; }
+
+        public PropertyInfo Property { get; set; }
 
     }
 

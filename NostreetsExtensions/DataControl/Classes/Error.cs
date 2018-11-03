@@ -4,6 +4,7 @@ using NostreetsExtensions.Extend.Basic;
 
 namespace NostreetsExtensions.DataControl.Classes
 {
+
     public class Error : DBObject
     {
         public Error() { }
@@ -14,12 +15,11 @@ namespace NostreetsExtensions.DataControl.Classes
             DateCreated = DateTime.Now;
             Source = ex.Source;
             HelpLink = ex.HelpLink;
-            Class = ex.StackTraceToDictionary()["class"];
-            Line = int.Parse(ex.StackTraceToDictionary()["line"]);
+            Class = ex.StackTraceToDictionary()?["class"];
+            Line = int.Parse(ex.StackTraceToDictionary()?["line"]);
             Method = ex.TargetSite.NameWithParams();
             Trace = ex.StackTrace;
         }
-
 
         public Error(Exception ex, string data)
         {
@@ -27,13 +27,12 @@ namespace NostreetsExtensions.DataControl.Classes
             DateCreated = DateTime.Now;
             Source = ex.Source;
             HelpLink = ex.HelpLink;
-            Class = ex.StackTraceToDictionary()["class"];
-            Line = int.Parse(ex.StackTraceToDictionary()["line"]);
+            Class = ex.StackTraceToDictionary()?["class"];
+            Line = int.Parse(ex.StackTraceToDictionary()?["line"]);
             Method = ex.TargetSite.NameWithParams();
             Trace = ex.StackTrace;
             Data = data;
         }
-
 
         public string Message { get; set; }
         public string Source { get; set; }

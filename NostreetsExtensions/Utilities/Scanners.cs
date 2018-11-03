@@ -36,11 +36,12 @@ namespace NostreetsExtensions.Utilities
             skipAssemblies.Add("Unity.Mvc5");
         }
 
-        public object ScanAssembliesForObject(string nameToCheckFor
-                                            , string[] assembliesToLookFor = null
-                                            , string[] assembliesToSkip = null
-                                            , ClassTypes classType = ClassTypes.Any
-                                            , Func<dynamic, bool> predicate = null)
+        public object ScanAssembliesForObject(
+              string nameToCheckFor
+            , string[] assembliesToLookFor = null
+            , string[] assembliesToSkip = null
+            , ClassTypes classType = ClassTypes.Any
+            , Func<dynamic, bool> predicate = null)
         {
             object result = null;
 
@@ -55,13 +56,14 @@ namespace NostreetsExtensions.Utilities
             return result;
         }
 
-        private void SearchForObject(Assembly assembly
-                                    , string nameToCheckFor
-                                    , out object result
-                                    , string[] assembliesToLookFor
-                                    , string[] assembliesToSkip
-                                    , ClassTypes classType = ClassTypes.Any
-                                    , Func<dynamic, bool> predicate = null)
+        private void SearchForObject(
+              Assembly assembly
+            , string nameToCheckFor
+            , out object result
+            , string[] assembliesToLookFor
+            , string[] assembliesToSkip
+            , ClassTypes classType = ClassTypes.Any
+            , Func<dynamic, bool> predicate = null)
         {
             result = null;
             string[] namesToCheckFor = null;
@@ -69,17 +71,27 @@ namespace NostreetsExtensions.Utilities
             bool shouldSkip = false,
                  hasPredicate = predicate != null;
 
-            if (assembliesToLookFor == null) { assembliesToLookFor = new string[0]; }
-            if (assembliesToSkip == null) { assembliesToSkip = new string[0]; }
-            if (assembliesToSkip != null) { foreach (var assemble in assembliesToSkip) { if (skipAssemblies.Find(a => a.Contains(assemble)) == null) { skipAssemblies.AddRange(assembliesToSkip); } } }
-            if (nameToCheckFor.Contains('.')) { namesToCheckFor = nameToCheckFor.Split('.'); }
-            else { namesToCheckFor = new[] { nameToCheckFor }; }
+            if (assembliesToLookFor == null)
+                assembliesToLookFor = new string[0];
+
+            if (assembliesToSkip == null)
+                assembliesToSkip = new string[0];
+
+            if (assembliesToSkip != null)
+                foreach (var assemble in assembliesToSkip)
+                    if (skipAssemblies.Find(a => a.Contains(assemble)) == null)
+                        skipAssemblies.AddRange(assembliesToSkip);
+
+            if (nameToCheckFor.Contains('.'))
+                namesToCheckFor = nameToCheckFor.Split('.');
+            else
+                namesToCheckFor = new[] { nameToCheckFor };
 
             foreach (string skippedAssembly in skipAssemblies)
-            {
-                if (assembly.FullName.Contains(skippedAssembly)) { shouldSkip = true; }
-                else if (assembliesToLookFor != null && assembliesToLookFor.Length > 0 && assembliesToLookFor[0] != null && !assembliesToLookFor.Any(a => a.Contains(assembly.GetName().Name))) { shouldSkip = true; }
-            }
+                if (assembly.FullName.Contains(skippedAssembly))
+                    shouldSkip = true;
+                else if (assembliesToLookFor.Length > 0 && !assembliesToLookFor.Any(a => assembly.FullName.Contains(a)))
+                    shouldSkip = true;
 
             if (!shouldSkip)
             {
@@ -92,6 +104,7 @@ namespace NostreetsExtensions.Utilities
                     if (namesToCheckFor.Any(a => a == type.Name))
                     {
                         #region Find Method
+
                         if (classType == ClassTypes.Methods || classType == ClassTypes.Any)
                             foreach (MethodInfo method in type.GetMethods(memberInfoBinding))
                             {
@@ -111,9 +124,11 @@ namespace NostreetsExtensions.Utilities
                                 if (namesToCheckFor.Any(a => a == method.Name))
                                     result = method;
                             }
-                        #endregion
+
+                        #endregion Find Method
 
                         #region Find Property
+
                         if (classType == ClassTypes.Properties || classType == ClassTypes.Any)
                             foreach (PropertyInfo prop in type.GetProperties())
                             {
@@ -123,9 +138,11 @@ namespace NostreetsExtensions.Utilities
                                 if (namesToCheckFor.Any(a => a == prop.Name))
                                     result = prop;
                             }
-                        #endregion
+
+                        #endregion Find Property
 
                         #region Find Constructor
+
                         if (classType == ClassTypes.Constructors || classType == ClassTypes.Any)
                             foreach (ConstructorInfo construct in type.GetConstructors())
                             {
@@ -135,7 +152,8 @@ namespace NostreetsExtensions.Utilities
                                 if (namesToCheckFor.Any(a => a == construct.Name))
                                     result = construct;
                             }
-                        #endregion
+
+                        #endregion Find Constructor
 
                         if (result != null)
                             break;
@@ -143,7 +161,6 @@ namespace NostreetsExtensions.Utilities
                         //+Find Type
                         if (namesToCheckFor.Any(a => a == type.Name) && classType == ClassTypes.Type || classType == ClassTypes.Any)
                             result = type;
-
                     }
                 }
 
@@ -163,9 +180,10 @@ namespace NostreetsExtensions.Utilities
             _targetMap = new List<Tuple<TAttribute, object, Type, Assembly>>();
         }
 
-        public IEnumerable<Tuple<TAttribute, object, Type, Assembly>> ScanForAttributes(Assembly assembly
-                                                                                        , ClassTypes section = ClassTypes.Any
-                                                                                        , Type type = null)
+        public IEnumerable<Tuple<TAttribute, object, Type, Assembly>> ScanForAttributes(
+              Assembly assembly
+            , ClassTypes section = ClassTypes.Any
+            , Type type = null)
         {
             if (assembly == null)
                 throw new ArgumentException(nameof(assembly));
@@ -221,7 +239,10 @@ namespace NostreetsExtensions.Utilities
             }
         }
 
-        private void SearchForAttributes(Assembly assembly, ClassTypes classPart = ClassTypes.Any, Type typeToCheck = null)
+        private void SearchForAttributes(
+            Assembly assembly
+            , ClassTypes classPart = ClassTypes.Any
+            , Type typeToCheck = null)
         {
             bool shouldSkip = false;
 
@@ -249,7 +270,6 @@ namespace NostreetsExtensions.Utilities
     public class DirectoryScanner : Disposable
     {
         private Dictionary<string, Assembly> _backedUpAssemblies = new Dictionary<string, Assembly>();
-
         private List<string> _checkedDirectories = new List<string>();
 
         public DirectoryScanner()
@@ -301,7 +321,7 @@ namespace NostreetsExtensions.Utilities
                                                ? null
                                                : fileNames.Select(a => new Tuple<string, bool>(a, false)).ToArray();
 
-            if (!path.IsUri(out Uri uri))
+            if (!path.IsValidUri(out Uri uri))
                 targetedDirectory = targetedDirectory.StepIntoDirectory(path, true);
             else
                 targetedDirectory = uri.LocalPath;

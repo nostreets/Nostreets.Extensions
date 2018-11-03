@@ -1,18 +1,19 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Reflection;
+using NostreetsExtensions.Extend.Basic;
+using NostreetsExtensions.Extend.IOC;
+using NostreetsExtensions.Utilities;
 
 namespace NostreetsExtensions.DataControl.Classes
 {
-    public abstract class DBObject<T>
+    public abstract partial class DBObject<T>
     {
 
-        DateTime _dateCreated = DateTime.Now;
-        DateTime _dateModified = DateTime.Now;
-        bool _isDeleted = false;
+        private DateTime _dateCreated = DateTime.Now;
+        private DateTime _dateModified = DateTime.Now;
+        private bool _isDeleted = false;
+        private static bool _hasUserId = true;
 
         [Key]
         public T Id { get; set; }
@@ -34,7 +35,7 @@ namespace NostreetsExtensions.DataControl.Classes
 
     }
 
-   
+
 
 
 }
