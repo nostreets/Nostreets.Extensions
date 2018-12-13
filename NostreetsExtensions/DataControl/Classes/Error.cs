@@ -31,7 +31,7 @@ namespace NostreetsExtensions.DataControl.Classes
             Line = int.Parse(ex.StackTraceToDictionary()?["line"]);
             Method = ex.TargetSite.NameWithParams();
             Trace = ex.StackTrace;
-            Data = data;
+            //Data = data;
         }
 
         public string Message { get; set; }
@@ -41,7 +41,7 @@ namespace NostreetsExtensions.DataControl.Classes
         public int Line { get; set; }
         public string Trace { get; set; }
         public string HelpLink { get; set; }
-        public string Data { get; set; }
+        public LINK Data { get; set; }
         [NotMapped]
         public override string ModifiedUserId { get; set; }
         [NotMapped]
@@ -68,4 +68,6 @@ namespace NostreetsExtensions.DataControl.Classes
         }
 
     }
+
+    public class LINK { public String VALUE { get; set; } public String VALUE2 { get; set; } }
 }

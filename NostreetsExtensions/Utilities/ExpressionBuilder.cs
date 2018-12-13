@@ -20,7 +20,7 @@ namespace NostreetsExtensions.Utilities
 
         public static Expression Expr(Expression func, Type t, Type r)
         {
-            Type castedFunc = typeof(Func<,>).InsertGenericTypes(new[] { t, r });
+            Type castedFunc = typeof(Func<,>).IntoGenericConstructorAsT(new[] { t, r });
             object result = typeof(Expression).IntoGenericMethod("Lambda", castedFunc, func);
             return (Expression)result;
         }

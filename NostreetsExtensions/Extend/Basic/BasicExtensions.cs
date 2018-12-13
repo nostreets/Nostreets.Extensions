@@ -3,45 +3,84 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Diagnostics;
+using System.Dynamic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Reflection.Emit;
+using System.Runtime.Serialization;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Xml;
+using System.Xml.Linq;
 using System.Xml.Serialization;
+
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
+
 using NostreetsExtensions.Utilities;
 
 namespace NostreetsExtensions.Extend.Basic
 {
     public static class Basic
     {
+        #region Static
+
         /// <summary>
-        /// Gets the objects with attribute.
+        /// Creates the class.
+        /// </summary>
+        /// <param name="props">The props.</param>
+        /// <param name="methods">The methods.</param>
+        /// <returns></returns>
+        public static Type CreateClass(List<Tuple<string, Type, Dictionary<Type, object[]>>> props, List<Tuple<string, Type, MethodAttributes, Dictionary<Type, ParameterAttributes>, Dictionary<Type, object[]>>> methods)
+        {
+            return CreateClass(null, props, methods);
+        }
+
+        /// <summary>
+        /// Creates the class.
+        /// </summary>
+        /// <param name="name">The name.</param>
+        /// <param name="props">The props.</param>
+        /// <param name="methods">The methods.</param>
+        /// <returns></returns>
+        public static Type CreateClass(string name, List<Tuple<string, Type, Dictionary<Type, object[]>>> props, List<Tuple<string, Type, MethodAttributes, Dictionary<Type, ParameterAttributes>, Dictionary<Type, object[]>>> methods)
+        {
+            return ClassBuilder.CreateType(name ?? "Class" + Guid.NewGuid().ToString(), props, methods);
+        }
+
+        /// <summary>
+        /// Gets the local path.
+        /// </summary>
+        /// <returns></returns>
+        public static string GetLocalPath()
+        {
+            return Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+        }
+
+        /// <summary>
+        /// Gets the methods by attribute.
         /// </summary>
         /// <typeparam name="TAttribute">The type of the attribute.</typeparam>
         /// <param name="obj">The object.</param>
-        /// <param name="types">The types.</param>
+        /// <param name="type">The type.</param>
         /// <param name="assembliesToSkip">The assemblies to skip.</param>
         /// <returns></returns>
-        public static List<Tuple<TAttribute, object, Assembly>> GetObjectsWithAttribute<TAttribute>(Func<Assembly, bool> predicate, ClassTypes section) where TAttribute : Attribute
+        public static List<MethodInfo> GetMethodsByAttribute<TAttribute>(Func<Assembly, bool> predicate) where TAttribute : Attribute
         {
             if (predicate == null)
                 throw new ArgumentNullException(nameof(predicate));
 
-            List<Tuple<TAttribute, object, Assembly>> result = new List<Tuple<TAttribute, object, Assembly>>();
+            List<MethodInfo> result = new List<MethodInfo>();
             IEnumerable<Assembly> assemblies = AppDomain.CurrentDomain.GetAssemblies().Where(predicate);
 
             using (AttributeScanner<TAttribute> scanner = new AttributeScanner<TAttribute>())
                 foreach (Assembly ass in assemblies)
-                    foreach (var item in scanner.ScanForAttributes(ass, section))
-                        result.Add(new Tuple<TAttribute, object, Assembly>(item.Item1, item.Item2, item.Item4));
+                    foreach (var item in scanner.ScanForAttributes(ass, ClassTypes.Methods))
+                        result.Add((MethodInfo)item.Item2);
 
             return result.Distinct().ToList();
         }
@@ -72,51 +111,35 @@ namespace NostreetsExtensions.Extend.Basic
         }
 
         /// <summary>
-        /// Gets the methods by attribute.
+        /// Gets the objects with attribute.
         /// </summary>
         /// <typeparam name="TAttribute">The type of the attribute.</typeparam>
         /// <param name="obj">The object.</param>
-        /// <param name="type">The type.</param>
+        /// <param name="types">The types.</param>
         /// <param name="assembliesToSkip">The assemblies to skip.</param>
         /// <returns></returns>
-        public static List<MethodInfo> GetMethodsByAttribute<TAttribute>(Func<Assembly, bool> predicate) where TAttribute : Attribute
+        public static List<Tuple<TAttribute, object, Assembly>> GetObjectsWithAttribute<TAttribute>(Func<Assembly, bool> predicate, ClassTypes section) where TAttribute : Attribute
         {
             if (predicate == null)
                 throw new ArgumentNullException(nameof(predicate));
 
-            List<MethodInfo> result = new List<MethodInfo>();
+            List<Tuple<TAttribute, object, Assembly>> result = new List<Tuple<TAttribute, object, Assembly>>();
             IEnumerable<Assembly> assemblies = AppDomain.CurrentDomain.GetAssemblies().Where(predicate);
 
             using (AttributeScanner<TAttribute> scanner = new AttributeScanner<TAttribute>())
                 foreach (Assembly ass in assemblies)
-                    foreach (var item in scanner.ScanForAttributes(ass, ClassTypes.Methods))
-                        result.Add((MethodInfo)item.Item2);
+                    foreach (var item in scanner.ScanForAttributes(ass, section))
+                        result.Add(new Tuple<TAttribute, object, Assembly>(item.Item1, item.Item2, item.Item4));
 
             return result.Distinct().ToList();
         }
-
         /// <summary>
-        /// Gets the types by attribute.
+        /// Gets the os drive.
         /// </summary>
-        /// <typeparam name="TAttribute">The type of the attribute.</typeparam>
-        /// <param name="obj">The object.</param>
-        /// <param name="type">The type.</param>
-        /// <param name="assembliesToSkip">The assemblies to skip.</param>
         /// <returns></returns>
-        public static List<Type> GetTypesByAttribute<TAttribute>(Func<Assembly, bool> predicate) where TAttribute : Attribute
+        public static string GetOSDrive()
         {
-            if (predicate == null)
-                throw new ArgumentNullException(nameof(predicate));
-
-            List<Type> result = new List<Type>();
-            IEnumerable<Assembly> assemblies = AppDomain.CurrentDomain.GetAssemblies().Where(predicate);
-
-            using (AttributeScanner<TAttribute> scanner = new AttributeScanner<TAttribute>())
-                foreach (Assembly ass in assemblies)
-                    foreach (var item in scanner.ScanForAttributes(ass, ClassTypes.Type))
-                        result.Add((Type)item.Item2);
-
-            return result.Distinct().ToList();
+            return Path.GetPathRoot(Environment.SystemDirectory);
         }
 
         /// <summary>
@@ -143,51 +166,53 @@ namespace NostreetsExtensions.Extend.Basic
             return result.Distinct().ToList();
         }
 
-        public static string SolutionPath()
-        {
-            string solutionDirPath = Assembly.GetCallingAssembly().CodeBase.StepOutOfDirectory(3);
-
-            return solutionDirPath.ScanForFilePath(null, "sln");
-        }
-
+        /// <summary>
+        /// Gets the solution.
+        /// </summary>
+        /// <returns></returns>
         public static Solution GetSolution()
         {
             return new Solution(SolutionPath());
         }
 
+        /// <summary>
+        /// Gets the solution projects.
+        /// </summary>
+        /// <returns></returns>
         public static List<Project> GetSolutionProjects()
         {
             return GetSolution().Projects;
         }
 
-        public static string GetOSDrive()
+        /// <summary>
+        /// Gets the types by attribute.
+        /// </summary>
+        /// <typeparam name="TAttribute">The type of the attribute.</typeparam>
+        /// <param name="obj">The object.</param>
+        /// <param name="type">The type.</param>
+        /// <param name="assembliesToSkip">The assemblies to skip.</param>
+        /// <returns></returns>
+        public static List<Type> GetTypesByAttribute<TAttribute>(Func<Assembly, bool> predicate) where TAttribute : Attribute
         {
-            return Path.GetPathRoot(Environment.SystemDirectory);
+            if (predicate == null)
+                throw new ArgumentNullException(nameof(predicate));
+
+            List<Type> result = new List<Type>();
+            IEnumerable<Assembly> assemblies = AppDomain.CurrentDomain.GetAssemblies().Where(predicate);
+
+            using (AttributeScanner<TAttribute> scanner = new AttributeScanner<TAttribute>())
+                foreach (Assembly ass in assemblies)
+                    foreach (var item in scanner.ScanForAttributes(ass, ClassTypes.Type))
+                        result.Add((Type)item.Item2);
+
+            return result.Distinct().ToList();
         }
-
-        public static string GetLocalPath()
-        {
-            return Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-        }
-
-        public static void CreateFolder(string path)
-        {
-            if (!Directory.Exists(path))
-                Directory.CreateDirectory(path);
-
-            return;
-        }
-
-        public static Type CreateClass(string[] propNames, Type[] propTypes)
-        {
-            return CreateClass(propNames, propTypes);
-        }
-
-        public static Type CreateClass(string name, string[] propNames, Type[] propTypes)
-        {
-            return ClassBuilder.CreateType(name ?? "Class" + Guid.NewGuid().ToString(), propNames, propTypes);
-        }
-
+        /// <summary>
+        /// Globals the stack trace.
+        /// </summary>
+        /// <param name="removeLines">The remove lines.</param>
+        /// <param name="trim">The trim.</param>
+        /// <returns></returns>
         public static string[] GlobalStackTrace(int removeLines = 0, int trim = 6)
         {
             string[] stack = Environment.StackTrace.Split(
@@ -208,174 +233,204 @@ namespace NostreetsExtensions.Extend.Basic
             return actualResult;
         }
 
-        public static object ScanAssembliesForObject(string nameToCheckFor
-                                                  , string assemblyToLookFor = null
-                                                  , ClassTypes classType = ClassTypes.Any
-                                                  , Func<dynamic, bool> predicate = null)
-        {
-            object result = null;
-            using (AssemblyScanner scanner = new AssemblyScanner())
-                result = scanner.ScanAssembliesForObject(nameToCheckFor, (assemblyToLookFor != null) ? new[] { assemblyToLookFor } : null, null, classType, predicate);
-            return result;
-        }
-
         /// <summary>
-        /// Scans the assemblies for object.
-        /// </summary>
-        /// <param name="nameToCheckFor">The name to check for.</param>
-        /// <param name="assembliesToLookFor">The assemblies to look for.</param>
-        /// <returns></returns>
-        public static object ScanAssembliesForObject(string nameToCheckFor
-                                                    , string[] assembliesToLookFor
-                                                    , ClassTypes classType = ClassTypes.Any
-                                                    , Func<dynamic, bool> predicate = null)
-        {
-            object result = null;
-            using (AssemblyScanner scanner = new AssemblyScanner())
-                result = scanner.ScanAssembliesForObject(nameToCheckFor, assembliesToLookFor, null, classType, predicate);
-            return result;
-        }
-
-        /// <summary>
-        /// Scans the assemblies for object.
-        /// </summary>
-        /// <param name="nameToCheckFor">The name to check for.</param>
-        /// <param name="assembliesToSkip">The assemblies to skip.</param>
-        /// <param name="assembliesToLookFor">The assemblies to look for.</param>
-        /// <returns></returns>
-        public static object ScanAssembliesForObject(string nameToCheckFor
-                                                    , string[] assembliesToSkip
-                                                    , string[] assembliesToLookFor
-                                                    , ClassTypes classType = ClassTypes.Any
-                                                    , Func<dynamic, bool> predicate = null)
-        {
-            object result = null;
-            using (AssemblyScanner scanner = new AssemblyScanner())
-                result = scanner.ScanAssembliesForObject(nameToCheckFor, assembliesToLookFor, assembliesToSkip, classType, predicate);
-            return result;
-        }
-
-    }
-
-    public static class BasicExtensions
-    {
-        /// <summary>
-        /// Adds the attribute.
+        /// Maps the specified source.
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        /// <param name="obj">The affected object.</param>
-        /// <param name="addToBaseObj">if set to <c>true</c> [affect base object].</param>
-        /// <param name="attributeParams">The parameters for the attribute.</param>
-        /// <param name="affectedFields">The affected fields.</param>
-        public static void AddAttribute<T>(this object obj, string @namespace, Dictionary<Type, object> attributeParams, bool addToBaseObj = true, params FieldInfo[] affectedFields) where T : Attribute
+        /// <param name="source">The source.</param>
+        /// <exception cref="ArgumentNullException">source</exception>
+        /// <exception cref="ArgumentException">
+        /// not nullable
+        /// or
+        /// type mismatch
+        /// </exception>
+        public static void Map<T>(ExpandoObject source)
         {
-            Type type = obj.GetType();
+            Dictionary<string, PropertyInfo> _propertyMap =
+                typeof(T)
+                .GetProperties()
+                .ToDictionary(
+                    p => p.Name.ToLower(),
+                    p => p
+                );
 
-            AssemblyName aName = new AssemblyName(@namespace);
-            AssemblyBuilder assemblyBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(aName, AssemblyBuilderAccess.Run);
-            ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule(aName.Name);
-            TypeBuilder affectedType = moduleBuilder.DefineType(type.Name + Guid.NewGuid().ToString(), TypeAttributes.Public, type);
+            // Might as well take care of null references early.
+            if (source == null)
+                throw new ArgumentNullException("source");
 
-
-            Type[] attrParams = (attributeParams != null) ? attributeParams.Keys.ToArray() : new Type[] { };
-            ConstructorInfo attrConstructor = typeof(T).GetConstructor(attrParams);
-            CustomAttributeBuilder attrBuilder = new CustomAttributeBuilder(attrConstructor, ((attributeParams != null) ? attributeParams.Values.ToArray() : new object[] { }));
-
-            if (addToBaseObj)
-                affectedType.SetCustomAttribute(attrBuilder);
-
-            if (affectedFields != null && affectedFields.Length > 1)
+            // By iterating the KeyValuePair<string, object> of
+            // source we can avoid manually searching the keys of
+            // source as we see in your original code.
+            foreach (var kv in source)
             {
-                foreach (FieldInfo field in affectedFields)
+                PropertyInfo p;
+                if (_propertyMap.TryGetValue(kv.Key.ToLower(), out p))
                 {
-                    FieldBuilder firstNameField = affectedType.DefineField(field.Name, field.FieldType, (field.IsPrivate) ? FieldAttributes.Private : FieldAttributes.Public);
-                    firstNameField.SetCustomAttribute(attrBuilder);
+                    var propType = p.PropertyType;
+                    if (kv.Value == null)
+                    {
+                        if (!propType.IsByRef && propType.Name != "Nullable`1")
+                        {
+                            // Throw if type is a value type
+                            // but not Nullable<>
+                            throw new ArgumentException("not nullable");
+                        }
+                    }
+                    else if (kv.Value.GetType() != propType)
+                    {
+                        // You could make this a bit less strict
+                        // but I don't recommend it.
+                        throw new ArgumentException("type mismatch");
+                    }
+                    p.SetValue(default(T), kv.Value, null);
                 }
             }
-
-            Type newType = affectedType.CreateType();
-            object instance = Activator.CreateInstance(newType);
-
-            obj = instance;
         }
+
+        /// <summary>
+        /// Gets the solution path.
+        /// </summary>
+        /// <returns></returns>
+        public static string SolutionPath()
+        {
+            string solutionDirPath = Assembly.GetCallingAssembly().CodeBase.StepOutOfDirectory(3);
+
+            return solutionDirPath.ScanForFilePath(null, "sln");
+        }
+        #endregion Static
+
+        #region Extensions
 
         /// <summary>
         /// Adds the attribute.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
         /// <param name="obj">The affected object.</param>
-        /// <param name="attributeParams">
-        /// ITEM 1 : Field's Name
+        /// <param name="attributeParams">ITEM 1 : Field's Name
         /// ITEM 2 : Attribute To Add
-        /// ITEM 3 : Attribute Params To Construct With
-        /// </param>
-        /// <param name="affectedFields">The affected fields.</param>
-        public static object AddAttribute(this object obj, Tuple<string, Type, object[]>[] attributeParams, bool addToBaseObj = true)
+        /// ITEM 3 : Attribute Params To Construct With</param>
+        /// <returns></returns>
+        /// <exception cref="InvalidDataException">attributeParams must only have Type's of Attributes...</exception>
+        public static object AddOrSetAttribute(this object obj, Dictionary<string, Dictionary<Type, object[]>> attributeParams)
         {
             object result = null;
-            if (attributeParams.Any(a => !a.Item2.IsSubclassOf(typeof(Attribute))))
+            if (attributeParams.Any(a => !a.Value.Any(b => b.Key.IsSubclassOf(typeof(Attribute)))))
                 throw new InvalidDataException("attributeParams must only have Type's of Attributes...");
 
-            Type type = obj.GetType();
-            PropertyInfo[] props = type.GetProperties();
+            Type type = obj as Type ?? obj.GetType();
+            List<Tuple<string, Type, Dictionary<Type, object[]>>> props = new List<Tuple<string, Type, Dictionary<Type, object[]>>>();
+            List<Tuple<string, Type, MethodAttributes, Dictionary<Type, ParameterAttributes>, Dictionary<Type, object[]>>> methods = new List<Tuple<string, Type, MethodAttributes, Dictionary<Type, ParameterAttributes>, Dictionary<Type, object[]>>>();
 
-            result = ClassBuilder.CreateObject(
-                                type.Name
-                                , props.Select(a => a.Name).ToArray()
-                                , props.Select(a => a.PropertyType).ToArray()
-                                , attributeParams
-                            );
+            foreach (PropertyInfo prop in type.GetProperties())
+                props.Add(
+                    new Tuple<string, Type, Dictionary<Type, object[]>>(
+                        prop.Name,
+                        prop.PropertyType,
+                        attributeParams.Keys.Any(a => a == prop.Name) ? attributeParams.Single(a => a.Key == prop.Name).Value : null
+                    )
+                );
 
-            foreach (PropertyInfo prop in props)
-                result.SetPropertyValue(prop.Name, obj.GetPropertyValue(prop.Name));
+            foreach (MethodInfo method in type.GetMethods())
+                methods.Add(
+                    new Tuple<string, Type, MethodAttributes, Dictionary<Type, ParameterAttributes>, Dictionary<Type, object[]>>(
+                        method.Name,
+                        method.ReturnType,
+                        method.Attributes,
+                        method.GetParameters().ToDictionary(a => new KeyValuePair<Type, ParameterAttributes>(a.ParameterType, a.Attributes)),
+                        attributeParams.Keys.Any(a => a == method.Name) ? attributeParams.Single(a => a.Key == method.Name).Value : null
+                    )
+                );
+
+            result = ClassBuilder.CreateObject(type.Name, props, methods);
+
+            foreach (var prop in props)
+                result.SetPropertyValue(prop.Item1, obj.GetPropertyValue(prop.Item1));
 
             return result;
         }
 
         /// <summary>
-        /// Adds the property.
+        /// Adds the attribute.
+        /// </summary>
+        /// <param name="obj">The affected object.</param>
+        /// <param name="attributeParams">ITEM 1 : Field's Name
+        /// ITEM 2 : Attribute To Add
+        /// ITEM 3 : Attribute Params To Construct With</param>
+        /// <returns></returns>
+        /// <exception cref="InvalidDataException">attributeParams must only have Type's of Attributes...</exception>
+        public static Type AddOrSetAttribute(this Type obj, Dictionary<string, Dictionary<Type, object[]>> attributeParams)
+        {
+            if (attributeParams.Any(a => !a.Value.Any(b => b.Key.IsSubclassOf(typeof(Attribute)))))
+                throw new InvalidDataException("attributeParams must only have Type's of Attributes...");
+
+            Type type = obj;
+            PropertyInfo[] props = type.GetProperties();
+            MethodInfo[] methods = type.GetMethods();
+
+            return ClassBuilder.CreateType(
+                                type.Name
+                                , props.Select(a => new Tuple<string, Type, Dictionary<Type, object[]>>(a.Name, a.PropertyType,
+                                    attributeParams.Any(b => b.Key == a.Name) ? attributeParams.FirstOrDefault(b => b.Key == a.Name).Value : null)
+                                ).ToList()
+                                , methods.Select(a => new Tuple<string, Type, MethodAttributes, Dictionary<Type, ParameterAttributes>, Dictionary<Type, object[]>>(a.Name, a.ReturnType, a.Attributes,
+                                    a.GetParameters().ToDictionary(b => new KeyValuePair<Type, ParameterAttributes>(b.ParameterType, b.Attributes)),
+                                    attributeParams.Any(b => b.Key == a.Name) ? attributeParams.FirstOrDefault(b => b.Key == a.Name).Value : null)
+                              ).ToList()
+                            );
+        }
+
+        /// <summary>
+        /// Adds the or set property.
         /// </summary>
         /// <param name="objType">Type of the object.</param>
-        /// <param name="propType">Type of the property.</param>
-        /// <param name="propName">Name of the property.</param>
-        /// <param name="index">The index.</param>
+        /// <param name="oldPropName">Old name of the property.</param>
+        /// <param name="newPropType">New type of the property.</param>
+        /// <param name="newPropName">New name of the property.</param>
+        /// <param name="propIndex">Index of the property.</param>
+        /// <param name="attributes">The attributes.</param>
         /// <returns></returns>
-        public static Type AddProperty(this Type objType, Type propType, string propName, int index = 0)
+        public static Type AddOrSetProperty(this Type objType, string oldPropName = null, Type newPropType = null, string newPropName = null, int propIndex = -1, Dictionary<Type, object[]> attributes = null)
         {
-            List<string> propNames = new List<string>();
-            List<Type> propTypes = new List<Type>();
-            PropertyInfo[] props = objType.GetProperties().Where(a => a.Name != propName).ToArray();
+            List<Tuple<string, Type, Dictionary<Type, object[]>>> properties = new List<Tuple<string, Type, Dictionary<Type, object[]>>>();
+            List<PropertyInfo> baseProps = objType.GetProperties().ToList();
+            PropertyInfo[] props = baseProps.Where(a => a.Name != oldPropName).ToArray();
             int i = 0;
 
             foreach (PropertyInfo prop in props)
             {
-                if (i == index)
+                if (i == propIndex)
                 {
-                    propNames.Add(propName);
-                    propTypes.Add(propType);
+                    properties.Add(new Tuple<string, Type, Dictionary<Type, object[]>>(newPropName, newPropType, attributes));
+                    properties.Add(new Tuple<string, Type, Dictionary<Type, object[]>>(prop.Name, prop.PropertyType, attributes));
                 }
-
-                propNames.Add(prop.Name);//s[(addedProp) ? i - 1 : i].Name);
-                propTypes.Add(prop.PropertyType);//s[(addedProp) ? i - 1 : i].PropertyType);
+                else if (prop.Name == oldPropName)
+                    properties.Add(new Tuple<string, Type, Dictionary<Type, object[]>>(newPropName ?? oldPropName, newPropType, attributes));
+                else
+                    properties.Add(new Tuple<string, Type, Dictionary<Type, object[]>>(prop.Name, prop.PropertyType, attributes));
 
                 i++;
             }
 
-            return ClassBuilder.CreateType(objType.Name, propNames.ToArray(), propTypes.ToArray());
+            List<Tuple<string, Type, MethodAttributes, Dictionary<Type, ParameterAttributes>, Dictionary<Type, object[]>>> methods = new List<Tuple<string, Type, MethodAttributes, Dictionary<Type, ParameterAttributes>, Dictionary<Type, object[]>>>();
+            foreach (MethodInfo method in objType.GetMethods())
+                methods.Add(new Tuple<string, Type, MethodAttributes, Dictionary<Type, ParameterAttributes>, Dictionary<Type, object[]>>(
+                    method.Name, method.ReturnType, method.Attributes, method.GetParameters().ToDictionary(a => new KeyValuePair<Type, ParameterAttributes>(a.ParameterType, a.Attributes)), null));
+
+            return ClassBuilder.CreateType(objType.Name, properties, methods);
         }
 
         /// <summary>
         /// Adds the property.
         /// </summary>
         /// <param name="obj">The object.</param>
-        /// <param name="propType">Type of the property.</param>
-        /// <param name="propName">Name of the property.</param>
-        /// <param name="index">The index.</param>
+        /// <param name="newPropType">Type of the property.</param>
+        /// <param name="newPropName">Name of the property.</param>
+        /// <param name="propIndex">Index of the property.</param>
+        /// <param name="attributes">The attributes.</param>
         /// <returns></returns>
-        public static Type AddProperty(this object obj, Type propType, string propName, int index = 0)
+        public static Type AddProperty(this object obj, Type newPropType, string newPropName, int propIndex = 0, Dictionary<Type, object[]> attributes = null)
         {
-            Type objType = obj.GetType();
-            return objType.AddProperty(propType, propName, index);
+            Type objType = obj as Type ?? obj.GetType();
+            return AddOrSetProperty(objType, null, newPropType, newPropName, (propIndex >= 0) ? propIndex : 0, attributes);
         }
 
         /// <summary>
@@ -402,12 +457,37 @@ namespace NostreetsExtensions.Extend.Basic
         }
 
         /// <summary>
+        /// Appends the specified chars.
+        /// </summary>
+        /// <param name="char">The character.</param>
+        /// <param name="chars">The chars.</param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentNullException">chars</exception>
+        public static string Append(this char @char, params char[] chars)
+        {
+            if (chars == null)
+                throw new ArgumentNullException("chars");
+
+            if (chars.Length == 0)
+                return @char.ToString();
+
+            List<char> arrOfChars = new List<char>();
+            arrOfChars.Add(@char);
+
+            foreach (char character in chars)
+                arrOfChars.Add(character);
+
+            return new string(arrOfChars.ToArray());
+        }
+
+        /// <summary>
         /// Casts the specified value.
         /// </summary>
         /// <param name="type">The type.</param>
         /// <param name="value">The value.</param>
         /// <returns></returns>
-        public static object Cast(this Type type, object value)
+        /// <exception cref="ArgumentNullException">value</exception>
+        public static object Cast(this object value, Type type)
         {
             if (value == null)
                 throw new ArgumentNullException(nameof(value));
@@ -415,6 +495,67 @@ namespace NostreetsExtensions.Extend.Basic
             object obj = null;
             obj = Convert.ChangeType(value, type);
             return obj;
+        }
+
+        /// <summary>
+        /// Casts the specified value.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="value">The value.</param>
+        /// <returns></returns>
+        public static T Cast<T>(this object value)
+        {
+            return (T)value.Cast(typeof(T));
+        }
+
+        /// <summary>
+        /// Tries the cast.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <param name="type">The type.</param>
+        /// <param name="convertedObj">The converted object.</param>
+        /// <returns></returns>
+        public static bool TryCast(this object value, Type type, out object convertedObj)
+        {
+            bool result = false;
+            convertedObj = null;
+
+            try
+            {
+                convertedObj = value.Cast(type);
+            }
+            finally
+            {
+                result = convertedObj != null;
+            }
+
+            return result;
+
+        }
+
+        /// <summary>
+        /// Tries the cast.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="value">The value.</param>
+        /// <param name="convertedObj">The converted object.</param>
+        /// <returns></returns>
+        public static bool TryCast<T>(this object value, out T convertedObj)
+        {
+            bool result = false;
+            convertedObj = default(T);
+
+            try
+            {
+                convertedObj = value.Cast<T>();
+            }
+            finally
+            {
+                result = convertedObj != null;
+            }
+
+            return result;
+
         }
 
         /// <summary>
@@ -463,11 +604,9 @@ namespace NostreetsExtensions.Extend.Basic
         /// <param name="collection">The collection.</param>
         /// <param name="type">The type.</param>
         /// <returns></returns>
-        /// <exception cref="Exception">
-        /// type cannot be null to be able to Cast
+        /// <exception cref="Exception">type cannot be null to be able to Cast
         /// or
-        /// All entities Type in the collection have to match to type to be able to Cast
-        /// </exception>
+        /// All entities Type in the collection have to match to type to be able to Cast</exception>
         public static IEnumerable Cast(this IEnumerable collection, Type type)
         {
             IEnumerable result = null;
@@ -547,6 +686,10 @@ namespace NostreetsExtensions.Extend.Basic
             return result;
         }
 
+        /// <summary>
+        /// Creates the folder.
+        /// </summary>
+        /// <param name="path">The path.</param>
         public static void CreateFolder(this string path)
         {
             if (!Directory.Exists(path))
@@ -555,6 +698,18 @@ namespace NostreetsExtensions.Extend.Basic
             return;
         }
 
+        /// <summary>
+        /// Decrypts the specified key.
+        /// </summary>
+        /// <param name="data">The data.</param>
+        /// <param name="key">The key.</param>
+        /// <param name="encoding">The encoding.</param>
+        /// <returns></returns>
+        /// <exception cref="Exception">
+        /// key cannot be null to be able to Decrypt...
+        /// or
+        /// this cannot be null to be able to Decrypt...
+        /// </exception>
         public static string Decrypt(this string data, string key, Encoding encoding = null)
         {
             if (key == null)
@@ -604,11 +759,29 @@ namespace NostreetsExtensions.Extend.Basic
             }
         }
 
+        /// <summary>
+        /// Doeses the inherit.
+        /// </summary>
+        /// <param name="type">The type.</param>
+        /// <param name="inheritanceType">Type of the inheritance.</param>
+        /// <returns></returns>
         public static bool DoesInherit(this Type type, Type inheritanceType)
         {
             return type.IsAssignableFrom(inheritanceType);
         }
 
+        /// <summary>
+        /// Encrypts the specified key.
+        /// </summary>
+        /// <param name="data">The data.</param>
+        /// <param name="key">The key.</param>
+        /// <param name="encoding">The encoding.</param>
+        /// <returns></returns>
+        /// <exception cref="Exception">
+        /// key cannot be null to be able to Encrypt...
+        /// or
+        /// this cannot be null to be able to Encrypt...
+        /// </exception>
         public static string Encrypt(this string data, string key, Encoding encoding = null)
         {
             if (key == null)
@@ -635,6 +808,46 @@ namespace NostreetsExtensions.Extend.Basic
         }
 
         /// <summary>
+        /// To the dictionary.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="enumType">Type of the enum.</param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentNullException">Type must be an enum</exception>
+        public static Dictionary<int, string> EnumToDictionary<T>(this T enumType) where T : struct, IConvertible
+        {
+            if (!typeof(T).IsEnum)
+                throw new ArgumentNullException("Type must be an enum");
+
+            return typeof(T).EnumToDictionary();
+        }
+
+        /// <summary>
+        /// To the dictionary.
+        /// </summary>
+        /// <param name="enumType">Type of the enum.</param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentNullException">Type must be an enum</exception>
+        public static Dictionary<int, string> EnumToDictionary(this Type enumType)
+        {
+            Dictionary<int, string> result = null;
+            if (!enumType.IsEnum)
+                throw new ArgumentNullException("Type must be an enum");
+
+            string[] arr = Enum.GetNames(enumType);
+
+            foreach (string enumName in arr)
+            {
+                if (result == null)
+                    result = new Dictionary<int, string>();
+
+                result.Add(enumType.GetEnumValue(enumName), enumName);
+            }
+
+            return result;
+        }
+
+        /// <summary>
         /// Extends the path.
         /// </summary>
         /// <param name="path">The path.</param>
@@ -645,6 +858,11 @@ namespace NostreetsExtensions.Extend.Basic
             return Path.GetFullPath(Path.Combine(path, extension));
         }
 
+        /// <summary>
+        /// Files the extention.
+        /// </summary>
+        /// <param name="path">The path.</param>
+        /// <returns></returns>
         public static string FileExtention(this string path)
         {
             string[] split = path.Split('.');
@@ -687,6 +905,11 @@ namespace NostreetsExtensions.Extend.Basic
             return result;
         }
 
+        /// <summary>
+        /// Gets the constructor parameters.
+        /// </summary>
+        /// <param name="type">The type.</param>
+        /// <param name="param">The parameter.</param>
         public static void GetConstructorParams(this Type type, object[] param = null)
         {
             if (param == null)
@@ -709,6 +932,16 @@ namespace NostreetsExtensions.Extend.Basic
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Gets the default constructor.
+        /// </summary>
+        /// <param name="t">The t.</param>
+        /// <returns></returns>
+        public static ConstructorInfo GetDefaultConstructor(this Type t)
+        {
+            return t.GetConstructor(Type.EmptyTypes);
         }
 
         /// <summary>
@@ -754,8 +987,12 @@ namespace NostreetsExtensions.Extend.Basic
         /// <param name="enumType">Type of the enum.</param>
         /// <param name="name">The name.</param>
         /// <returns></returns>
+        /// <exception cref="ArgumentNullException">Type must be an enum</exception>
         public static int GetEnumValue(this Type enumType, string name)
         {
+            if (!enumType.IsEnum)
+                throw new ArgumentNullException("Type must be an enum");
+
             return (int)Enum.Parse(enumType, name);
         }
 
@@ -765,14 +1002,52 @@ namespace NostreetsExtensions.Extend.Basic
         /// <typeparam name="T"></typeparam>
         /// <param name="name">The name.</param>
         /// <returns></returns>
+        /// <exception cref="ArgumentNullException">Type must be an enum</exception>
         public static int GetEnumValue<T>(this string name)
         {
+            if (!typeof(T).IsEnum)
+                throw new ArgumentNullException("Type must be an enum");
+
             return (int)Enum.Parse(typeof(T), name);
         }
 
+        /// <summary>
+        /// Gets the event.
+        /// </summary>
+        /// <param name="obj">The object.</param>
+        /// <param name="eventName">Name of the event.</param>
+        /// <returns></returns>
         public static EventInfo GetEvent(this object obj, string eventName)
         {
             return obj.GetType().GetEvent(eventName);
+        }
+
+        /// <summary>
+        /// Gets the name of the incremented.
+        /// </summary>
+        /// <param name="name">The name.</param>
+        /// <param name="format">The format.</param>
+        /// <returns></returns>
+        public static string GetIncrementedName(this string name, string format = "{0}.v.{1}")
+        {
+            format = format.Contains("{0}") && format.Contains("{1}") ? format : "{0}.v.{1}";
+
+            int numericIndex = 0;
+            for (int i = name.Length - 1; i >= 0; i--)
+                if (name[i].IsNumeric())
+                    numericIndex++;
+                else
+                    break;
+
+            string result = null;
+            int nextVersion = !name[name.Length - 1].IsNumeric() ? 2 : int.Parse(name.Substring(name.Length - numericIndex).ToString()) + 1;
+
+            if (nextVersion != 2)
+                result = name.Substring(0, name.Length - numericIndex) + nextVersion;
+            else
+                result = format.FormatString(name, nextVersion.ToString());
+
+            return result;
         }
 
         /// <summary>
@@ -783,7 +1058,7 @@ namespace NostreetsExtensions.Extend.Basic
         /// <param name="expression">The expression.</param>
         /// <returns></returns>
         /// <exception cref="ArgumentNullException">Expression is not a method - expression</exception>
-        public static MethodInfo GetMethodInfo<T, T2>(this Expression<Func<T, T2>> expression)
+        public static MethodInfo GetMethod<T, T2>(this Expression<Func<T, T2>> expression)
         {
             var member = expression.Body as MethodCallExpression;
 
@@ -800,7 +1075,7 @@ namespace NostreetsExtensions.Extend.Basic
         /// <param name="expression">The expression.</param>
         /// <returns></returns>
         /// <exception cref="ArgumentNullException">Expression is not a method - expression</exception>
-        public static MethodInfo GetMethodInfo<T>(this Expression<Action<T>> expression)
+        public static MethodInfo GetMethod<T>(this Expression<Action<T>> expression)
         {
             var member = expression.Body as MethodCallExpression;
 
@@ -815,11 +1090,12 @@ namespace NostreetsExtensions.Extend.Basic
         /// </summary>
         /// <param name="obj">The object.</param>
         /// <param name="methodName">Name of the method.</param>
+        /// <param name="types">The types.</param>
         /// <param name="searchSettings">The search settings.</param>
         /// <returns></returns>
-        public static MethodInfo GetMethodInfo(this object obj, string methodName, BindingFlags searchSettings = BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public | BindingFlags.Static)
+        public static MethodInfo GetMethod(this object obj, string methodName, Type[] types = null, BindingFlags searchSettings = BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public | BindingFlags.Static)
         {
-            return obj.GetType().GetMethod(methodName, searchSettings);
+            return obj.GetType().GetMethod(methodName, searchSettings, Type.DefaultBinder, types ?? new Type[] { }, null);
         }
 
         /// <summary>
@@ -827,11 +1103,12 @@ namespace NostreetsExtensions.Extend.Basic
         /// </summary>
         /// <param name="type">The type.</param>
         /// <param name="methodName">Name of the method.</param>
+        /// <param name="types">The types.</param>
         /// <param name="searchSettings">The search settings.</param>
         /// <returns></returns>
-        public static MethodInfo GetMethodInfo(this Type type, string methodName, BindingFlags searchSettings = BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public | BindingFlags.Static)
+        public static MethodInfo GetMethod(this Type type, string methodName, Type[] types = null, BindingFlags searchSettings = BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public | BindingFlags.Static)
         {
-            return type.GetMethod(methodName, searchSettings);
+            return type.GetMethod(methodName, searchSettings, Type.DefaultBinder, types ?? new Type[] { }, null);
         }
 
         /// <summary>
@@ -839,7 +1116,7 @@ namespace NostreetsExtensions.Extend.Basic
         /// </summary>
         /// <param name="fullMethodName">Full name of the method.</param>
         /// <returns></returns>
-        public static MethodInfo GetMethodInfo(this string fullMethodName)
+        public static MethodInfo GetMethod(this string fullMethodName)
         {
             return (MethodInfo)fullMethodName.ScanAssembliesForObject();
         }
@@ -848,9 +1125,8 @@ namespace NostreetsExtensions.Extend.Basic
         /// Gets the methods by attribute.
         /// </summary>
         /// <typeparam name="TAttribute">The type of the attribute.</typeparam>
-        /// <param name="obj">The object.</param>
+        /// <param name="assembly">The assembly.</param>
         /// <param name="type">The type.</param>
-        /// <param name="assembliesToSkip">The assemblies to skip.</param>
         /// <returns></returns>
         public static List<MethodInfo> GetMethodsByAttribute<TAttribute>(this Assembly assembly, Type type = null) where TAttribute : Attribute
         {
@@ -864,6 +1140,13 @@ namespace NostreetsExtensions.Extend.Basic
             return result;
         }
 
+        /// <summary>
+        /// Gets the methods by attribute.
+        /// </summary>
+        /// <typeparam name="TAttribute">The type of the attribute.</typeparam>
+        /// <param name="assembly">The assembly.</param>
+        /// <param name="types">The types.</param>
+        /// <returns></returns>
         public static List<MethodInfo> GetMethodsByAttribute<TAttribute>(this Assembly assembly, IEnumerable<Type> types = null) where TAttribute : Attribute
         {
             List<MethodInfo> result = new List<MethodInfo>();
@@ -883,6 +1166,12 @@ namespace NostreetsExtensions.Extend.Basic
             return result;
         }
 
+        /// <summary>
+        /// Gets the methods by attribute.
+        /// </summary>
+        /// <typeparam name="TAttribute">The type of the attribute.</typeparam>
+        /// <param name="type">The type.</param>
+        /// <returns></returns>
         public static List<MethodInfo> GetMethodsByAttribute<TAttribute>(this Type type) where TAttribute : Attribute
         {
             List<MethodInfo> result = new List<MethodInfo>();
@@ -895,6 +1184,12 @@ namespace NostreetsExtensions.Extend.Basic
             return result;
         }
 
+        /// <summary>
+        /// Gets the methods by attribute.
+        /// </summary>
+        /// <typeparam name="TAttribute">The type of the attribute.</typeparam>
+        /// <param name="types">The types.</param>
+        /// <returns></returns>
         public static List<MethodInfo> GetMethodsByAttribute<TAttribute>(this IEnumerable<Type> types) where TAttribute : Attribute
         {
             List<MethodInfo> result = new List<MethodInfo>();
@@ -912,10 +1207,9 @@ namespace NostreetsExtensions.Extend.Basic
         /// Gets the objects by attribute.
         /// </summary>
         /// <typeparam name="TAttribute">The type of the attribute.</typeparam>
-        /// <param name="obj">The object.</param>
+        /// <param name="assembly">The assembly.</param>
         /// <param name="section">The section.</param>
         /// <param name="type">The type.</param>
-        /// <param name="assembliesToSkip">The assemblies to skip.</param>
         /// <returns></returns>
         public static List<object> GetObjectsByAttribute<TAttribute>(this Assembly assembly, ClassTypes section, Type type = null) where TAttribute : Attribute
         {
@@ -929,6 +1223,13 @@ namespace NostreetsExtensions.Extend.Basic
             return result;
         }
 
+        /// <summary>
+        /// Gets the objects with attribute.
+        /// </summary>
+        /// <typeparam name="TAttribute">The type of the attribute.</typeparam>
+        /// <param name="assembly">The assembly.</param>
+        /// <param name="section">The section.</param>
+        /// <returns></returns>
         public static List<Tuple<TAttribute, object, Assembly>> GetObjectsWithAttribute<TAttribute>(this Assembly assembly, ClassTypes section) where TAttribute : Attribute
         {
             List<Tuple<TAttribute, object, Assembly>> result = new List<Tuple<TAttribute, object, Assembly>>();
@@ -943,9 +1244,8 @@ namespace NostreetsExtensions.Extend.Basic
         /// Gets the properties by attribute.
         /// </summary>
         /// <typeparam name="TAttribute">The type of the attribute.</typeparam>
-        /// <param name="obj">The object.</param>
+        /// <param name="assembly">The assembly.</param>
         /// <param name="type">The type.</param>
-        /// <param name="assembliesToSkip">The assemblies to skip.</param>
         /// <returns></returns>
         public static List<PropertyInfo> GetPropertiesByAttribute<TAttribute>(this Assembly assembly, Type type = null) where TAttribute : Attribute
         {
@@ -964,9 +1264,7 @@ namespace NostreetsExtensions.Extend.Basic
         /// Gets the properties by attribute.
         /// </summary>
         /// <typeparam name="TAttribute">The type of the attribute.</typeparam>
-        /// <param name="obj">The object.</param>
         /// <param name="type">The type.</param>
-        /// <param name="assembliesToSkip">The assemblies to skip.</param>
         /// <returns></returns>
         public static List<PropertyInfo> GetPropertiesByAttribute<TAttribute>(this Type type) where TAttribute : Attribute
         {
@@ -992,6 +1290,7 @@ namespace NostreetsExtensions.Extend.Basic
         /// <param name="obj">The object.</param>
         /// <param name="propertyName">Name of the property.</param>
         /// <returns></returns>
+        /// <exception cref="Exception">obj cannot be a Type its self to be able to GetPropertyValue...</exception>
         public static object GetPropertyValue(this object obj, string propertyName)
         {
             if (obj.GetType() == typeof(Type).GetType())
@@ -1000,6 +1299,13 @@ namespace NostreetsExtensions.Extend.Basic
             return obj.GetType().GetProperties().Single(pi => pi.Name == propertyName).GetValue(obj);
         }
 
+        /// <summary>
+        /// Gets the property value.
+        /// </summary>
+        /// <param name="obj">The object.</param>
+        /// <param name="ordinal">The ordinal.</param>
+        /// <returns></returns>
+        /// <exception cref="Exception">obj cannot be a Type its self to be able to GetPropertyValue...</exception>
         public static object GetPropertyValue(this object obj, int ordinal)
         {
             if (obj.GetType() == typeof(Type).GetType())
@@ -1050,9 +1356,8 @@ namespace NostreetsExtensions.Extend.Basic
         /// Gets the types by attribute.
         /// </summary>
         /// <typeparam name="TAttribute">The type of the attribute.</typeparam>
-        /// <param name="obj">The object.</param>
+        /// <param name="assembly">The assembly.</param>
         /// <param name="type">The type.</param>
-        /// <param name="assembliesToSkip">The assemblies to skip.</param>
         /// <returns></returns>
         public static List<Type> GetTypesByAttribute<TAttribute>(this Assembly assembly, Type type = null) where TAttribute : Attribute
         {
@@ -1119,6 +1424,118 @@ namespace NostreetsExtensions.Extend.Basic
         }
 
         /// <summary>
+        /// Determines whether this instance has attribute.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="prop">The property.</param>
+        /// <returns>
+        ///   <c>true</c> if the specified property has attribute; otherwise, <c>false</c>.
+        /// </returns>
+        /// <exception cref="InvalidDataException">T must have a base Type of Attribute...</exception>
+        public static bool HasAttribute<T>(this PropertyInfo prop)
+        {
+            if (typeof(T).IsSubclassOf(typeof(Attribute)))
+                throw new InvalidDataException("T must have a base Type of Attribute...");
+
+            return prop.GetCustomAttribute(typeof(T)) == null ? false : true;
+        }
+
+        /// <summary>
+        /// Determines whether this instance has attribute.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="type">The type.</param>
+        /// <returns>
+        ///   <c>true</c> if the specified type has attribute; otherwise, <c>false</c>.
+        /// </returns>
+        /// <exception cref="InvalidDataException">T must have a base Type of Attribute...</exception>
+        public static bool HasAttribute<T>(this Type type)
+        {
+            if (typeof(T).IsSubclassOf(typeof(Attribute)))
+                throw new InvalidDataException("T must have a base Type of Attribute...");
+
+            bool result = false;
+            foreach (PropertyInfo prop in type.GetProperties())
+            {
+                result = prop.GetCustomAttribute(typeof(T)) == null ? false : true;
+
+                if (result == true)
+                    break;
+            }
+
+            return result;
+        }
+        /// <summary>
+        /// Determines whether the specified constructor has constuctor.
+        /// </summary>
+        /// <param name="type">The type.</param>
+        /// <param name="constructor">The constructor.</param>
+        /// <param name="parameters">The parameters.</param>
+        /// <returns>
+        ///   <c>true</c> if the specified constructor has constuctor; otherwise, <c>false</c>.
+        /// </returns>
+        public static bool HasConstuctor(this Type type, out ConstructorInfo constructor, params object[] parameters)
+        {
+            bool doParamsMatch = true;
+            constructor = null;
+
+            if (parameters.Length > 0)
+            {
+                List<Type> argTypes = new List<Type>();
+                ConstructorInfo[] constructors = type.GetConstructors();
+
+                foreach (object par in parameters)
+                {
+                    if (par != null)
+                        argTypes.Add(par.GetType());
+                    else
+                        argTypes.Add(null);
+                }
+
+                foreach (ConstructorInfo constuct in constructors)
+                {
+                    ParameterInfo[] constuctorParams = constuct.GetParameters();
+                    // parameters can be null for default constructors so use argTypes
+                    if (argTypes.Count == constuctorParams.Length)
+                    {
+                        for (int i = 0; i < parameters.Length; i++)
+                        {
+                            if (argTypes[i] == null)
+                            {
+                                if (constuctorParams[i].ParameterType.IsValueType)
+                                {
+                                    //fill the defaults for value type if not supplied
+                                    parameters[i] = Instantiate(constuctorParams[i].ParameterType, null);
+                                    argTypes[i] = parameters[i].GetType();
+                                }
+                                else
+                                {
+                                    argTypes[i] = constuctorParams[i].ParameterType;
+                                }
+                            }
+                            if (!constuctorParams[i].ParameterType.IsAssignableFrom(argTypes[i]))
+                            {
+                                doParamsMatch = false;
+                                break;
+                            }
+                        }
+                        if (doParamsMatch)
+                            constructor = constuct;
+                    }
+                }
+            }
+            else
+            {
+                constructor = GetDefaultConstructor(type);
+
+                if (constructor == null)
+                    doParamsMatch = false;
+            }
+
+            return doParamsMatch;
+        }
+
+        /// <summary>
         /// Determines whether the specified property name has duplicates.
         /// </summary>
         /// <typeparam name="T"></typeparam>
@@ -1143,6 +1560,14 @@ namespace NostreetsExtensions.Extend.Basic
             return false;
         }
 
+        /// <summary>
+        /// Determines whether the specified field has field.
+        /// </summary>
+        /// <param name="type">The type.</param>
+        /// <param name="field">The field.</param>
+        /// <returns>
+        ///   <c>true</c> if the specified field has field; otherwise, <c>false</c>.
+        /// </returns>
         public static bool HasField(this Type type, FieldInfo field)
         {
             return type.GetFields().FirstOrDefault(a => a == field) == null ? false : true;
@@ -1200,21 +1625,51 @@ namespace NostreetsExtensions.Extend.Basic
             return false;
         }
 
+        /// <summary>
+        /// Determines whether the specified method has method.
+        /// </summary>
+        /// <param name="type">The type.</param>
+        /// <param name="method">The method.</param>
+        /// <returns>
+        ///   <c>true</c> if the specified method has method; otherwise, <c>false</c>.
+        /// </returns>
         public static bool HasMethod(this Type type, MethodInfo method)
         {
             return type.GetMethods().FirstOrDefault(a => a == method) == null ? false : true;
         }
 
+        /// <summary>
+        /// Determines whether the specified property has property.
+        /// </summary>
+        /// <param name="type">The type.</param>
+        /// <param name="prop">The property.</param>
+        /// <returns>
+        ///   <c>true</c> if the specified property has property; otherwise, <c>false</c>.
+        /// </returns>
         public static bool HasProperty(this Type type, PropertyInfo prop)
         {
             return type.GetProperties().FirstOrDefault(a => a == prop) == null ? false : true;
         }
 
+        /// <summary>
+        /// Ins the specified arguments.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="obj">The object.</param>
+        /// <param name="args">The arguments.</param>
+        /// <returns></returns>
         public static bool In<T>(this T obj, params T[] args)
         {
             return args.Contains(obj);
         }
 
+        /// <summary>
+        /// Indexes the specified predicate.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="coll">The coll.</param>
+        /// <param name="predicate">The predicate.</param>
+        /// <returns></returns>
         public static int Index<T>(this IEnumerable<T> coll, Func<T, bool> predicate)
         {
             for (int i = 0; i < coll.Count(); i++)
@@ -1224,69 +1679,29 @@ namespace NostreetsExtensions.Extend.Basic
             return -1;
         }
 
-        public static Type InsertGenericTypes(this Type genericType, Type[] types, params object[] parms)
-        {
-            return genericType.MakeGenericType(types);
-        }
-
         /// <summary>
         /// Instantiates the specified parameters.
         /// </summary>
-        /// <param name="type">The type.</param>
+        /// <param name="t">The type.</param>
         /// <param name="parameters">The parameters.</param>
         /// <returns></returns>
-        public static object Instantiate(this Type type, params object[] parameters)
+        public static object Instantiate(this Type t, params object[] parameters)
         {
-            List<Type> argTypes = new List<Type>();
+            Func<object> func = null;
 
-            //used .GetType() method to get the appropriate type
-            //Param can be null so handle accordingly
-            if (parameters != null)
-                foreach (object Param in parameters)
-                {
-                    if (Param != null)
-                        argTypes.Add(Param.GetType());
-                    else
-                        argTypes.Add(null);
-                }
+            if (t == typeof(string))
+                func = Expression.Lambda<Func<object>>(Expression.Constant(string.Empty)).Compile();
 
-            ConstructorInfo[] Types = type.GetConstructors();
+            if (t.HasConstuctor(out ConstructorInfo constructor, parameters))
+                func = Expression.Lambda<Func<object>>(Expression.New(constructor)).Compile();
 
-            foreach (ConstructorInfo node in Types)
-            {
-                ParameterInfo[] Args = node.GetParameters();
-                // parameters can be null for default constructors so use argTypes
-                if (argTypes.Count == Args.Length)
-                {
-                    bool areTypesCompatible = true;
-                    for (int i = 0; i < parameters.Length; i++)
-                    {
-                        if (argTypes[i] == null)
-                        {
-                            if (Args[i].ParameterType.IsValueType)
-                            {
-                                //fill the defaults for value type if not supplied
-                                parameters[i] = Instantiate(Args[i].ParameterType, null);
-                                argTypes[i] = parameters[i].GetType();
-                            }
-                            else
-                            {
-                                argTypes[i] = Args[i].ParameterType;
-                            }
-                        }
-                        if (!Args[i].ParameterType.IsAssignableFrom(argTypes[i]))
-                        {
-                            areTypesCompatible = false;
-                            break;
-                        }
-                    }
-                    if (areTypesCompatible)
-                        return node.Invoke(parameters);
-                }
-            }
+            //if (parameters.Length == 0)
+            //    func = Expression.Lambda<Func<object>>(Expression.New(t)).Compile();
 
-            //delegate type to Activator.CreateInstance if unable to find a suitable constructor
-            return Activator.CreateInstance(type);
+            if (func == null)
+                func = () => FormatterServices.GetUninitializedObject(t);
+
+            return func.Invoke();
         }
 
         /// <summary>
@@ -1300,14 +1715,50 @@ namespace NostreetsExtensions.Extend.Basic
             return (T)typeof(T).Instantiate();
         }
 
-        public static object IntoGenericConstructorAsT(this Type type, Type genericType, params object[] parms)
+        /// <summary>
+        /// Intoes the generic constructor as t.
+        /// </summary>
+        /// <param name="type">The type.</param>
+        /// <param name="T">The t.</param>
+        /// <param name="parms">The parms.</param>
+        /// <returns></returns>
+        public static object IntoGenericConstructorAsT(this Type type, Type T, params object[] parms)
         {
-            return type.IntoGenericConstructorAsT(genericType).Instantiate(parms);
+            return type.IntoGenericConstructorAsT(T).Instantiate(parms);
         }
 
-        public static Type IntoGenericConstructorAsT(this Type type, Type genericType)
+        /// <summary>
+        /// Intoes the generic constructor as t.
+        /// </summary>
+        /// <param name="type">The type.</param>
+        /// <param name="T">The t.</param>
+        /// <param name="parms">The parms.</param>
+        /// <returns></returns>
+        public static object IntoGenericConstructorAsT(this Type type, Type[] T, params object[] parms)
         {
-            return genericType.MakeGenericType(type);
+            return type.IntoGenericConstructorAsT(T).Instantiate(parms);
+        }
+
+        /// <summary>
+        /// Intoes the generic constructor as t.
+        /// </summary>
+        /// <param name="type">The type.</param>
+        /// <param name="T">The t.</param>
+        /// <returns></returns>
+        public static Type IntoGenericConstructorAsT(this Type type, Type T)
+        {
+            return type.MakeGenericType(T);
+        }
+
+        /// <summary>
+        /// Intoes the generic constructor as t.
+        /// </summary>
+        /// <param name="type">The type.</param>
+        /// <param name="T">The t.</param>
+        /// <returns></returns>
+        public static Type IntoGenericConstructorAsT(this Type type, params Type[] T)
+        {
+            return type.MakeGenericType(T);
         }
 
         /// <summary>
@@ -1322,6 +1773,9 @@ namespace NostreetsExtensions.Extend.Basic
         /// <returns></returns>
         public static object IntoGenericMethod(this object obj, Type methodHolder, string methodName, Type[] generics, bool isExtension = false, params object[] parameters)
         {
+            if (obj == null)
+                return null;
+
             object result = null;
             bool isStatic = false;
 
@@ -1331,24 +1785,43 @@ namespace NostreetsExtensions.Extend.Basic
             if (methodHolder.GetMethods(BindingFlags.Static | BindingFlags.Public).Any(a => a.Name == methodName))
                 isStatic = true;
 
-            MethodInfo method = methodHolder.GetMethodInfo(methodName)?.MakeGenericMethod(generics);
+            MethodInfo method = GetMethod(methodHolder, methodName, parameters.Select(a => a.GetType()).ToArray())?.MakeGenericMethod(generics);
             result = method?.Invoke((isStatic) ? null : obj, parameters);
             return result;
         }
 
+        /// <summary>
+        /// Intoes the generic method.
+        /// </summary>
+        /// <param name="obj">The object.</param>
+        /// <param name="methodName">Name of the method.</param>
+        /// <param name="generic">The generic.</param>
+        /// <param name="parameters">The parameters.</param>
+        /// <returns></returns>
         public static object IntoGenericMethod(this object obj, string methodName, Type generic, params object[] parameters)
         {
+            if (obj == null)
+                return null;
+
             object result = null;
             bool isStatic = false;
 
             if (obj.GetType().GetMethods(BindingFlags.Static | BindingFlags.Public).Any(a => a.Name == methodName))
                 isStatic = true;
 
-            MethodInfo method = obj.GetType().GetMethodInfo(methodName)?.MakeGenericMethod(new Type[] { generic });
+            MethodInfo method = GetMethod(obj.GetType(), methodName, parameters.Select(a => a.GetType()).ToArray())?.MakeGenericMethod(new Type[] { generic });
             result = method?.Invoke((isStatic) ? null : obj, parameters);
             return result;
         }
 
+        /// <summary>
+        /// Intoes the generic method.
+        /// </summary>
+        /// <param name="methodHolder">The method holder.</param>
+        /// <param name="methodName">Name of the method.</param>
+        /// <param name="generic">The generic.</param>
+        /// <param name="parameters">The parameters.</param>
+        /// <returns></returns>
         public static object IntoGenericMethod(this Type methodHolder, string methodName, Type generic, params object[] parameters)
         {
             object result = null;
@@ -1357,12 +1830,20 @@ namespace NostreetsExtensions.Extend.Basic
             if (methodHolder.GetMethods(BindingFlags.Static | BindingFlags.Public).Any(a => a.Name == methodName))
                 isStatic = true;
 
-            MethodInfo method = methodHolder.GetMethodInfo(methodName)?.MakeGenericMethod(new Type[] { generic });
+            MethodInfo method = GetMethod(methodHolder, methodName, parameters.Select(a => a.GetType()).ToArray())?.MakeGenericMethod(new Type[] { generic });
 
             result = method?.Invoke((isStatic) ? null : methodHolder.Instantiate(), parameters);
             return result;
         }
 
+        /// <summary>
+        /// Intoes the generic method.
+        /// </summary>
+        /// <param name="methodHolder">The method holder.</param>
+        /// <param name="methodName">Name of the method.</param>
+        /// <param name="generics">The generics.</param>
+        /// <param name="parameters">The parameters.</param>
+        /// <returns></returns>
         public static object IntoGenericMethod(this Type methodHolder, string methodName, Type[] generics, params object[] parameters)
         {
             object result = null;
@@ -1371,7 +1852,7 @@ namespace NostreetsExtensions.Extend.Basic
             if (methodHolder.GetMethods(BindingFlags.Static | BindingFlags.Public).Any(a => a.Name == methodName))
                 isStatic = true;
 
-            MethodInfo method = methodHolder.GetMethodInfo(methodName)?.MakeGenericMethod(generics);
+            MethodInfo method = GetMethod(methodHolder, methodName, parameters.Select(a => a.GetType()).ToArray())?.MakeGenericMethod(generics);
 
             result = method?.Invoke((isStatic) ? null : methodHolder.Instantiate(), parameters);
             return result;
@@ -1388,6 +1869,9 @@ namespace NostreetsExtensions.Extend.Basic
         /// <returns></returns>
         public static object IntoMethod(this object obj, Type methodHolder, string methodName, bool isExtension = false, params object[] parameters)
         {
+            if (obj == null)
+                return null;
+
             object result = null;
             bool isStatic = false;
 
@@ -1397,34 +1881,32 @@ namespace NostreetsExtensions.Extend.Basic
             if (methodHolder.GetMethods(BindingFlags.Static | BindingFlags.Public).Any(a => a.Name == methodName))
                 isStatic = true;
 
-            MethodInfo method = methodHolder.GetMethodInfo(methodName);
+            MethodInfo method = GetMethod(methodHolder, methodName, parameters.Select(a => a.GetType()).ToArray());
             result = method?.Invoke((isStatic) ? null : obj, parameters);
             return result;
         }
 
+        /// <summary>
+        /// Intoes the method.
+        /// </summary>
+        /// <param name="obj">The object.</param>
+        /// <param name="methodName">Name of the method.</param>
+        /// <param name="parameters">The parameters.</param>
+        /// <returns></returns>
         public static object IntoMethod(this object obj, string methodName, params object[] parameters)
         {
+            if (obj == null)
+                return null;
+
             object result = null;
             bool isStatic = false;
+            Type type = obj as Type ?? obj.GetType();
 
-            if (obj.GetType().GetMethods(BindingFlags.Static | BindingFlags.Public).Any(a => a.Name == methodName))
+            if (type.GetMethods(BindingFlags.Static | BindingFlags.Public).Any(a => a.Name == methodName))
                 isStatic = true;
 
-            MethodInfo method = obj.GetType().GetMethodInfo(methodName);
+            MethodInfo method = GetMethod(type, methodName, parameters.Select(a => a.GetType()).ToArray());
             result = method?.Invoke((isStatic) ? null : obj, parameters);
-            return result;
-        }
-
-        public static object IntoMethod(this Type methodHolder, string methodName, params object[] parameters)
-        {
-            object result = null;
-            bool isStatic = false;
-
-            if (methodHolder.GetMethods(BindingFlags.Static | BindingFlags.Public).Any(a => a.Name == methodName))
-                isStatic = true;
-
-            MethodInfo method = methodHolder.GetMethodInfo(methodName);
-            result = method?.Invoke((isStatic) ? null : methodHolder.Instantiate(), parameters);
             return result;
         }
 
@@ -1459,6 +1941,30 @@ namespace NostreetsExtensions.Extend.Basic
         }
 
         /// <summary>
+        /// Determines whether [is equal to] [the specified object].
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="enumerable">The enumerable.</param>
+        /// <param name="obj">The object.</param>
+        /// <returns>
+        ///   <c>true</c> if [is equal to] [the specified object]; otherwise, <c>false</c>.
+        /// </returns>
+        public static bool IsEqualTo<T>(this IEnumerable<T> enumerable, IEnumerable<T> obj)
+        {
+            bool result = false;
+
+            for (int i = 0; i < enumerable.Count(); i++)
+            {
+                result = enumerable.ElementAt(i).Equals(obj.ElementAt(i));
+
+                if (!result)
+                    break;
+            }
+
+            return result;
+        }
+
+        /// <summary>
         /// Determines whether this instance is even.
         /// </summary>
         /// <param name="value">The value.</param>
@@ -1470,9 +1976,28 @@ namespace NostreetsExtensions.Extend.Basic
             return value % 2 == 0;
         }
 
-        public static bool IsNumeric(this Type type)
+        /// <summary>
+        /// Determines whether this instance is nullable.
+        /// </summary>
+        /// <param name="type">The type.</param>
+        /// <returns>
+        ///   <c>true</c> if the specified type is nullable; otherwise, <c>false</c>.
+        /// </returns>
+        public static bool IsNullable(this Type type)
         {
-            Type nnType = Nullable.GetUnderlyingType(type) ?? type;
+            return Nullable.GetUnderlyingType(type) != null;
+        }
+
+        /// <summary>
+        /// Determines whether this instance is numeric.
+        /// </summary>
+        /// <param name="obj">The object.</param>
+        /// <returns>
+        ///   <c>true</c> if the specified object is numeric; otherwise, <c>false</c>.
+        /// </returns>
+        public static bool IsNumeric(this object obj)
+        {
+            Type nnType = Nullable.GetUnderlyingType(obj.GetType()) ?? obj.GetType();
             switch (Type.GetTypeCode(nnType))
             {
                 case TypeCode.SByte:
@@ -1485,14 +2010,15 @@ namespace NostreetsExtensions.Extend.Basic
                 case TypeCode.UInt64:
                     return true;
 
+                case TypeCode.Char:
+                    return int.TryParse(obj + "", out int x);
+
+                case TypeCode.String:
+                    return int.TryParse((string)obj, out int y);
+
                 default:
                     return false;
             }
-        }
-
-        public static bool IsNumeric(this object obj)
-        {
-            return (obj == null) ? false : obj.GetType().IsNumeric();
         }
 
         /// <summary>
@@ -1517,6 +2043,18 @@ namespace NostreetsExtensions.Extend.Basic
         public static bool IsPlural(this string txt)
         {
             return ((txt[txt.Length - 1] == 's') ? true : false);
+        }
+
+        /// <summary>
+        /// Determines whether [is runtime type].
+        /// </summary>
+        /// <param name="type">The type.</param>
+        /// <returns>
+        ///   <c>true</c> if [is runtime type] [the specified type]; otherwise, <c>false</c>.
+        /// </returns>
+        public static bool IsRuntimeType(this Type type)
+        {
+            return type.Name.Contains("Runtime");
         }
 
         /// <summary>
@@ -1572,6 +2110,15 @@ namespace NostreetsExtensions.Extend.Basic
             return result;
         }
 
+        /// <summary>
+        /// Determines whether [is valid URI] [the specified URI].
+        /// </summary>
+        /// <param name="path">The path.</param>
+        /// <param name="uri">The URI.</param>
+        /// <param name="predicate">The predicate.</param>
+        /// <returns>
+        ///   <c>true</c> if [is valid URI] [the specified URI]; otherwise, <c>false</c>.
+        /// </returns>
         public static bool IsValidUri(this string path, out Uri uri, Func<Uri, bool> predicate = null)
         {
             bool result = false;
@@ -1593,6 +2140,13 @@ namespace NostreetsExtensions.Extend.Basic
             return Uri.TryCreate(url, UriKind.Absolute, out Uri uriResult) && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
         }
 
+        /// <summary>
+        /// Determines whether [is week day].
+        /// </summary>
+        /// <param name="date">The date.</param>
+        /// <returns>
+        ///   <c>true</c> if [is week day] [the specified date]; otherwise, <c>false</c>.
+        /// </returns>
         public static bool IsWeekDay(this DateTime date)
         {
             return ((date.DayOfWeek == DayOfWeek.Saturday) || (date.DayOfWeek == DayOfWeek.Sunday)) ? false : true;
@@ -1620,16 +2174,32 @@ namespace NostreetsExtensions.Extend.Basic
             return result;
         }
 
+        /// <summary>
+        /// Jsons the deserialize.
+        /// </summary>
+        /// <param name="obj">The object.</param>
+        /// <returns></returns>
         public static object JsonDeserialize(this string obj)
         {
             return JsonConvert.DeserializeObject(obj);
         }
 
+        /// <summary>
+        /// Jsons the deserialize.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="obj">The object.</param>
+        /// <returns></returns>
         public static T JsonDeserialize<T>(this string obj)
         {
             return JsonConvert.DeserializeObject<T>(obj);
         }
 
+        /// <summary>
+        /// Jsons the serialize.
+        /// </summary>
+        /// <param name="obj">The object.</param>
+        /// <returns></returns>
         public static string JsonSerialize(this object obj)
         {
             return JsonConvert.SerializeObject(obj, new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() });
@@ -1644,6 +2214,30 @@ namespace NostreetsExtensions.Extend.Basic
             Debug.Write(txt);
         }
 
+        /// <summary>
+        /// Maps the properties.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="obj">The object.</param>
+        /// <param name="target">The target.</param>
+        public static void MapProperties<T>(this object obj, ref T target)
+        {
+            PropertyInfo[] curProps = obj.GetType() == typeof(Type) ? ((Type)obj).GetProperties() : obj.GetType().GetProperties();
+            PropertyInfo[] targetProps = target.GetType().GetProperties();
+
+            foreach (PropertyInfo prop in curProps)
+            {
+                PropertyInfo newProp = targetProps.FirstOrDefault(a => a.Name == prop.Name && a.PropertyType == prop.PropertyType);
+                if (newProp != null)
+                    target.SetPropertyValue(prop.Name, newProp);
+            }
+        }
+
+        /// <summary>
+        /// Names the with parameters.
+        /// </summary>
+        /// <param name="method">The method.</param>
+        /// <returns></returns>
         public static string NameWithParams(this MethodBase method)
         {
             return string.Format("{0}.{1}({2})",
@@ -1653,6 +2247,12 @@ namespace NostreetsExtensions.Extend.Basic
                 );
         }
 
+        /// <summary>
+        /// Numbers the of days in month.
+        /// </summary>
+        /// <param name="date">The date.</param>
+        /// <param name="dayOfWeek">The day of week.</param>
+        /// <returns></returns>
         public static int NumberOfDaysInMonth(this DateTime date, DayOfWeek dayOfWeek)
         {
             DateTime start = new DateTime(date.Year, date.Month, 1),
@@ -1702,26 +2302,6 @@ namespace NostreetsExtensions.Extend.Basic
         {
             return short.Parse(obj);
         }
-
-        public static Dictionary<string, string> StackTraceToDictionary(this Exception ex)
-        {
-            Dictionary<string, string> result = new Dictionary<string, string>();
-            Regex r = new Regex(@"at (?<namespace>.*)\.(?<class>.*)\.(?<method>.*(.*)) in (?<file>.*):line (?<line>\d*)");
-            Match match = r.Match(ex.StackTrace);
-
-            if (match.Success)
-            {
-                result.Add("namespace", match.Groups["namespace"].Value.ToString());
-                result.Add("class", match.Groups["class"].Value.ToString());
-                result.Add("method", match.Groups["method"].Value.ToString());
-                result.Add("file", match.Groups["file"].Value.ToString());
-                result.Add("line", match.Groups["line"].Value.ToString());
-            }
-
-            return result;
-        }
-
-
 
         /// <summary>
         /// Parses the u int.
@@ -1803,11 +2383,25 @@ namespace NostreetsExtensions.Extend.Basic
             return list.ToDictionary();
         }
 
+        /// <summary>
+        /// Randoms the number.
+        /// </summary>
+        /// <param name="ran">The ran.</param>
+        /// <param name="min">The minimum.</param>
+        /// <param name="max">The maximum.</param>
+        /// <returns></returns>
         public static int RandomNumber(this Random ran, int min, int max)
         {
             return ran.Next(min, max);
         }
 
+        /// <summary>
+        /// Randoms the string.
+        /// </summary>
+        /// <param name="ran">The ran.</param>
+        /// <param name="length">The length.</param>
+        /// <param name="includeNumbers">if set to <c>true</c> [include numbers].</param>
+        /// <returns></returns>
         public static string RandomString(this Random ran, int length, bool includeNumbers = true)
         {
             string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0" + (includeNumbers ? "123456789" : "");
@@ -1877,6 +2471,8 @@ namespace NostreetsExtensions.Extend.Basic
         /// </summary>
         /// <param name="nameToCheckFor">The name to check for.</param>
         /// <param name="assemblyToLookFor">The assembly to look for.</param>
+        /// <param name="classType">Type of the class.</param>
+        /// <param name="predicate">The predicate.</param>
         /// <returns></returns>
         public static object ScanAssembliesForObject(this string nameToCheckFor
                                                     , string assemblyToLookFor = null
@@ -1894,6 +2490,8 @@ namespace NostreetsExtensions.Extend.Basic
         /// </summary>
         /// <param name="nameToCheckFor">The name to check for.</param>
         /// <param name="assembliesToLookFor">The assemblies to look for.</param>
+        /// <param name="classType">Type of the class.</param>
+        /// <param name="predicate">The predicate.</param>
         /// <returns></returns>
         public static object ScanAssembliesForObject(this string nameToCheckFor
                                                     , string[] assembliesToLookFor
@@ -1912,6 +2510,8 @@ namespace NostreetsExtensions.Extend.Basic
         /// <param name="nameToCheckFor">The name to check for.</param>
         /// <param name="assembliesToSkip">The assemblies to skip.</param>
         /// <param name="assembliesToLookFor">The assemblies to look for.</param>
+        /// <param name="classType">Type of the class.</param>
+        /// <param name="predicate">The predicate.</param>
         /// <returns></returns>
         public static object ScanAssembliesForObject(this string nameToCheckFor
                                                     , string[] assembliesToSkip
@@ -1925,6 +2525,14 @@ namespace NostreetsExtensions.Extend.Basic
             return result;
         }
 
+        /// <summary>
+        /// Scans for file.
+        /// </summary>
+        /// <param name="dirPath">The dir path.</param>
+        /// <param name="fileName">Name of the file.</param>
+        /// <param name="fileExtension">The file extension.</param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentNullException">fileName</exception>
         public static FileInfo ScanForFile(this string dirPath, string fileName, string fileExtension)
         {
             if (fileName == null)
@@ -1938,6 +2546,18 @@ namespace NostreetsExtensions.Extend.Basic
             return result;
         }
 
+        /// <summary>
+        /// Scans for file path.
+        /// </summary>
+        /// <param name="dirPath">The dir path.</param>
+        /// <param name="fileName">Name of the file.</param>
+        /// <param name="fileExtension">The file extension.</param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentNullException">
+        /// fileExtension
+        /// or
+        /// fileName
+        /// </exception>
         public static string ScanForFilePath(this string dirPath, string fileName, string fileExtension)
         {
             if (fileName == null && fileExtension == null)
@@ -1954,6 +2574,18 @@ namespace NostreetsExtensions.Extend.Basic
             return result.FullName;
         }
 
+        /// <summary>
+        /// Scans for file paths.
+        /// </summary>
+        /// <param name="dirPath">The dir path.</param>
+        /// <param name="fileExtension">The file extension.</param>
+        /// <param name="fileNames">The file names.</param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentNullException">
+        /// fileExtension
+        /// or
+        /// fileNames
+        /// </exception>
         public static string[] ScanForFilePaths(this string dirPath, string fileExtension, params string[] fileNames)
         {
             if (fileNames == null && fileExtension == null)
@@ -1971,6 +2603,18 @@ namespace NostreetsExtensions.Extend.Basic
             return result.ToArray();
         }
 
+        /// <summary>
+        /// Scans for files.
+        /// </summary>
+        /// <param name="dirPath">The dir path.</param>
+        /// <param name="fileExtension">The file extension.</param>
+        /// <param name="fileNames">The file names.</param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentNullException">
+        /// fileExtension
+        /// or
+        /// fileNames
+        /// </exception>
         public static FileInfo[] ScanForFiles(this string dirPath, string fileExtension, params string[] fileNames)
         {
             if (fileNames == null && fileExtension == null)
@@ -1986,6 +2630,11 @@ namespace NostreetsExtensions.Extend.Basic
             return result;
         }
 
+        /// <summary>
+        /// Semis the month date.
+        /// </summary>
+        /// <param name="date">The date.</param>
+        /// <returns></returns>
         public static DateTime SemiMonthDate(this DateTime date)
         {
             int daysInMonth = DateTime.DaysInMonth(date.Year, date.Month);
@@ -2008,10 +2657,40 @@ namespace NostreetsExtensions.Extend.Basic
         }
 
         /// <summary>
+        /// Sets the property.
+        /// </summary>
+        /// <param name="objType">Type of the object.</param>
+        /// <param name="property">The property.</param>
+        /// <param name="newPropType">New type of the property.</param>
+        /// <param name="newName">The new name.</param>
+        /// <returns></returns>
+        public static Type SetProperty(this Type objType, PropertyInfo property, Type newPropType = null, string newName = null)
+        {
+            return AddOrSetProperty(objType, property.Name, newPropType ?? property.PropertyType, newName ?? property.Name);
+        }
+
+        /// <summary>
+        /// Sets the property.
+        /// </summary>
+        /// <param name="objType">Type of the object.</param>
+        /// <param name="propName">Name of the property.</param>
+        /// <param name="newPropType">New type of the property.</param>
+        /// <param name="newName">The new name.</param>
+        /// <returns></returns>
+        /// <exception cref="Exception">There is no property that is named " + propName + "...</exception>
+        public static Type SetProperty(this Type objType, string propName, Type newPropType = null, string newName = null)
+        {
+            PropertyInfo prop = objType.GetProperties().SingleOrDefault(a => a.Name == propName);
+            if (prop == null)
+                throw new Exception("There is no property that is named " + propName + "...");
+
+            return SetProperty(objType, prop, newPropType ?? prop.PropertyType, newName ?? prop.Name);
+        }
+        /// <summary>
         /// Sets the property value.
         /// </summary>
         /// <param name="obj">The object.</param>
-        /// <param name="propertyName">Name of the property.</param>
+        /// <param name="ordinal">The ordinal.</param>
         /// <param name="value">The value.</param>
         public static void SetPropertyValue(this object obj, int ordinal, object value)
         {
@@ -2019,6 +2698,12 @@ namespace NostreetsExtensions.Extend.Basic
                 obj.GetType().GetProperties().Where((a, b) => b == ordinal).Single().SetValue(obj, value);
         }
 
+        /// <summary>
+        /// Sets the property value.
+        /// </summary>
+        /// <param name="obj">The object.</param>
+        /// <param name="propertyName">Name of the property.</param>
+        /// <param name="value">The value.</param>
         public static void SetPropertyValue(this object obj, string propertyName, object value)
         {
             if (obj.GetType().GetProperties().Single(pi => pi.Name == propertyName).GetSetMethod() != null)
@@ -2037,6 +2722,28 @@ namespace NostreetsExtensions.Extend.Basic
         }
 
         /// <summary>
+        /// Stacks the trace to dictionary.
+        /// </summary>
+        /// <param name="ex">The ex.</param>
+        /// <returns></returns>
+        public static Dictionary<string, string> StackTraceToDictionary(this Exception ex)
+        {
+            Dictionary<string, string> result = new Dictionary<string, string>();
+            Regex r = new Regex(@"at (?<namespace>.*)\.(?<class>.*)\.(?<method>.*(.*)) in (?<file>.*):line (?<line>\d*)");
+            Match match = r.Match(ex.StackTrace);
+
+            if (match.Success)
+            {
+                result.Add("namespace", match.Groups["namespace"].Value.ToString());
+                result.Add("class", match.Groups["class"].Value.ToString());
+                result.Add("method", match.Groups["method"].Value.ToString());
+                result.Add("file", match.Groups["file"].Value.ToString());
+                result.Add("line", match.Groups["line"].Value.ToString());
+            }
+
+            return result;
+        }
+        /// <summary>
         /// Starts the of week.
         /// </summary>
         /// <param name="dt">The dt.</param>
@@ -2051,6 +2758,14 @@ namespace NostreetsExtensions.Extend.Basic
             return firstDayInWeek;
         }
 
+        /// <summary>
+        /// Steps the into directory.
+        /// </summary>
+        /// <param name="path">The path.</param>
+        /// <param name="targetFile">The target file.</param>
+        /// <param name="recursively">if set to <c>true</c> [recursively].</param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentNullException">path</exception>
         public static string StepIntoDirectory(this string path, string targetFile, bool recursively = false)
         {
             if (path == null)
@@ -2108,6 +2823,12 @@ namespace NostreetsExtensions.Extend.Basic
             return p;
         }
 
+        /// <summary>
+        /// Synchronizes the task.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="task">The task.</param>
+        /// <returns></returns>
         public static T SyncTask<T>(this Task<T> task)
         {
             task.RunSynchronously();
@@ -2118,6 +2839,7 @@ namespace NostreetsExtensions.Extend.Basic
         /// Timestamps the specified time.
         /// </summary>
         /// <param name="time">The time.</param>
+        /// <param name="format">The format.</param>
         /// <returns></returns>
         public static string Timestamp(this DateTime time, string format = null)
         {
@@ -2140,6 +2862,11 @@ namespace NostreetsExtensions.Extend.Basic
             return lambda(source);
         }
 
+        /// <summary>
+        /// To the character.
+        /// </summary>
+        /// <param name="num">The number.</param>
+        /// <returns></returns>
         public static char ToChar(this int num)
         {
             return Convert.ToChar(num);
@@ -2189,47 +2916,6 @@ namespace NostreetsExtensions.Extend.Basic
 
             return result;
         }
-
-        /// <summary>
-        /// To the dictionary.
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="enumType">Type of the enum.</param>
-        /// <returns></returns>
-        /// <exception cref="ArgumentNullException">Type must be an enum</exception>
-        public static Dictionary<int, string> EnumToDictionary<T>(this T enumType) where T : struct, IConvertible
-        {
-            if (!typeof(T).IsEnum)
-                throw new ArgumentNullException("Type must be an enum");
-
-            return Enum.GetValues(typeof(T)).Cast<T>().ToDictionary(t => (int)(object)t, t => t.ToString());
-        }
-
-        /// <summary>
-        /// To the dictionary.
-        /// </summary>
-        /// <param name="enumType">Type of the enum.</param>
-        /// <returns></returns>
-        /// <exception cref="ArgumentNullException">Type must be an enum</exception>
-        public static Dictionary<int, string> EnumToDictionary(this Type enumType)
-        {
-            Dictionary<int, string> result = null;
-            if (!enumType.IsEnum)
-                throw new ArgumentNullException("Type must be an enum");
-
-            string[] arr = Enum.GetNames(enumType);
-
-            foreach (string enumName in arr)
-            {
-                if (result == null)
-                    result = new Dictionary<int, string>();
-
-                result.Add(enumType.GetEnumValue(enumName), enumName);
-            }
-
-            return result;
-        }
-
         /// <summary>
         /// To the dictionary.
         /// </summary>
@@ -2244,6 +2930,30 @@ namespace NostreetsExtensions.Extend.Basic
             if (coll != null && coll.ToArray().Length > 0)
                 foreach (KeyValuePair<TKey, TValue> pair in coll.ToArray())
                     result.Add(pair.Key, pair.Value);
+
+            return result;
+        }
+
+        /// <summary>
+        /// To the dictionary.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="TKey">The type of the key.</typeparam>
+        /// <typeparam name="TValue">The type of the value.</typeparam>
+        /// <param name="coll">The coll.</param>
+        /// <param name="converter">The converter.</param>
+        /// <returns></returns>
+        public static Dictionary<TKey, TValue> ToDictionary<T, TKey, TValue>(this IEnumerable<T> coll, Converter<T, KeyValuePair<TKey, TValue>> converter)
+        {
+            if (coll == null)
+                return null;
+
+            Dictionary<TKey, TValue> result = new Dictionary<TKey, TValue>();
+            foreach (T data in coll)
+            {
+                var pair = converter(data);
+                result.Add(pair.Key, pair.Value);
+            }
 
             return result;
         }
@@ -2272,7 +2982,6 @@ namespace NostreetsExtensions.Extend.Basic
         /// <summary>
         /// To the expression.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
         /// <typeparam name="TResult">The type of the result.</typeparam>
         /// <param name="method">The method.</param>
         /// <returns></returns>
@@ -2293,6 +3002,14 @@ namespace NostreetsExtensions.Extend.Basic
             return x => method(x);
         }
 
+        /// <summary>
+        /// To the expression.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="TResult">The type of the result.</typeparam>
+        /// <param name="method">The method.</param>
+        /// <returns></returns>
+        /// <exception cref="Exception">obj is not an method...</exception>
         public static Expression<Func<T, TResult>> ToExpression<T, TResult>(this object method)
         {
             if (method is Delegate)
@@ -2324,6 +3041,21 @@ namespace NostreetsExtensions.Extend.Basic
             return nameValueCollection;
         }
 
+        /// <summary>
+        /// To the upper case.
+        /// </summary>
+        /// <param name="char">The character.</param>
+        /// <returns></returns>
+        public static char ToUpperCase(this char @char)
+        {
+            return char.ToUpper(@char);
+        }
+
+        /// <summary>
+        /// XMLs the deserialize.
+        /// </summary>
+        /// <param name="obj">The object.</param>
+        /// <returns></returns>
         public static object XmlDeserialize(this string obj)
         {
             object result = null;
@@ -2337,11 +3069,23 @@ namespace NostreetsExtensions.Extend.Basic
             return result;
         }
 
+        /// <summary>
+        /// XMLs the deserialize.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="obj">The object.</param>
+        /// <returns></returns>
         public static T XmlDeserialize<T>(this string obj)
         {
             return (T)XmlDeserialize(obj);
         }
 
+        /// <summary>
+        /// XMLs the serialize.
+        /// </summary>
+        /// <param name="obj">The object.</param>
+        /// <returns></returns>
+        /// <exception cref="Exception">An error occurred on XmlSerialize(this object obj)...</exception>
         public static string XmlSerialize(this object obj)
         {
             if (obj == null)
@@ -2363,48 +3107,62 @@ namespace NostreetsExtensions.Extend.Basic
             }
         }
 
-        public static bool IsNullable(this Type type)
+        public static bool IsJson(this string input)
         {
-            return Nullable.GetUnderlyingType(type) != null;
-        }
-
-        public static char ToUpperCase(this char @char)
-        {
-            return char.ToUpper(@char);
-        }
-
-        public static string Append(this char @char, params char[] chars)
-        {
-            if (chars == null)
-                throw new ArgumentNullException("chars");
-
-            if (chars.Length == 0)
-                return @char.ToString();
-
-            List<char> arrOfChars = new List<char>();
-            arrOfChars.Add(@char);
-
-            foreach (char character in chars)
-                arrOfChars.Add(character);
-
-            return new string(arrOfChars.ToArray());
-        }
-
-        public static bool IsEqualTo<T>(this IEnumerable<T> enumerable, IEnumerable<T> obj)
-        {
-
-            bool result = false;
-
-            for (int i = 0; i < enumerable.Count(); i++)
+            input = input.Trim();
+            bool IsWellFormed()
             {
-                result = enumerable.ElementAt(i).Equals(obj.ElementAt(i));
-
-                if (!result)
-                    break;
+                try
+                {
+                    JToken.Parse(input);
+                }
+                catch
+                {
+                    return false;
+                }
+                return true;
             }
+            return (input.StartsWith("{") && input.EndsWith("}") || input.StartsWith("[") && input.EndsWith("]")) && IsWellFormed();
+        }
+
+        public static bool IsXml(this string input)
+        {
+            bool result = true;
+            if (!string.IsNullOrEmpty(input) && input.TrimStart().StartsWith("<"))
+            {
+                try
+                {
+                    XDocument.Parse(input);
+                }
+                catch
+                {
+                    result = false;
+                }
+            }
+
+            else
+                result = false;
 
             return result;
         }
 
+        public static bool AllEquals<T>(this IEnumerable<T> a, IEnumerable<T> b)
+        {
+            if (a == null)
+                return b == null;
+            if (b == null || a.Count() != b.Count())
+                return false;
+
+            int i = 0;
+            foreach (T item in a)
+            {
+                if (!Equals(item, b.ElementAt(i)))
+                    return false;
+                i++;
+            }
+            return true;
+        }
+
+        #endregion Extensions
     }
 }

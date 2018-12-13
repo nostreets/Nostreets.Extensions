@@ -27,7 +27,7 @@ namespace NostreetsExtensions.Interfaces
             CommandBehavior cmdBehavior = default(CommandBehavior),
             int? timeOutSpan = null);
 
-        int ExecuteNonQuery(Func<SqlConnection> dataSouce, string storedProc,
+        int ExecuteNonQuery(Func<SqlConnection> dataSouce, string query,
             Action<SqlParameterCollection> inputParamMapper,
             Action<SqlParameterCollection> returnParameters = null,
             Action<SqlCommand> cmdModifier = null,

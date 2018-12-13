@@ -79,16 +79,6 @@ namespace NostreetsExtensions.Utilities
             return result;
         }
 
-        //public static T Get<T>(string key) where T : class
-        //{
-        //     return Get<T>(key);
-        //}
-
-        //public static T Get<T>(string key) where T : struct
-        //{
-        //    return Get<T>(key);
-        //}
-
 
         public static void Set(string key, object data, int minsTillExp = 180)
         {

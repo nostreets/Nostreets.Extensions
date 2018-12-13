@@ -24,7 +24,6 @@ namespace NostreetsExtensions.Helpers
         private string _connectionString = null;
         private IQueryProvider _queryProvider = null;
 
-        public SqlConnectionStringBuilder Builder => new SqlConnectionStringBuilder(_connectionString);
         public SqlConnection Connection => new SqlConnection(_connectionString);
         public static ISqlExecutor Query => DataProvider.SqlInstance;
         public IQueryProvider QueryProvider { get => _queryProvider; set => _queryProvider = value; }
@@ -32,7 +31,7 @@ namespace NostreetsExtensions.Helpers
 
         public SqlConnection ChangeSqlConnection(string connectionKey)
         {
-            _connectionString = WebConfigurationManager.ConnectionStrings[connectionKey].ConnectionString;
+            _connectionString = ConfigurationManager.ConnectionStrings[connectionKey].ConnectionString;
             return Connection;
         }
 
@@ -44,11 +43,12 @@ namespace NostreetsExtensions.Helpers
         {
             string[] splitPath = filePath.Split('.');
 
-            if (splitPath[splitPath.Length - 1].Contains("xlsx"))
 
+            if (splitPath[splitPath.Length - 1].Contains("xlsx"))
                 _connectionString = string.Format("Provider=Microsoft.ACE.OLEDB.12.0; Data Source='{0}'; Extended Properties=\"Excel 12.0;HDR=YES;\"", filePath);
             else
-                _connectionString = string.Format("Provider=Microsoft.Jet.OLEDB.4.0; Data Source = '{0}'; Extended Properties=\"Excel 8.0;HDR=YES;\"", filePath);
+                _connectionString = string.Format("Provider=Microsoft.Jet.OLEDB.4.0; Data Source='{0}'; Extended Properties=\"Excel 8.0;HDR=YES;\"", filePath);
+
         }
 
         private string _connectionString;

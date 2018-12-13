@@ -18,7 +18,7 @@ namespace NostreetsExtensions.Interfaces
         void Update(object model, Converter<object, object> converter);
         void Delete(object id);
         void Delete(IEnumerable<object> ids);
-        IEnumerable<object> Where(Func<object, bool> predicate);
+        List<object> Where(Func<object, bool> predicate);
         object FirstOrDefault(Func<object, bool> predicate);
     }
 
@@ -38,7 +38,7 @@ namespace NostreetsExtensions.Interfaces
         void Update(T model, Converter<T, T> converter);
         void Delete(object id);
         void Delete(IEnumerable<object> ids);
-        IEnumerable<T> Where(Func<T, bool> predicate);
+        List<T> Where(Func<T, bool> predicate);
         T FirstOrDefault(Func<T, bool> predicate);
         void Backup(string disk = null);
     }
@@ -58,7 +58,7 @@ namespace NostreetsExtensions.Interfaces
         void Update(T model);
         void Update(T model, Converter<T, T> converter);
         void Delete(IdType id);
-        IEnumerable<T> Where(Func<T, bool> predicate);
+        List<T> Where(Func<T, bool> predicate);
         void Delete(IEnumerable<IdType> ids);
         T FirstOrDefault(Func<T, bool> predicate);
         void Backup(string disk = null);
@@ -82,7 +82,7 @@ namespace NostreetsExtensions.Interfaces
         void Update(T model, Converter<T, T> converter);
         void Delete(IdType id);
         void Delete(IEnumerable<IdType> ids);
-        IEnumerable<T> Where(Func<T, bool> predicate);
+        List<T> Where(Func<T, bool> predicate);
         T FirstOrDefault(Func<T, bool> predicate);
         void Backup(string disk = null);
     }

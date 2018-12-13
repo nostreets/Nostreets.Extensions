@@ -29,14 +29,15 @@ namespace NostreetsExtensions.Utilities
                     if (result == null)
                         result = new List<object>();
 
-                    if (excelSchema == null)
-                        excelSchema = reader.GetColumnNames();
+                    //if (excelSchema == null)
+                    //    excelSchema = reader.GetColumnNames();
 
-                    if (schemaTypes == null)
-                        schemaTypes = reader.GetColumnTypes();
+                    //if (schemaTypes == null)
+                    //    schemaTypes = reader.GetColumnTypes();
+
 
                     if (dynamicType == null)
-                        dynamicType = ClassBuilder.CreateType("DynamicModel", excelSchema, schemaTypes);
+                        dynamicType = ClassBuilder.CreateType("DynamicModel",  reader.GetSchema().Select(a => new Tuple<string, Type, Dictionary<Type, object[]>>(a.Key, a.Value, null)).ToList(), null);
 
 
                     object stat = DataMapper.MapToObject(reader, dynamicType);
@@ -102,7 +103,7 @@ namespace NostreetsExtensions.Utilities
                     }
 
                     if (dynamicType == null)
-                        dynamicType = ClassBuilder.CreateType(_fileName, excelSchema, schemaTypes);
+                        dynamicType = ClassBuilder.CreateType(_fileName, reader.GetSchema().Select(a => new Tuple<string, Type, Dictionary<Type, object[]>>(a.Key, a.Value, null)).ToList(), null);
 
 
                     object stat = DataMapper.MapToObject(reader, dynamicType);

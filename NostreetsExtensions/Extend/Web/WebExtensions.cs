@@ -6,16 +6,16 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Web;
 using System.Web.Configuration;
-using System.Web.Http.Controllers;
 using System.Web.Mvc;
 using System.Web.Optimization;
+using System.Web.Routing;
+using System.Xml;
+using System.Xml.Linq;
 using System.Xml.Serialization;
-
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
@@ -27,20 +27,27 @@ using RestSharp.Authenticators;
 
 namespace NostreetsExtensions.Extend.Web
 {
-    public static class Web
+    public static partial class Web
     {
         /// <summary>
         /// Gets the local ip addresses.
         /// </summary>
         /// <returns></returns>
-        public static IPAddress[] GetLocalIPAddresses()
+        public static string GetIPAddress()
         {
-            string hostName = Dns.GetHostName();
-            IPHostEntry ipEntry = Dns.GetHostEntry(hostName);
+            string result = null;
 
-            IPAddress[] addr = ipEntry.AddressList;
+            if (HttpContext.Current != null)
+                HttpContext.Current.GetIP4Address();
 
-            return addr;
+            else {
+                string hostName = Dns.GetHostName();
+                IPHostEntry ipEntry = Dns.GetHostEntry(hostName);
+                result = ipEntry.AddressList[ipEntry.AddressList.Length - 1].ToString();
+            }
+
+            return result;
+
         }
 
         public static void UpdateWebConfig(string key, string value)
@@ -61,9 +68,18 @@ namespace NostreetsExtensions.Extend.Web
             // Save to the file,
             config.Save(ConfigurationSaveMode.Minimal);
         }
+
+        public static HttpResponseMessage CreateHttpResponseMessage(object content, string contentType, HttpStatusCode httpStatusCode)
+        {
+            throw new NotImplementedException();
+
+            string serializedContent = content as string ?? JsonConvert.SerializeObject(content);
+            HttpResponseMessage result = new HttpResponseMessage(httpStatusCode);
+            result.Content = new StringContent((string)content, Encoding.UTF8, contentType);
+        }
     }
 
-    public static class WebExtensions
+    public static partial class Web
     {
         /// <summary>
         /// Creates the response.
@@ -310,7 +326,7 @@ namespace NostreetsExtensions.Extend.Web
         /// <param name="headers">The headers.</param>
         /// <returns></returns>
         /// <exception cref="Exception">url to has to be valid url string to be able to HitEndpoint...</exception>
-        public static object HitEndpoint(this string url, string method = "GET", object data = null, string contentType = "application/json", Dictionary<string, string> headers = null)
+        public static object HitEndpoint(this string url, string method = "GET", object data = null, string contentType = "application/json", Dictionary<string, string> headers = null, Type responseType = null)
         {
             if (!url.IsValidUrl())
                 throw new Exception("url to has to be valid url string to be able to HitEndpoint...");
@@ -323,10 +339,11 @@ namespace NostreetsExtensions.Extend.Web
             requestStream.ContentType = contentType;
             requestStream.Method = method;
 
-            foreach (KeyValuePair<string, string> head in headers)
-            {
-                requestStream.Headers.Add(head.Key, head.Value);
-            }
+            if (headers != null)
+                foreach (KeyValuePair<string, string> head in headers)
+                {
+                    requestStream.Headers.Add(head.Key, head.Value);
+                }
 
             try
             {
@@ -373,16 +390,43 @@ namespace NostreetsExtensions.Extend.Web
 
                     object responseData;
 
-                    if (contentType == "application/json")
-                    {
+                    if (responseString.IsJson())
                         responseData = JsonConvert.DeserializeObject<Dictionary<string, dynamic>>(responseString);
+
+                    else if (responseString.IsXml())
+                    {
+
+                        object deserializedJson;
+                        string json;
+
+
+                        if (responseString.IsHtml())
+                        {
+                            XDocument doc = XDocument.Parse(responseString);
+                            json = JsonConvert.SerializeXNode(doc);
+                            deserializedJson = JsonConvert.DeserializeObject(json);
+                        }
+                        else
+                        {
+                            //XmlSerializer serial = new XmlSerializer(data.GetType());
+                            //StringReader reader = new StringReader(responseString);
+                            //responseData = serial.Deserialize(reader);
+                            XmlDocument doc = new XmlDocument();
+                            doc.Load(responseString);
+                            json = JsonConvert.SerializeXmlNode(doc);
+                            deserializedJson = JsonConvert.DeserializeObject(json);
+                        }
+
+
+                        if (responseType != null && deserializedJson.TryCast(responseType, out object obj))
+                            responseData = obj;
+                        else
+                            responseData = deserializedJson;
+
                     }
                     else
-                    {
-                        XmlSerializer serial = new XmlSerializer(data.GetType());
-                        StringReader reader = new StringReader(responseString);
-                        responseData = serial.Deserialize(reader);
-                    }
+                        responseData = null;
+
                     return responseData;
                 }
             }
@@ -391,7 +435,7 @@ namespace NostreetsExtensions.Extend.Web
                 if (FileManager.LatestInstance != null)
                     FileManager.LatestInstance.WriteToFile("\n----------------------   Error Details    ---------------------\nRequest: \n{0}\n\n Response: \n {1}\n", requestString, responseString);
 
-                return ex;
+                throw ex;
             }
         }
 
@@ -480,13 +524,26 @@ namespace NostreetsExtensions.Extend.Web
                     }
                     else
                     {
-                        XmlSerializer serial = new XmlSerializer(typeof(T));
-                        StringReader reader = new StringReader(responseString); //XmlReader.Create(responseString);
-                        responseData = (T)serial.Deserialize(reader);
+                        //XmlSerializer serial = new XmlSerializer(data.GetType());
+                        //StringReader reader = new StringReader(responseString);
+                        //responseData = serial.Deserialize(reader);
+
+                        XmlDocument doc = new XmlDocument();
+                        doc.Load(responseString);
+
+                        string json = JsonConvert.SerializeXmlNode(doc);
+                        object deserializedJson = JsonConvert.DeserializeObject(json);
+
+                        if (deserializedJson.TryCast(out T obj))
+                            responseData = obj;
+                        else
+                            throw new InvalidCastException("Unable to cast response data to type of " + typeof(T).Name, new Exception(responseString));
+
+
                     }
 
                     if (responseString.ToLower().Contains("<error>"))
-                    { throw new Exception(responseString); }
+                        throw new Exception(responseString);
 
                     return responseData;
                 }
@@ -534,7 +591,7 @@ namespace NostreetsExtensions.Extend.Web
         public static IRestResponse<T> RestSharpEndpoint<T>(this string url, string method = "GET", object data = null, string contentType = "application/json", Dictionary<string, string> headers = null) where T : new()
         {
             #region Client
-
+            IRestResponse<T> result = null;
             RestClient rest = null;
             if (url != null)
             {
@@ -597,7 +654,8 @@ namespace NostreetsExtensions.Extend.Web
 
             #endregion Request
 
-            return rest.Execute<T>(request);
+            result = rest.Execute<T>(request);
+            return result;
         }
         /// <summary>
         /// Sets the cookie.
@@ -653,6 +711,12 @@ namespace NostreetsExtensions.Extend.Web
             }
         }
 
+        /// <summary>
+        /// Valids the URL.
+        /// </summary>
+        /// <param name="url">The URL.</param>
+        /// <param name="uri">The URI.</param>
+        /// <returns></returns>
         public static bool ValidUrl(this string url, out Uri uri)
         {
             if (!Regex.IsMatch(url, @"^https?:\/\/", RegexOptions.IgnoreCase))
@@ -661,6 +725,31 @@ namespace NostreetsExtensions.Extend.Web
             url.IsValidUri(out uri, a => a.Scheme == Uri.UriSchemeHttp || a.Scheme == Uri.UriSchemeHttps);
 
             return false;
+        }
+
+        /// <summary>
+        /// Registers the route.
+        /// </summary>
+        /// <param name="routes">The routes.</param>
+        /// <param name="namespace">The namespace.</param>
+        /// <param name="path">The path.</param>
+        public static void RegisterRoute(this RouteCollection routes, string @namespace, string path = "{controller}/{action}/{id}")
+        {
+            Route externalBlogRoute = new Route(path, new MvcRouteHandler())
+            {
+                DataTokens = new RouteValueDictionary(
+               new
+               {
+                   namespaces = new[] { @namespace }
+               })
+            };
+
+            routes.Add(Guid.NewGuid().ToString() + "Route", externalBlogRoute);
+        }
+
+        public static bool IsHtml(this string input)
+        {
+            return input != HttpUtility.HtmlEncode(input) && input.Contains("DOCTYPE html");
         }
     }
 }
