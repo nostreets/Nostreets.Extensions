@@ -18,8 +18,9 @@ using System.Xml.Linq;
 using System.Xml.Serialization;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
-
+using NostreetsExtensions.DataControl.Classes;
 using NostreetsExtensions.Extend.Basic;
+using NostreetsExtensions.Interfaces;
 using NostreetsExtensions.Utilities;
 
 using RestSharp;
@@ -40,7 +41,8 @@ namespace NostreetsExtensions.Extend.Web
             if (HttpContext.Current != null)
                 HttpContext.Current.GetIP4Address();
 
-            else {
+            else
+            {
                 string hostName = Dns.GetHostName();
                 IPHostEntry ipEntry = Dns.GetHostEntry(hostName);
                 result = ipEntry.AddressList[ipEntry.AddressList.Length - 1].ToString();
@@ -326,115 +328,14 @@ namespace NostreetsExtensions.Extend.Web
         /// <param name="headers">The headers.</param>
         /// <returns></returns>
         /// <exception cref="Exception">url to has to be valid url string to be able to HitEndpoint...</exception>
-        public static object HitEndpoint(this string url, string method = "GET", object data = null, string contentType = "application/json", Dictionary<string, string> headers = null, Type responseType = null)
+        public static IHttpResponse<object> HitEndpoint(this string url, string method = "GET", object data = null, string contentType = "application/json", Dictionary<string, string> headers = null, Type responseType = null)
         {
-            if (!url.IsValidUrl())
-                throw new Exception("url to has to be valid url string to be able to HitEndpoint...");
-
-            HttpWebRequest requestStream = (HttpWebRequest)WebRequest.Create(url);
-            HttpWebResponse responseStream = null;
-            string responseString = null,
-                   requestString = null;
-
-            requestStream.ContentType = contentType;
-            requestStream.Method = method;
-
-            if (headers != null)
-                foreach (KeyValuePair<string, string> head in headers)
-                {
-                    requestStream.Headers.Add(head.Key, head.Value);
-                }
-
             try
             {
-                if (data != null)
-                {
-                    if (method == "POST" || method == "PUT" || method == "PATCH")
-                    {
-                        if (contentType == "application/json")
-                        {
-                            requestString = JsonConvert.SerializeObject(data);
-                        }
-                        else
-                        {
-                            XmlSerializer serial = new XmlSerializer(data.GetType());
-                            StringWriter writer = new StringWriter();
-                            serial.Serialize(writer, data);
-                            requestString = writer.ToString();
-                            writer.Close();
-                        }
-
-                        using (Stream stream = requestStream.GetRequestStream())
-                        {
-                            StreamWriter writer = new StreamWriter(stream);
-                            writer.Write(requestString);
-                            writer.Close();
-                        }
-                    }
-                }
+                return new HttpResponse<object>(url, method, data, contentType, headers);
             }
             catch (Exception ex)
             {
-                return ex;
-            }
-
-            try
-            {
-                using (responseStream = (HttpWebResponse)requestStream.GetResponse())
-                {
-                    using (Stream stream = responseStream.GetResponseStream())
-                    {
-                        StreamReader reader = new StreamReader(stream);
-                        responseString = reader.ReadToEnd();
-                    }
-
-                    object responseData;
-
-                    if (responseString.IsJson())
-                        responseData = JsonConvert.DeserializeObject<Dictionary<string, dynamic>>(responseString);
-
-                    else if (responseString.IsXml())
-                    {
-
-                        object deserializedJson;
-                        string json;
-
-
-                        if (responseString.IsHtml())
-                        {
-                            XDocument doc = XDocument.Parse(responseString);
-                            json = JsonConvert.SerializeXNode(doc);
-                            deserializedJson = JsonConvert.DeserializeObject(json);
-                        }
-                        else
-                        {
-                            //XmlSerializer serial = new XmlSerializer(data.GetType());
-                            //StringReader reader = new StringReader(responseString);
-                            //responseData = serial.Deserialize(reader);
-                            XmlDocument doc = new XmlDocument();
-                            doc.Load(responseString);
-                            json = JsonConvert.SerializeXmlNode(doc);
-                            deserializedJson = JsonConvert.DeserializeObject(json);
-                        }
-
-
-                        if (responseType != null && deserializedJson.TryCast(responseType, out object obj))
-                            responseData = obj;
-                        else
-                            responseData = deserializedJson;
-
-                    }
-                    else
-                        responseData = null;
-
-                    return responseData;
-                }
-            }
-            catch (Exception ex)
-            {
-                if (FileManager.LatestInstance != null)
-                    FileManager.LatestInstance.WriteToFile("\n----------------------   Error Details    ---------------------\nRequest: \n{0}\n\n Response: \n {1}\n", requestString, responseString);
-
                 throw ex;
             }
         }
@@ -451,108 +352,14 @@ namespace NostreetsExtensions.Extend.Web
         /// <returns></returns>
         /// <exception cref="Exception">url to has to be valid url string to be able to HitEndpoint...
         /// or</exception>
-        public static T HitEndpoint<T>(this string url, string method = "GET", object data = null, string contentType = "application/json", Dictionary<string, string> headers = null)
+        public static IHttpResponse<T> HitEndpoint<T>(this string url, string method = "GET", object data = null, string contentType = "application/json", Dictionary<string, string> headers = null)
         {
-            if (!url.IsValidUrl())
-                throw new Exception("url to has to be valid url string to be able to HitEndpoint...");
-
-            HttpWebRequest requestStream = (HttpWebRequest)WebRequest.Create(url);
-            HttpWebResponse responseStream = null;
-            string responseString = null,
-                   requestString = null;
-            byte[] bytes = null;
-
-            if (headers == null) { headers = new Dictionary<string, string>(); }
-
-            requestStream.ContentType = contentType;
-            requestStream.Method = method;
-
-            foreach (KeyValuePair<string, string> head in headers)
-            {
-                requestStream.Headers.Add(head.Key, head.Value);
-            }
-
             try
             {
-                if (data != null)
-                {
-                    if (method == "POST" || method == "PUT" || method == "PATCH")
-                    {
-                        if (contentType == "application/json")
-                        {
-                            requestString = JsonConvert.SerializeObject(data);
-                        }
-                        else if (contentType == "text/xml; encoding='utf-8'")
-                        {
-                            XmlSerializer serial = new XmlSerializer(data.GetType());
-                            StringWriter writer = new StringWriter();
-                            serial.Serialize(writer, data);
-                            requestString = "XML=" + writer.ToString();
-                            writer.Close();
-                        }
-                    }
-
-                    using (Stream stream = requestStream.GetRequestStream())
-                    {
-                        StreamWriter writer = new StreamWriter(stream);
-                        if (requestString != null) { writer.Write(requestString); }
-                        else if (bytes != null) { stream.Write(bytes, 0, bytes.Length); }
-                        writer.Close();
-                    }
-                }
+                return new HttpResponse<T>(url, method, data, contentType, headers);
             }
             catch (Exception ex)
             {
-                throw ex;
-            }
-
-            try
-            {
-                using (responseStream = (HttpWebResponse)requestStream.GetResponse())
-                {
-                    using (Stream stream = responseStream.GetResponseStream())
-                    {
-                        StreamReader reader = new StreamReader(stream);
-                        responseString = reader.ReadToEnd();
-                    }
-
-                    T responseData;
-
-                    if (contentType == "application/json")
-                    {
-                        responseData = JsonConvert.DeserializeObject<T>(responseString);
-                    }
-                    else
-                    {
-                        //XmlSerializer serial = new XmlSerializer(data.GetType());
-                        //StringReader reader = new StringReader(responseString);
-                        //responseData = serial.Deserialize(reader);
-
-                        XmlDocument doc = new XmlDocument();
-                        doc.Load(responseString);
-
-                        string json = JsonConvert.SerializeXmlNode(doc);
-                        object deserializedJson = JsonConvert.DeserializeObject(json);
-
-                        if (deserializedJson.TryCast(out T obj))
-                            responseData = obj;
-                        else
-                            throw new InvalidCastException("Unable to cast response data to type of " + typeof(T).Name, new Exception(responseString));
-
-
-                    }
-
-                    if (responseString.ToLower().Contains("<error>"))
-                        throw new Exception(responseString);
-
-                    return responseData;
-                }
-            }
-            catch (Exception ex)
-            {
-                if (FileManager.LatestInstance != null)
-                    FileManager.LatestInstance.WriteToFile("\n----------------------   Error Details    ---------------------\nRequest: \n{0}\n\n Response: \n {1}\n", requestString, responseString);
-
                 throw ex;
             }
         }
@@ -574,6 +381,88 @@ namespace NostreetsExtensions.Extend.Web
             }
 
             return bundle;
+        }
+
+        /// <summary>
+        /// Hits the endpoint.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="url">The URL.</param>
+        /// <param name="method">The method.</param>
+        /// <param name="data">The data.</param>
+        /// <param name="contentType">Type of the content.</param>
+        /// <param name="headers">The headers.</param>
+        /// <returns></returns>
+        /// <exception cref="Exception">url to has to be valid url string to be able to HitEndpoint...
+        /// or</exception>
+        public static IRestResponse<object> RestSharpEndpoint(this string url, string method = "GET", object data = null, string contentType = "application/json", Dictionary<string, string> headers = null)
+        {
+            #region Client
+            IRestResponse<object> result = null;
+            RestClient rest = null;
+            if (url != null)
+            {
+                rest = new RestClient(url);
+            }
+            else { throw new Exception("URL is not defined!"); }
+
+            #endregion Client
+
+            #region Request
+
+            RestRequest request = new RestRequest();
+            switch (method)
+            {
+                case "GET":
+                    request.Method = Method.GET;
+                    break;
+
+                case "POST":
+                    request.Method = Method.POST;
+                    break;
+
+                case "PATCH":
+                    request.Method = Method.PATCH;
+                    break;
+
+                case "PUT":
+                    request.Method = Method.PUT;
+                    break;
+
+                case "DELETE":
+                    request.Method = Method.DELETE;
+                    break;
+
+                default:
+                    request.Method = Method.GET;
+                    break;
+            };
+            request.JsonSerializer = CustomSerializer.CamelCaseIngoreDictionaryKeys;
+            request.RequestFormat = DataFormat.Json;
+            request.AddBody(data);
+            if (headers != null)
+            {
+                foreach (var item in headers)
+                {
+                    if (item.Key.Contains("auth"))
+                    {
+                        rest.Authenticator = new HttpBasicAuthenticator("username", item.Value);
+                    }
+                    else if (item.Key == "contentType")
+                    {
+                        request.AddParameter(new Parameter { ContentType = item.Value });
+                    }
+                    else
+                    {
+                        request.AddParameter(new Parameter { Name = item.Key, Value = item.Value });
+                    }
+                }
+            }
+
+            #endregion Request
+
+            result = rest.Execute<object>(request);
+            return result;
         }
 
         /// <summary>
@@ -733,7 +622,7 @@ namespace NostreetsExtensions.Extend.Web
         /// <param name="routes">The routes.</param>
         /// <param name="namespace">The namespace.</param>
         /// <param name="path">The path.</param>
-        public static void RegisterRoute(this RouteCollection routes, string @namespace, string path = "{controller}/{action}/{id}")
+        public static void RegisterExternalRoute(this RouteCollection routes, string @namespace, string path = "{controller}/{action}/{id}")
         {
             Route externalBlogRoute = new Route(path, new MvcRouteHandler())
             {
@@ -751,5 +640,194 @@ namespace NostreetsExtensions.Extend.Web
         {
             return input != HttpUtility.HtmlEncode(input) && input.Contains("DOCTYPE html");
         }
+
+        public static object GetHttpResponseData(this HttpWebResponse responseStream, Type responseType = null)
+        {
+            try
+            {
+                string responseString = null;
+
+                using (Stream stream = responseStream.GetResponseStream())
+                {
+                    StreamReader reader = new StreamReader(stream);
+                    responseString = reader.ReadToEnd();
+                }
+
+                object responseData;
+
+                if (responseString.IsJson())
+                    responseData = JsonConvert.DeserializeObject<Dictionary<string, dynamic>>(responseString);
+
+                else if (responseString.IsXml())
+                {
+
+                    object deserializedJson;
+                    string json;
+
+
+                    if (responseString.IsHtml())
+                    {
+                        XDocument doc = XDocument.Parse(responseString);
+                        json = JsonConvert.SerializeXNode(doc);
+                        deserializedJson = JsonConvert.DeserializeObject(json);
+                    }
+                    else
+                    {
+                        //XmlSerializer serial = new XmlSerializer(data.GetType());
+                        //StringReader reader = new StringReader(responseString);
+                        //responseData = serial.Deserialize(reader);
+                        XmlDocument doc = new XmlDocument();
+                        doc.Load(responseString);
+                        json = JsonConvert.SerializeXmlNode(doc);
+                        deserializedJson = JsonConvert.DeserializeObject(json);
+                    }
+
+
+                    if (responseType != null && deserializedJson.TryCast(responseType, out object obj))
+                        responseData = obj;
+                    else
+                        responseData = deserializedJson;
+
+                }
+                else
+                    responseData = null;
+
+
+
+                return responseData;
+            }
+            catch (Exception ex)
+            {
+
+                throw ex;
+            }
+
+        }
+
+        public static T GetHttpResponseData<T>(this HttpWebResponse responseStream, out string responseString)
+        {
+            try
+            {
+                responseString = null;
+
+                using (Stream stream = responseStream.GetResponseStream())
+                {
+                    StreamReader reader = new StreamReader(stream);
+                    responseString = reader.ReadToEnd();
+                }
+
+                T responseData;
+
+                if (responseString.IsJson())
+                    responseData = JsonConvert.DeserializeObject<T>(responseString);
+
+                else if (responseString.IsXml())
+                {
+
+                    object deserializedJson;
+                    string json;
+
+
+                    if (responseString.IsHtml())
+                    {
+                        XDocument doc = XDocument.Parse(responseString);
+                        json = JsonConvert.SerializeXNode(doc);
+                        deserializedJson = JsonConvert.DeserializeObject(json);
+
+                    }
+                    else
+                    {
+                        //XmlSerializer serial = new XmlSerializer(data.GetType());
+                        //StringReader reader = new StringReader(responseString);
+                        //responseData = serial.Deserialize(reader);
+
+                        XmlDocument doc = new XmlDocument();
+                        doc.Load(responseString);
+                        json = JsonConvert.SerializeXmlNode(doc);
+                        deserializedJson = JsonConvert.DeserializeObject(json);
+                    }
+
+
+                    if (deserializedJson.TryCast(out T convertedObj))
+                        responseData = convertedObj;
+                    else
+                        responseData = default(T);
+                    //    throw new InvalidCastException("Unable to cast response data to type of " + typeof(T).Name, new Exception(responseString));
+
+                }
+                else
+                    responseData = default(T);
+
+
+
+                return responseData;
+            }
+            catch (Exception ex)
+            {
+
+                throw ex; 
+            }
+
+        }
+
+        public static HttpWebRequest GetRequestStream(this string url, string method = "GET", object data = null, string contentType = "application/json", Dictionary<string, string> headers = null)
+        {
+            try
+            {
+                if (!url.IsValidUrl())
+                    throw new Exception("url to has to be valid url string to be able to HitEndpoint...");
+
+                HttpWebRequest requestStream = (HttpWebRequest)WebRequest.Create(url);
+                string requestString = null;
+                byte[] bytes = null;
+
+                if (headers == null) { headers = new Dictionary<string, string>(); }
+
+                requestStream.ContentType = contentType;
+                requestStream.Method = method;
+
+                foreach (KeyValuePair<string, string> head in headers)
+                {
+                    requestStream.Headers.Add(head.Key, head.Value);
+                }
+
+
+                if (data != null)
+                {
+                    if (method == "POST" || method == "PUT" || method == "PATCH")
+                    {
+                        if (contentType == "application/json" && !(data.GetType() == typeof(string) && ((string)data).IsJson()))
+                            requestString = JsonConvert.SerializeObject(data);
+
+
+                        else if (contentType == "text/xml; encoding='utf-8'")
+                        {
+                            XmlSerializer serial = new XmlSerializer(data.GetType());
+                            StringWriter writer = new StringWriter();
+                            serial.Serialize(writer, data);
+                            requestString = "XML=" + writer.ToString();
+                            writer.Close();
+                        }
+                    }
+
+                    using (Stream stream = requestStream.GetRequestStream())
+                    {
+                        StreamWriter writer = new StreamWriter(stream);
+                        if (requestString != null) { writer.Write(requestString); }
+                        else if (bytes != null) { stream.Write(bytes, 0, bytes.Length); }
+                        writer.Close();
+                    }
+                }
+
+                return requestStream;
+            }
+            catch (Exception ex)
+            {
+
+                throw ex;
+            }
+        }
+
+        
     }
 }
