@@ -1,9 +1,5 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
-using System.Reflection;
-using NostreetsExtensions.Extend.Basic;
-using NostreetsExtensions.Extend.IOC;
-using NostreetsExtensions.Utilities;
 
 namespace NostreetsExtensions.DataControl.Classes
 {
@@ -12,8 +8,6 @@ namespace NostreetsExtensions.DataControl.Classes
 
         private DateTime _dateCreated = DateTime.Now;
         private DateTime _dateModified = DateTime.Now;
-        private bool _isDeleted = false;
-        private static bool _hasUserId = true;
 
         [Key]
         public T Id { get; set; }
@@ -26,7 +20,7 @@ namespace NostreetsExtensions.DataControl.Classes
 
         public virtual string ModifiedUserId { get; set; }
 
-        public virtual bool IsDeleted { get => _isDeleted; set => _isDeleted = value; }
+        public virtual bool IsDeleted { get; set; } = false;
 
     }
 

@@ -192,7 +192,7 @@ namespace NostreetsExtensions.Extend.Web
 
         public static string GetIP4Address(this HttpContext context)
         {
-            string result = String.Empty;
+            string result = string.Empty;
 
             foreach (IPAddress IPA in Dns.GetHostAddresses(context.Request.UserHostAddress))
                 if (IPA.AddressFamily.ToString() == "InterNetwork")
@@ -201,7 +201,7 @@ namespace NostreetsExtensions.Extend.Web
                     break;
                 }
 
-            if (result != String.Empty)
+            if (result != string.Empty)
                 return result;
 
             foreach (IPAddress IPA in Dns.GetHostAddresses(Dns.GetHostName()))
@@ -216,7 +216,7 @@ namespace NostreetsExtensions.Extend.Web
 
         public static string GetIP4Address(this HttpContextBase context)
         {
-            string result = String.Empty;
+            string result = string.Empty;
 
             foreach (IPAddress IPA in Dns.GetHostAddresses(context.Request.UserHostAddress))
                 if (IPA.AddressFamily.ToString() == "InterNetwork")
@@ -225,7 +225,7 @@ namespace NostreetsExtensions.Extend.Web
                     break;
                 }
 
-            if (result != String.Empty)
+            if (result != string.Empty)
                 return result;
 
             foreach (IPAddress IPA in Dns.GetHostAddresses(Dns.GetHostName()))
@@ -237,6 +237,7 @@ namespace NostreetsExtensions.Extend.Web
 
             return result;
         }
+
 
         /// <summary>
         /// Gets the request ip address.

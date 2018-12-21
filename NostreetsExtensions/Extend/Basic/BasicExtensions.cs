@@ -1953,13 +1953,14 @@ namespace NostreetsExtensions.Extend.Basic
         {
             bool result = false;
 
-            for (int i = 0; i < enumerable.Count(); i++)
-            {
-                result = enumerable.ElementAt(i).Equals(obj.ElementAt(i));
+            if (enumerable.Count() == obj.Count())
+                for (int i = 0; i < enumerable.Count(); i++)
+                {
+                    result = enumerable.ElementAt(i).Equals(obj.ElementAt(i));
 
-                if (!result)
-                    break;
-            }
+                    if (!result)
+                        break;
+                }
 
             return result;
         }
