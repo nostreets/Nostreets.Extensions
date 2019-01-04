@@ -1,9 +1,15 @@
-﻿using System.Management.Automation;
+﻿using System;
+using System.CodeDom.Compiler;
+using System.Collections.Generic;
+using System.Management.Automation;
+using System.Reflection;
+using System.Text;
 
 namespace NostreetsExtensions.Extend.Command
 {
-    public static class CommandExtensions
+    public static class Command
     {
+
         /// <summary>
         /// Runs the power shell command.
         /// </summary>
@@ -23,5 +29,8 @@ namespace NostreetsExtensions.Extend.Command
                 var results = powershell.Invoke();
             }
         }
+
+
+
     }
 }

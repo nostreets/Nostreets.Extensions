@@ -36,21 +36,50 @@ namespace NostreetsExtensions.Utilities
             skipAssemblies.Add("Unity.Mvc5");
         }
 
-        public object ScanAssembliesForObject(
-              string nameToCheckFor
+        public Dictionary<object,Assembly> ScanAssembliesForObjects(
+            string nameToCheckFor
             , string[] assembliesToLookFor = null
             , string[] assembliesToSkip = null
             , ClassTypes classType = ClassTypes.Any
             , Func<dynamic, bool> predicate = null)
         {
-            object result = null;
+            Dictionary<object,Assembly> result = null;
 
             foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
             {
-                SearchForObject(assembly, nameToCheckFor, out result, assembliesToLookFor, assembliesToSkip, classType);
+                SearchForObject(assembly, nameToCheckFor, out object obj, assembliesToLookFor, assembliesToSkip, classType, predicate);
 
                 if (result != null)
+                {
+                    result.Add(obj, assembly);
+                }
+            }
+
+            return result;
+
+        }
+
+
+        public object ScanAssembliesForObject(
+              string nameToCheckFor
+            , out Assembly assembly
+            , string[] assembliesToLookFor = null
+            , string[] assembliesToSkip = null
+            , ClassTypes classType = ClassTypes.Any
+            , Func<dynamic, bool> predicate = null)
+        {
+            assembly = null;
+            object result = null;
+
+            foreach (Assembly _assembly in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                SearchForObject(_assembly, nameToCheckFor, out result, assembliesToLookFor, assembliesToSkip, classType, predicate);
+
+                if (result != null)
+                {
+                    assembly = _assembly;
                     break;
+                }
             }
 
             return result;

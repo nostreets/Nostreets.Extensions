@@ -1,4 +1,12 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
+using NostreetsExtensions.DataControl.Classes;
+using NostreetsExtensions.Extend.Basic;
+using NostreetsExtensions.Interfaces;
+using NostreetsExtensions.Utilities;
+using RestSharp;
+using RestSharp.Authenticators;
+using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.IO;
@@ -10,25 +18,18 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Web;
 using System.Web.Configuration;
+using System.Web.Http;
+using System.Web.Http.Routing;
 using System.Web.Mvc;
 using System.Web.Optimization;
 using System.Web.Routing;
 using System.Xml;
 using System.Xml.Linq;
 using System.Xml.Serialization;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Serialization;
-using NostreetsExtensions.DataControl.Classes;
-using NostreetsExtensions.Extend.Basic;
-using NostreetsExtensions.Interfaces;
-using NostreetsExtensions.Utilities;
-
-using RestSharp;
-using RestSharp.Authenticators;
 
 namespace NostreetsExtensions.Extend.Web
 {
-    public static partial class Web
+    public static class Web
     {
         /// <summary>
         /// Gets the local ip addresses.
@@ -79,10 +80,7 @@ namespace NostreetsExtensions.Extend.Web
             HttpResponseMessage result = new HttpResponseMessage(httpStatusCode);
             result.Content = new StringContent((string)content, Encoding.UTF8, contentType);
         }
-    }
 
-    public static partial class Web
-    {
         /// <summary>
         /// Creates the response.
         /// </summary>
@@ -622,20 +620,82 @@ namespace NostreetsExtensions.Extend.Web
         /// </summary>
         /// <param name="routes">The routes.</param>
         /// <param name="namespace">The namespace.</param>
-        /// <param name="path">The path.</param>
-        public static void RegisterExternalRoute(this RouteCollection routes, string @namespace, string path = "{controller}/{action}/{id}")
+        /// <param name="url">The path.</param>
+        public static void RegisterMvcExternalRoute(this RouteCollection routes, string @namespace, string url = null, object defaults = null)
         {
-            Route externalBlogRoute = new Route(path, new MvcRouteHandler())
-            {
-                DataTokens = new RouteValueDictionary(
-               new
-               {
-                   namespaces = new[] { @namespace }
-               })
-            };
+            if (@namespace == null || @namespace == "")
+                throw new ArgumentNullException("@namespace");
 
-            routes.Add(Guid.NewGuid().ToString() + "Route", externalBlogRoute);
+            Route route = null;
+
+
+            if (defaults != null)
+                route = routes.MapRoute(
+                    name: @namespace + "Default",
+                    url: url ?? "{controller}/{action}/{id}",
+                    defaults: defaults,
+                    namespaces: new[] { @namespace }
+                );
+
+            else
+                route = routes.MapRoute(
+                    name: @namespace + "Default",
+                    url: url ?? "{controller}/{action}/{id}",
+                    namespaces: new[] { @namespace }
+                );
+
+
+            route.DataTokens = new RouteValueDictionary(new { namespaces = new[] { @namespace } });
+
+            //Route externalBlogRoute = new Route(path, new MvcRouteHandler())
+            //{
+            //    DataTokens = new RouteValueDictionary(
+            //   new
+            //   {
+            //       namespaces = new[] { @namespace }
+            //   })
+            //};
+
+            //routes.Add(Guid.NewGuid().ToString() + "Route", externalBlogRoute);
+
         }
+
+        public static void RegisterApiExternalRoute(this HttpConfiguration config, string @namespace, string url = "api/{controller}/{id}", object defaults = null)
+        {
+            if (@namespace == null || @namespace == "")
+                throw new ArgumentNullException("@namespace");
+
+
+
+            // config.Routes.MapHttpRoute(
+            //    name: @namespace + "Default",
+            //    routeTemplate: url,
+            //    defaults: defaults ?? new { controller = "Home", action = "Index", id = UrlParameter.Optional },
+            //    constraints: new[] {
+            //        new HttpRouteValueDictionary(
+            //            new
+            //            {
+            //                Namespace = new[] { @namespace }
+            //                //namespaces = new[] { @namespace }
+            //            }
+            //        )
+            //    }
+            //);
+
+
+            HttpRoute externalRoute = new HttpRoute(url,
+                new HttpRouteValueDictionary(
+                   new
+                   {
+                       Namespace = new[] { @namespace }
+                       //namespaces = new[] { @namespace }
+                   })
+               );
+
+            config.Routes.Add(@namespace + "Route", externalRoute);
+
+        }
+
 
         public static bool IsHtml(this string input)
         {
@@ -766,7 +826,7 @@ namespace NostreetsExtensions.Extend.Web
             catch (Exception ex)
             {
 
-                throw ex; 
+                throw ex;
             }
 
         }
@@ -829,6 +889,6 @@ namespace NostreetsExtensions.Extend.Web
             }
         }
 
-        
+
     }
 }
