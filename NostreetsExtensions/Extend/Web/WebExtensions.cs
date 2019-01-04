@@ -630,7 +630,7 @@ namespace NostreetsExtensions.Extend.Web
                 DataTokens = new RouteValueDictionary(
                new
                {
-                   namespaces = new[] { @namespace }
+                   namespaces = new[] { @namespace.ToLower().Contains("controller") ? @namespace : @namespace + ".Controller" }
                })
             };
 
