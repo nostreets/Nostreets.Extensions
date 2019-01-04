@@ -1,4 +1,8 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Serialization;
+using NostreetsExtensions.Utilities;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Specialized;
@@ -17,17 +21,13 @@ using System.Xml;
 using System.Xml.Linq;
 using System.Xml.Serialization;
 
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using Newtonsoft.Json.Serialization;
-
-using NostreetsExtensions.Utilities;
-
 namespace NostreetsExtensions.Extend.Basic
 {
     public static class Basic
     {
         #region Static
+
+
 
         /// <summary>
         /// Creates the class.
@@ -300,7 +300,6 @@ namespace NostreetsExtensions.Extend.Basic
         #endregion Static
 
         #region Extensions
-
         /// <summary>
         /// Adds the attribute.
         /// </summary>
@@ -903,6 +902,11 @@ namespace NostreetsExtensions.Extend.Basic
             }
 
             return result;
+        }
+
+        public static Type GetTypeWithAssembly(this Assembly assembly, string typeName)
+        {
+            return assembly.GetTypes().FirstOrDefault(t => t.Name == typeName);
         }
 
         /// <summary>
@@ -2467,6 +2471,31 @@ namespace NostreetsExtensions.Extend.Basic
             return txt?.Remove("`1")?.RemoveChar('<', '>', '@', '.', '{', '}', '[', ']', '_');
         }
 
+        public static object ScanAssembliesForObject(this string nameToCheckFor
+                                                    , string assemblyToLookFor = null
+                                                    , ClassTypes classType = ClassTypes.Any
+                                                    , Func<dynamic, bool> predicate = null)
+        {
+            return nameToCheckFor.ScanAssembliesForObject(out Assembly assembly, null, (assemblyToLookFor != null) ? new[] { assemblyToLookFor } : null, classType, predicate);
+        }
+
+        public static object ScanAssembliesForObject(this string nameToCheckFor
+                                                    , string[] assembliesToLookFor
+                                                    , ClassTypes classType = ClassTypes.Any
+                                                    , Func<dynamic, bool> predicate = null)
+        {
+            return nameToCheckFor.ScanAssembliesForObject(out Assembly assembly, null, assembliesToLookFor, classType, predicate);
+        }
+
+        public static object ScanAssembliesForObject(this string nameToCheckFor
+                                                    , string[] assembliesToSkip
+                                                    , string[] assembliesToLookFor
+                                                    , ClassTypes classType = ClassTypes.Any
+                                                    , Func<dynamic, bool> predicate = null)
+        {
+            return nameToCheckFor.ScanAssembliesForObject(out Assembly assembly, assembliesToSkip, assembliesToLookFor, classType, predicate);
+        }
+
         /// <summary>
         /// Scans the assemblies for object.
         /// </summary>
@@ -2476,13 +2505,15 @@ namespace NostreetsExtensions.Extend.Basic
         /// <param name="predicate">The predicate.</param>
         /// <returns></returns>
         public static object ScanAssembliesForObject(this string nameToCheckFor
+                                                    , out Assembly assembly
                                                     , string assemblyToLookFor = null
                                                     , ClassTypes classType = ClassTypes.Any
                                                     , Func<dynamic, bool> predicate = null)
         {
             object result = null;
             using (AssemblyScanner scanner = new AssemblyScanner())
-                result = scanner.ScanAssembliesForObject(nameToCheckFor, (assemblyToLookFor != null) ? new[] { assemblyToLookFor } : null, null, classType, predicate);
+                result = scanner.ScanAssembliesForObject(nameToCheckFor, out assembly, (assemblyToLookFor != null) ? new[] { assemblyToLookFor } : null, null, classType, predicate);
+
             return result;
         }
 
@@ -2495,13 +2526,15 @@ namespace NostreetsExtensions.Extend.Basic
         /// <param name="predicate">The predicate.</param>
         /// <returns></returns>
         public static object ScanAssembliesForObject(this string nameToCheckFor
+                                                    , out Assembly assembly
                                                     , string[] assembliesToLookFor
                                                     , ClassTypes classType = ClassTypes.Any
                                                     , Func<dynamic, bool> predicate = null)
         {
             object result = null;
             using (AssemblyScanner scanner = new AssemblyScanner())
-                result = scanner.ScanAssembliesForObject(nameToCheckFor, assembliesToLookFor, null, classType, predicate);
+                result = scanner.ScanAssembliesForObject(nameToCheckFor, out assembly, assembliesToLookFor, null, classType, predicate);
+
             return result;
         }
 
@@ -2515,6 +2548,7 @@ namespace NostreetsExtensions.Extend.Basic
         /// <param name="predicate">The predicate.</param>
         /// <returns></returns>
         public static object ScanAssembliesForObject(this string nameToCheckFor
+                                                    , out Assembly assembly
                                                     , string[] assembliesToSkip
                                                     , string[] assembliesToLookFor
                                                     , ClassTypes classType = ClassTypes.Any
@@ -2522,7 +2556,62 @@ namespace NostreetsExtensions.Extend.Basic
         {
             object result = null;
             using (AssemblyScanner scanner = new AssemblyScanner())
-                result = scanner.ScanAssembliesForObject(nameToCheckFor, assembliesToLookFor, assembliesToSkip, classType, predicate);
+                result = scanner.ScanAssembliesForObject(nameToCheckFor, out assembly, assembliesToLookFor, assembliesToSkip, classType, predicate);
+
+            return result;
+        }
+
+        public static Dictionary<object, Assembly> ScanAssembliesForObjects(this string nameToCheckFor
+                                                                           , string assemblyToLookFor = null
+                                                                           , ClassTypes classType = ClassTypes.Any
+                                                                           , Func<dynamic, bool> predicate = null)
+        {
+            Dictionary<object, Assembly> result = null;
+            using (AssemblyScanner scanner = new AssemblyScanner())
+                result = scanner.ScanAssembliesForObjects(nameToCheckFor, (assemblyToLookFor != null) ? new[] { assemblyToLookFor } : null, null, classType, predicate);
+
+            return result;
+        }
+
+        /// <summary>
+        /// Scans the assemblies for object.
+        /// </summary>
+        /// <param name="nameToCheckFor">The name to check for.</param>
+        /// <param name="assembliesToLookFor">The assemblies to look for.</param>
+        /// <param name="classType">Type of the class.</param>
+        /// <param name="predicate">The predicate.</param>
+        /// <returns></returns>
+        public static Dictionary<object, Assembly> ScanAssembliesForObjects(this string nameToCheckFor
+                                                                           , string[] assembliesToLookFor
+                                                                           , ClassTypes classType = ClassTypes.Any
+                                                                           , Func<dynamic, bool> predicate = null)
+        {
+            Dictionary<object, Assembly> result = null;
+            using (AssemblyScanner scanner = new AssemblyScanner())
+                result = scanner.ScanAssembliesForObjects(nameToCheckFor, assembliesToLookFor, null, classType, predicate);
+
+            return result;
+        }
+
+        /// <summary>
+        /// Scans the assemblies for object.
+        /// </summary>
+        /// <param name="nameToCheckFor">The name to check for.</param>
+        /// <param name="assembliesToSkip">The assemblies to skip.</param>
+        /// <param name="assembliesToLookFor">The assemblies to look for.</param>
+        /// <param name="classType">Type of the class.</param>
+        /// <param name="predicate">The predicate.</param>
+        /// <returns></returns>
+        public static Dictionary<object, Assembly> ScanAssembliesForObjects(this string nameToCheckFor
+                                                                           , string[] assembliesToSkip
+                                                                           , string[] assembliesToLookFor
+                                                                           , ClassTypes classType = ClassTypes.Any
+                                                                           , Func<dynamic, bool> predicate = null)
+        {
+            Dictionary<object, Assembly> result = null;
+            using (AssemblyScanner scanner = new AssemblyScanner())
+                result = scanner.ScanAssembliesForObjects(nameToCheckFor, assembliesToLookFor, assembliesToSkip, classType, predicate);
+
             return result;
         }
 

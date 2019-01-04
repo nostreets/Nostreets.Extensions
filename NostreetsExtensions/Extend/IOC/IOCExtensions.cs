@@ -137,32 +137,32 @@ namespace NostreetsExtensions.Extend.IOC
 
         public static IUnityContainer GetUnityContainer(this string assemblyName)
         {
-            MethodInfo methodInfo = (MethodInfo)"UnityConfig.GetContainer".ScanAssembliesForObject(assemblyName);
-            object unityConfig = "UnityConfig".ScanAssembliesForObject().Instantiate();
+            MethodInfo methodInfo = (MethodInfo)"UnityConfig.GetContainer".ScanAssembliesForObject(out Assembly assembly, assemblyName);
+            object unityConfig = assembly.GetTypeWithAssembly("UnityConfig");
             UnityContainer result = (UnityContainer)methodInfo?.Invoke(unityConfig, null);
             return result;
         }
 
         public static IUnityContainer GetUnityContainer(this Assembly assembly)
         {
-            MethodInfo methodInfo = (MethodInfo)"UnityConfig.GetContainer".ScanAssembliesForObject(assembly.GetName().Name);
-            object unityConfig = "UnityConfig".ScanAssembliesForObject().Instantiate();
+            MethodInfo methodInfo = (MethodInfo)"UnityConfig.GetContainer".ScanAssembliesForObject(out Assembly _assembly, assembly.GetName().Name);
+            object unityConfig = assembly.GetTypeWithAssembly("UnityConfig");
             UnityContainer result = (UnityContainer)methodInfo?.Invoke(unityConfig, null);
             return result;
         }
 
         public static IWindsorContainer GetWindsorContainer(this string assemblyName)
         {
-            MethodInfo methodInfo = (MethodInfo)"WindsorConfig.GetContainer".ScanAssembliesForObject(assemblyName);
-            object windsorConfig = "WindsorConfig".ScanAssembliesForObject().Instantiate();
+            MethodInfo methodInfo = (MethodInfo)"WindsorConfig.GetContainer".ScanAssembliesForObject(out Assembly assembly, assemblyName);
+            object windsorConfig = assembly.GetTypeWithAssembly("WindsorConfig");
             WindsorContainer result = (WindsorContainer)methodInfo?.Invoke(windsorConfig, null);
             return result;
         }
 
         public static IWindsorContainer GetWindsorContainer(this Assembly assembly)
         {
-            MethodInfo methodInfo = (MethodInfo)"WindsorConfig.GetContainer".ScanAssembliesForObject(assembly.GetName().Name);
-            object windsorConfig = "WindsorConfig".ScanAssembliesForObject().Instantiate();
+            MethodInfo methodInfo = (MethodInfo)"WindsorConfig.GetContainer".ScanAssembliesForObject(out Assembly _assembly, assembly.GetName().Name);
+            object windsorConfig = assembly.GetTypeWithAssembly("WindsorConfig");
             WindsorContainer result = (WindsorContainer)methodInfo?.Invoke(windsorConfig, null);
             return result;
         }
