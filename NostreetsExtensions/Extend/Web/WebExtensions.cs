@@ -1,11 +1,18 @@
-﻿using Newtonsoft.Json;
+﻿using Hangfire;
+
+using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
+
 using NostreetsExtensions.DataControl.Classes;
 using NostreetsExtensions.Extend.Basic;
 using NostreetsExtensions.Interfaces;
 using NostreetsExtensions.Utilities;
+
+using Owin;
+
 using RestSharp;
 using RestSharp.Authenticators;
+
 using System;
 using System.Collections.Generic;
 using System.Configuration;
@@ -32,46 +39,13 @@ namespace NostreetsExtensions.Extend.Web
     public static class Web
     {
         /// <summary>
-        /// Gets the local ip addresses.
+        /// Creates the HTTP response message.
         /// </summary>
+        /// <param name="content">The content.</param>
+        /// <param name="contentType">Type of the content.</param>
+        /// <param name="httpStatusCode">The HTTP status code.</param>
         /// <returns></returns>
-        public static string GetIPAddress()
-        {
-            string result = null;
-
-            if (HttpContext.Current != null)
-                HttpContext.Current.GetIP4Address();
-
-            else
-            {
-                string hostName = Dns.GetHostName();
-                IPHostEntry ipEntry = Dns.GetHostEntry(hostName);
-                result = ipEntry.AddressList[ipEntry.AddressList.Length - 1].ToString();
-            }
-
-            return result;
-
-        }
-
-        public static void UpdateWebConfig(string key, string value)
-        {
-            // Get the configuration.
-            Configuration config = WebConfigurationManager.OpenWebConfiguration("~");
-            bool doesKeyExist = false;
-
-            foreach (KeyValueConfigurationElement item in config.AppSettings.Settings)
-                if (item.Key == key)
-                    doesKeyExist = true;
-
-            if (!doesKeyExist)
-                config.AppSettings.Settings.Add(key, value);
-            else
-                config.AppSettings.Settings[key].Value = value;
-
-            // Save to the file,
-            config.Save(ConfigurationSaveMode.Minimal);
-        }
-
+        /// <exception cref="System.NotImplementedException"></exception>
         public static HttpResponseMessage CreateHttpResponseMessage(object content, string contentType, HttpStatusCode httpStatusCode)
         {
             throw new NotImplementedException();
@@ -188,6 +162,134 @@ namespace NostreetsExtensions.Extend.Web
             return keys.First();
         }
 
+        /// <summary>
+        /// Gets the HTTP response data.
+        /// </summary>
+        /// <param name="responseStream">The response stream.</param>
+        /// <param name="responseType">Type of the response.</param>
+        /// <returns></returns>
+        public static object GetHttpResponseData(this HttpWebResponse responseStream, Type responseType = null)
+        {
+            try
+            {
+                string responseString = null;
+
+                using (Stream stream = responseStream.GetResponseStream())
+                {
+                    StreamReader reader = new StreamReader(stream);
+                    responseString = reader.ReadToEnd();
+                }
+
+                object responseData;
+
+                if (responseString.IsJson())
+                    responseData = JsonConvert.DeserializeObject<Dictionary<string, dynamic>>(responseString);
+                else if (responseString.IsXml())
+                {
+                    object deserializedJson;
+                    string json;
+
+                    if (responseString.IsHtml())
+                    {
+                        XDocument doc = XDocument.Parse(responseString);
+                        json = JsonConvert.SerializeXNode(doc);
+                        deserializedJson = JsonConvert.DeserializeObject(json);
+                    }
+                    else
+                    {
+                        //XmlSerializer serial = new XmlSerializer(data.GetType());
+                        //StringReader reader = new StringReader(responseString);
+                        //responseData = serial.Deserialize(reader);
+                        XmlDocument doc = new XmlDocument();
+                        doc.Load(responseString);
+                        json = JsonConvert.SerializeXmlNode(doc);
+                        deserializedJson = JsonConvert.DeserializeObject(json);
+                    }
+
+                    if (responseType != null && deserializedJson.TryCast(responseType, out object obj))
+                        responseData = obj;
+                    else
+                        responseData = deserializedJson;
+                }
+                else
+                    responseData = null;
+
+                return responseData;
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+
+        /// <summary>
+        /// Gets the HTTP response data.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="responseStream">The response stream.</param>
+        /// <param name="responseString">The response string.</param>
+        /// <returns></returns>
+        public static T GetHttpResponseData<T>(this HttpWebResponse responseStream, out string responseString)
+        {
+            try
+            {
+                responseString = null;
+
+                using (Stream stream = responseStream.GetResponseStream())
+                {
+                    StreamReader reader = new StreamReader(stream);
+                    responseString = reader.ReadToEnd();
+                }
+
+                T responseData;
+
+                if (responseString.IsJson())
+                    responseData = JsonConvert.DeserializeObject<T>(responseString);
+                else if (responseString.IsXml())
+                {
+                    object deserializedJson;
+                    string json;
+
+                    if (responseString.IsHtml())
+                    {
+                        XDocument doc = XDocument.Parse(responseString);
+                        json = JsonConvert.SerializeXNode(doc);
+                        deserializedJson = JsonConvert.DeserializeObject(json);
+                    }
+                    else
+                    {
+                        //XmlSerializer serial = new XmlSerializer(data.GetType());
+                        //StringReader reader = new StringReader(responseString);
+                        //responseData = serial.Deserialize(reader);
+
+                        XmlDocument doc = new XmlDocument();
+                        doc.Load(responseString);
+                        json = JsonConvert.SerializeXmlNode(doc);
+                        deserializedJson = JsonConvert.DeserializeObject(json);
+                    }
+
+                    if (deserializedJson.TryCast(out T convertedObj))
+                        responseData = convertedObj;
+                    else
+                        responseData = default(T);
+                    //    throw new InvalidCastException("Unable to cast response data to type of " + typeof(T).Name, new Exception(responseString));
+                }
+                else
+                    responseData = default(T);
+
+                return responseData;
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+
+        /// <summary>
+        /// Gets the i p4 address.
+        /// </summary>
+        /// <param name="context">The context.</param>
+        /// <returns></returns>
         public static string GetIP4Address(this HttpContext context)
         {
             string result = string.Empty;
@@ -212,6 +314,11 @@ namespace NostreetsExtensions.Extend.Web
             return result;
         }
 
+        /// <summary>
+        /// Gets the i p4 address.
+        /// </summary>
+        /// <param name="context">The context.</param>
+        /// <returns></returns>
         public static string GetIP4Address(this HttpContextBase context)
         {
             string result = string.Empty;
@@ -236,6 +343,25 @@ namespace NostreetsExtensions.Extend.Web
             return result;
         }
 
+        /// <summary>
+        /// Gets the local ip addresses.
+        /// </summary>
+        /// <returns></returns>
+        public static string GetIPAddress()
+        {
+            string result = null;
+
+            if (HttpContext.Current != null)
+                HttpContext.Current.GetIP4Address();
+            else
+            {
+                string hostName = Dns.GetHostName();
+                IPHostEntry ipEntry = Dns.GetHostEntry(hostName);
+                result = ipEntry.AddressList[ipEntry.AddressList.Length - 1].ToString();
+            }
+
+            return result;
+        }
 
         /// <summary>
         /// Gets the request ip address.
@@ -264,6 +390,11 @@ namespace NostreetsExtensions.Extend.Web
             return result;
         }
 
+        /// <summary>
+        /// Gets the ip address.
+        /// </summary>
+        /// <param name="context">The context.</param>
+        /// <returns></returns>
         public static string GetIPAddress(this HttpContextBase context)
         {
             string result = null;
@@ -318,6 +449,86 @@ namespace NostreetsExtensions.Extend.Web
         }
 
         /// <summary>
+        /// Gets the request stream.
+        /// </summary>
+        /// <param name="url">The URL.</param>
+        /// <param name="method">The method.</param>
+        /// <param name="data">The data.</param>
+        /// <param name="contentType">Type of the content.</param>
+        /// <param name="headers">The headers.</param>
+        /// <returns></returns>
+        /// <exception cref="System.Exception">url to has to be valid url string to be able to HitEndpoint...</exception>
+        public static HttpWebRequest GetRequestStream(this string url, string method = "GET", object data = null, string contentType = "application/json", Dictionary<string, string> headers = null)
+        {
+            try
+            {
+                if (!url.IsValidUrl())
+                    throw new Exception("url to has to be valid url string to be able to HitEndpoint...");
+
+                HttpWebRequest requestStream = (HttpWebRequest)WebRequest.Create(url);
+                string requestString = null;
+                byte[] bytes = null;
+
+                if (headers == null) { headers = new Dictionary<string, string>(); }
+
+                requestStream.ContentType = contentType;
+                requestStream.Method = method;
+
+                foreach (KeyValuePair<string, string> head in headers)
+                {
+                    requestStream.Headers.Add(head.Key, head.Value);
+                }
+
+                if (data != null)
+                {
+                    if (method == "POST" || method == "PUT" || method == "PATCH")
+                    {
+                        if (contentType == "application/json" && !(data.GetType() == typeof(string) && ((string)data).IsJson()))
+                            requestString = JsonConvert.SerializeObject(data);
+                        else if (contentType == "text/xml; encoding='utf-8'")
+                        {
+                            XmlSerializer serial = new XmlSerializer(data.GetType());
+                            StringWriter writer = new StringWriter();
+                            serial.Serialize(writer, data);
+                            requestString = "XML=" + writer.ToString();
+                            writer.Close();
+                        }
+                    }
+
+                    using (Stream stream = requestStream.GetRequestStream())
+                    {
+                        StreamWriter writer = new StreamWriter(stream);
+                        if (requestString != null) { writer.Write(requestString); }
+                        else if (bytes != null) { stream.Write(bytes, 0, bytes.Length); }
+                        writer.Close();
+                    }
+                }
+
+                return requestStream;
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+
+        /// <summary>
+        /// Hangfires the start.
+        /// </summary>
+        /// <param name="app">The application.</param>
+        /// <param name="connectionString">The connection string.</param>
+        /// <param name="useDashboard">if set to <c>true</c> [use dashboard].</param>
+        public static void HangfireStart(this IAppBuilder app, string connectionString, bool useDashboard = true)
+        {
+            GlobalConfiguration.Configuration.UseSqlServerStorage(connectionString);
+
+            if (useDashboard)
+                app.UseHangfireDashboard();
+
+            app.UseHangfireServer();
+        }
+
+        /// <summary>
         /// Hits the endpoint.
         /// </summary>
         /// <param name="url">The URL.</param>
@@ -325,6 +536,7 @@ namespace NostreetsExtensions.Extend.Web
         /// <param name="data">The data.</param>
         /// <param name="contentType">Type of the content.</param>
         /// <param name="headers">The headers.</param>
+        /// <param name="responseType">Type of the response.</param>
         /// <returns></returns>
         /// <exception cref="Exception">url to has to be valid url string to be able to HitEndpoint...</exception>
         public static IHttpResponse<object> HitEndpoint(this string url, string method = "GET", object data = null, string contentType = "application/json", Dictionary<string, string> headers = null, Type responseType = null)
@@ -366,6 +578,9 @@ namespace NostreetsExtensions.Extend.Web
         /// <summary>
         /// Applies the CssRewriteUrlTransform to every path in the array.
         /// </summary>
+        /// <param name="bundle">The bundle.</param>
+        /// <param name="virtualPaths">The virtual paths.</param>
+        /// <returns></returns>
         public static Bundle IncludeWithCssRewriteUrlTransform(this StyleBundle bundle, params string[] virtualPaths)
         {
             //Ensure we add CssRewriteUrlTransform to turn relative paths (to images, etc.) in the CSS files into absolute paths.
@@ -383,20 +598,116 @@ namespace NostreetsExtensions.Extend.Web
         }
 
         /// <summary>
+        /// Determines whether this instance is HTML.
+        /// </summary>
+        /// <param name="input">The input.</param>
+        /// <returns>
+        ///   <c>true</c> if the specified input is HTML; otherwise, <c>false</c>.
+        /// </returns>
+        public static bool IsHtml(this string input)
+        {
+            return input != HttpUtility.HtmlEncode(input) && input.Contains("DOCTYPE html");
+        }
+
+        /// <summary>
+        /// Registers the API external route.
+        /// </summary>
+        /// <param name="config">The configuration.</param>
+        /// <param name="namespace">The namespace.</param>
+        /// <param name="url">The URL.</param>
+        /// <param name="defaults">The defaults.</param>
+        /// <exception cref="System.ArgumentNullException">@namespace</exception>
+        public static void RegisterApiExternalRoute(this HttpConfiguration config, string @namespace, string url = "api/{controller}/{id}", object defaults = null)
+        {
+            if (@namespace == null || @namespace == "")
+                throw new ArgumentNullException("@namespace");
+
+            // config.Routes.MapHttpRoute(
+            //    name: @namespace + "Default",
+            //    routeTemplate: url,
+            //    defaults: defaults ?? new { controller = "Home", action = "Index", id = UrlParameter.Optional },
+            //    constraints: new[] {
+            //        new HttpRouteValueDictionary(
+            //            new
+            //            {
+            //                Namespace = new[] { @namespace }
+            //                //namespaces = new[] { @namespace }
+            //            }
+            //        )
+            //    }
+            //);
+
+            HttpRoute externalRoute = new HttpRoute(url,
+                new HttpRouteValueDictionary(
+                   new
+                   {
+                       Namespace = new[] { @namespace }
+                       //namespaces = new[] { @namespace }
+                   })
+               );
+
+            config.Routes.Add(@namespace + "Route", externalRoute);
+        }
+
+        /// <summary>
+        /// Registers the route.
+        /// </summary>
+        /// <param name="routes">The routes.</param>
+        /// <param name="namespace">The namespace.</param>
+        /// <param name="url">The path.</param>
+        /// <param name="defaults">The defaults.</param>
+        /// <exception cref="System.ArgumentNullException">@namespace</exception>
+        public static void RegisterMvcExternalRoute(this RouteCollection routes, string @namespace, string url = null, object defaults = null)
+        {
+            if (@namespace == null || @namespace == "")
+                throw new ArgumentNullException("@namespace");
+
+            Route route = null;
+
+            if (defaults != null)
+                route = routes.MapRoute(
+                    name: @namespace + "Default",
+                    url: url ?? "{controller}/{action}/{id}",
+                    defaults: defaults,
+                    namespaces: new[] { @namespace }
+                );
+            else
+                route = routes.MapRoute(
+                    name: @namespace + "Default",
+                    url: url ?? "{controller}/{action}/{id}",
+                    namespaces: new[] { @namespace }
+                );
+
+            route.DataTokens = new RouteValueDictionary(new { namespaces = new[] { @namespace } });
+
+            //Route externalBlogRoute = new Route(path, new MvcRouteHandler())
+            //{
+            //    DataTokens = new RouteValueDictionary(
+            //   new
+            //   {
+            //       namespaces = new[] { @namespace }
+            //   })
+            //};
+
+            //routes.Add(Guid.NewGuid().ToString() + "Route", externalBlogRoute);
+        }
+
+        /// <summary>
         /// Hits the endpoint.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
         /// <param name="url">The URL.</param>
         /// <param name="method">The method.</param>
         /// <param name="data">The data.</param>
         /// <param name="contentType">Type of the content.</param>
         /// <param name="headers">The headers.</param>
         /// <returns></returns>
+        /// <exception cref="System.Exception">URL is not defined!</exception>
         /// <exception cref="Exception">url to has to be valid url string to be able to HitEndpoint...
         /// or</exception>
         public static IRestResponse<object> RestSharpEndpoint(this string url, string method = "GET", object data = null, string contentType = "application/json", Dictionary<string, string> headers = null)
         {
             #region Client
+
             IRestResponse<object> result = null;
             RestClient rest = null;
             if (url != null)
@@ -474,11 +785,13 @@ namespace NostreetsExtensions.Extend.Web
         /// <param name="contentType">Type of the content.</param>
         /// <param name="headers">The headers.</param>
         /// <returns></returns>
+        /// <exception cref="System.Exception">URL is not defined!</exception>
         /// <exception cref="Exception">url to has to be valid url string to be able to HitEndpoint...
         /// or</exception>
         public static IRestResponse<T> RestSharpEndpoint<T>(this string url, string method = "GET", object data = null, string contentType = "application/json", Dictionary<string, string> headers = null) where T : new()
         {
             #region Client
+
             IRestResponse<T> result = null;
             RestClient rest = null;
             if (url != null)
@@ -545,6 +858,7 @@ namespace NostreetsExtensions.Extend.Web
             result = rest.Execute<T>(request);
             return result;
         }
+
         /// <summary>
         /// Sets the cookie.
         /// </summary>
@@ -600,6 +914,29 @@ namespace NostreetsExtensions.Extend.Web
         }
 
         /// <summary>
+        /// Updates the web configuration.
+        /// </summary>
+        /// <param name="key">The key.</param>
+        /// <param name="value">The value.</param>
+        public static void UpdateWebConfig(string key, string value)
+        {
+            // Get the configuration.
+            Configuration config = WebConfigurationManager.OpenWebConfiguration("~");
+            bool doesKeyExist = false;
+
+            foreach (KeyValueConfigurationElement item in config.AppSettings.Settings)
+                if (item.Key == key)
+                    doesKeyExist = true;
+
+            if (!doesKeyExist)
+                config.AppSettings.Settings.Add(key, value);
+            else
+                config.AppSettings.Settings[key].Value = value;
+
+            // Save to the file,
+            config.Save(ConfigurationSaveMode.Minimal);
+        }
+        /// <summary>
         /// Valids the URL.
         /// </summary>
         /// <param name="url">The URL.</param>
@@ -614,281 +951,5 @@ namespace NostreetsExtensions.Extend.Web
 
             return false;
         }
-
-        /// <summary>
-        /// Registers the route.
-        /// </summary>
-        /// <param name="routes">The routes.</param>
-        /// <param name="namespace">The namespace.</param>
-        /// <param name="url">The path.</param>
-        public static void RegisterMvcExternalRoute(this RouteCollection routes, string @namespace, string url = null, object defaults = null)
-        {
-            if (@namespace == null || @namespace == "")
-                throw new ArgumentNullException("@namespace");
-
-            Route route = null;
-
-
-            if (defaults != null)
-                route = routes.MapRoute(
-                    name: @namespace + "Default",
-                    url: url ?? "{controller}/{action}/{id}",
-                    defaults: defaults,
-                    namespaces: new[] { @namespace }
-                );
-
-            else
-                route = routes.MapRoute(
-                    name: @namespace + "Default",
-                    url: url ?? "{controller}/{action}/{id}",
-                    namespaces: new[] { @namespace }
-                );
-
-
-            route.DataTokens = new RouteValueDictionary(new { namespaces = new[] { @namespace } });
-
-            //Route externalBlogRoute = new Route(path, new MvcRouteHandler())
-            //{
-            //    DataTokens = new RouteValueDictionary(
-            //   new
-            //   {
-            //       namespaces = new[] { @namespace }
-            //   })
-            //};
-
-            //routes.Add(Guid.NewGuid().ToString() + "Route", externalBlogRoute);
-
-        }
-
-        public static void RegisterApiExternalRoute(this HttpConfiguration config, string @namespace, string url = "api/{controller}/{id}", object defaults = null)
-        {
-            if (@namespace == null || @namespace == "")
-                throw new ArgumentNullException("@namespace");
-
-
-
-            // config.Routes.MapHttpRoute(
-            //    name: @namespace + "Default",
-            //    routeTemplate: url,
-            //    defaults: defaults ?? new { controller = "Home", action = "Index", id = UrlParameter.Optional },
-            //    constraints: new[] {
-            //        new HttpRouteValueDictionary(
-            //            new
-            //            {
-            //                Namespace = new[] { @namespace }
-            //                //namespaces = new[] { @namespace }
-            //            }
-            //        )
-            //    }
-            //);
-
-
-            HttpRoute externalRoute = new HttpRoute(url,
-                new HttpRouteValueDictionary(
-                   new
-                   {
-                       Namespace = new[] { @namespace }
-                       //namespaces = new[] { @namespace }
-                   })
-               );
-
-            config.Routes.Add(@namespace + "Route", externalRoute);
-
-        }
-
-
-        public static bool IsHtml(this string input)
-        {
-            return input != HttpUtility.HtmlEncode(input) && input.Contains("DOCTYPE html");
-        }
-
-        public static object GetHttpResponseData(this HttpWebResponse responseStream, Type responseType = null)
-        {
-            try
-            {
-                string responseString = null;
-
-                using (Stream stream = responseStream.GetResponseStream())
-                {
-                    StreamReader reader = new StreamReader(stream);
-                    responseString = reader.ReadToEnd();
-                }
-
-                object responseData;
-
-                if (responseString.IsJson())
-                    responseData = JsonConvert.DeserializeObject<Dictionary<string, dynamic>>(responseString);
-
-                else if (responseString.IsXml())
-                {
-
-                    object deserializedJson;
-                    string json;
-
-
-                    if (responseString.IsHtml())
-                    {
-                        XDocument doc = XDocument.Parse(responseString);
-                        json = JsonConvert.SerializeXNode(doc);
-                        deserializedJson = JsonConvert.DeserializeObject(json);
-                    }
-                    else
-                    {
-                        //XmlSerializer serial = new XmlSerializer(data.GetType());
-                        //StringReader reader = new StringReader(responseString);
-                        //responseData = serial.Deserialize(reader);
-                        XmlDocument doc = new XmlDocument();
-                        doc.Load(responseString);
-                        json = JsonConvert.SerializeXmlNode(doc);
-                        deserializedJson = JsonConvert.DeserializeObject(json);
-                    }
-
-
-                    if (responseType != null && deserializedJson.TryCast(responseType, out object obj))
-                        responseData = obj;
-                    else
-                        responseData = deserializedJson;
-
-                }
-                else
-                    responseData = null;
-
-
-
-                return responseData;
-            }
-            catch (Exception ex)
-            {
-
-                throw ex;
-            }
-
-        }
-
-        public static T GetHttpResponseData<T>(this HttpWebResponse responseStream, out string responseString)
-        {
-            try
-            {
-                responseString = null;
-
-                using (Stream stream = responseStream.GetResponseStream())
-                {
-                    StreamReader reader = new StreamReader(stream);
-                    responseString = reader.ReadToEnd();
-                }
-
-                T responseData;
-
-                if (responseString.IsJson())
-                    responseData = JsonConvert.DeserializeObject<T>(responseString);
-
-                else if (responseString.IsXml())
-                {
-
-                    object deserializedJson;
-                    string json;
-
-
-                    if (responseString.IsHtml())
-                    {
-                        XDocument doc = XDocument.Parse(responseString);
-                        json = JsonConvert.SerializeXNode(doc);
-                        deserializedJson = JsonConvert.DeserializeObject(json);
-
-                    }
-                    else
-                    {
-                        //XmlSerializer serial = new XmlSerializer(data.GetType());
-                        //StringReader reader = new StringReader(responseString);
-                        //responseData = serial.Deserialize(reader);
-
-                        XmlDocument doc = new XmlDocument();
-                        doc.Load(responseString);
-                        json = JsonConvert.SerializeXmlNode(doc);
-                        deserializedJson = JsonConvert.DeserializeObject(json);
-                    }
-
-
-                    if (deserializedJson.TryCast(out T convertedObj))
-                        responseData = convertedObj;
-                    else
-                        responseData = default(T);
-                    //    throw new InvalidCastException("Unable to cast response data to type of " + typeof(T).Name, new Exception(responseString));
-
-                }
-                else
-                    responseData = default(T);
-
-
-
-                return responseData;
-            }
-            catch (Exception ex)
-            {
-
-                throw ex;
-            }
-
-        }
-
-        public static HttpWebRequest GetRequestStream(this string url, string method = "GET", object data = null, string contentType = "application/json", Dictionary<string, string> headers = null)
-        {
-            try
-            {
-                if (!url.IsValidUrl())
-                    throw new Exception("url to has to be valid url string to be able to HitEndpoint...");
-
-                HttpWebRequest requestStream = (HttpWebRequest)WebRequest.Create(url);
-                string requestString = null;
-                byte[] bytes = null;
-
-                if (headers == null) { headers = new Dictionary<string, string>(); }
-
-                requestStream.ContentType = contentType;
-                requestStream.Method = method;
-
-                foreach (KeyValuePair<string, string> head in headers)
-                {
-                    requestStream.Headers.Add(head.Key, head.Value);
-                }
-
-
-                if (data != null)
-                {
-                    if (method == "POST" || method == "PUT" || method == "PATCH")
-                    {
-                        if (contentType == "application/json" && !(data.GetType() == typeof(string) && ((string)data).IsJson()))
-                            requestString = JsonConvert.SerializeObject(data);
-
-
-                        else if (contentType == "text/xml; encoding='utf-8'")
-                        {
-                            XmlSerializer serial = new XmlSerializer(data.GetType());
-                            StringWriter writer = new StringWriter();
-                            serial.Serialize(writer, data);
-                            requestString = "XML=" + writer.ToString();
-                            writer.Close();
-                        }
-                    }
-
-                    using (Stream stream = requestStream.GetRequestStream())
-                    {
-                        StreamWriter writer = new StreamWriter(stream);
-                        if (requestString != null) { writer.Write(requestString); }
-                        else if (bytes != null) { stream.Write(bytes, 0, bytes.Length); }
-                        writer.Close();
-                    }
-                }
-
-                return requestStream;
-            }
-            catch (Exception ex)
-            {
-
-                throw ex;
-            }
-        }
-
-
     }
 }
