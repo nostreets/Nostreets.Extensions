@@ -795,10 +795,10 @@ namespace NostreetsExtensions.Extend.Web
             IRestResponse<T> result = null;
             RestClient rest = null;
             if (url != null)
-            {
                 rest = new RestClient(url);
-            }
-            else { throw new Exception("URL is not defined!"); }
+
+            else
+                throw new Exception("URL is not defined!");
 
             #endregion Client
 
@@ -839,17 +839,13 @@ namespace NostreetsExtensions.Extend.Web
                 foreach (var item in headers)
                 {
                     if (item.Key.Contains("auth"))
-                    {
                         rest.Authenticator = new HttpBasicAuthenticator("username", item.Value);
-                    }
+
                     else if (item.Key == "contentType")
-                    {
-                        request.AddParameter(new Parameter { ContentType = item.Value });
-                    }
+                        request.AddParameter(new Parameter { Name = item.Key, ContentType = item.Value });
+
                     else
-                    {
                         request.AddParameter(new Parameter { Name = item.Key, Value = item.Value });
-                    }
                 }
             }
 
