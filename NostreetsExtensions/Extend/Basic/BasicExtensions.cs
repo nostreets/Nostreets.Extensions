@@ -2216,7 +2216,7 @@ namespace NostreetsExtensions.Extend.Basic
         /// <param name="txt">The text.</param>
         public static void LogInDebug(this string txt)
         {
-            Debug.Write(txt);
+            Debug.Write(txt + Environment.NewLine);
         }
 
         /// <summary>
