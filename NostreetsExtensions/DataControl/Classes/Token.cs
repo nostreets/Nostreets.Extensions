@@ -1,5 +1,4 @@
-﻿using NostreetsExtensions.DataControl.Enums;
-using System;
+﻿using System;
 
 namespace NostreetsExtensions.DataControl.Classes
 {
@@ -26,4 +25,12 @@ namespace NostreetsExtensions.DataControl.Classes
         public string Code { get; set; }
     }
 
+
+    public enum TokenPurpose
+    {
+        TwoFactorAuth,
+        EmailValidtion,
+        PhoneValidtion,
+        PasswordReset
+    }
 }

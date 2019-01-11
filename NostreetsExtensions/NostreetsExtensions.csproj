@@ -253,6 +253,7 @@
     <Compile Include="DataControl\Classes\FlatEnum.cs" />
     <Compile Include="DataControl\Classes\HttpResponse.cs" />
     <Compile Include="DataControl\Classes\InboundEmail.cs" />
+    <Compile Include="DataControl\Classes\Sitemap.cs" />
     <Compile Include="DataControl\Classes\Token.cs" />
     <Compile Include="DataControl\Enums\Enums.cs" />
     <Compile Include="Extend\Basic\BasicExtensions.cs" />

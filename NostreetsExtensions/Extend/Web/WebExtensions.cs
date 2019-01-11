@@ -21,8 +21,8 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Reflection;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Web;
 using System.Web.Configuration;
 using System.Web.Http;
@@ -114,11 +114,57 @@ namespace NostreetsExtensions.Extend.Web
                 config.AppSettings.Settings[key].Value = value;
 
             // Save to the file,
-            config.Save(ConfigurationSaveMode.Minimal); 
+            config.Save(ConfigurationSaveMode.Minimal);
         }
         #endregion
 
         #region Extensions
+        public static string GetSitemap(this HttpContextBase context, string rootUrl, params string[] assemblyNames)//this IEnumerable<SitemapNode> sitemapNodes)
+        {
+            if (rootUrl == null)
+                throw new ArgumentNullException("rootUrl");
+
+            if (!rootUrl.IsValidUrl())
+                throw new Exception("rootUrl is not a valid url...");
+
+
+            context.Response.StatusCode = 200;
+            context.Response.ContentType = "application/xml";
+            context.Response.ContentEncoding = Encoding.UTF8;
+
+            string sitemapContent = "<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">";
+
+
+            foreach (var name in assemblyNames)
+            {
+                if (name.DoesAssemblyExist())
+                {
+                    var controllers = Assembly.Load(name).GetTypes().Where(
+                                       type => typeof(Controller).IsAssignableFrom(type) || type.Name.EndsWith("controller")
+                                   ).ToList();
+
+                    foreach (var controller in controllers)
+                    {
+                        var methods = controller.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly).Where(method => typeof(ActionResult).IsAssignableFrom(method.ReturnType));
+                        foreach (var method in methods)
+                        {
+                            sitemapContent += "<url>";
+                            sitemapContent += string.Format("<loc>{0}/{1}/{2}</loc>", rootUrl,
+                            controller.Name.ToLower().Replace("controller", ""), method.Name.ToLower());
+                            sitemapContent += string.Format("<lastmod>{0}</lastmod>", DateTime.UtcNow.ToString("yyyy-MM-dd"));
+                            sitemapContent += "</url>";
+                        }
+                    }
+                }
+            }
+
+            sitemapContent += "</urlset>";
+
+            return sitemapContent;
+
+
+        }
+
         /// <summary>
         /// Creates the response.
         /// </summary>
@@ -953,7 +999,6 @@ namespace NostreetsExtensions.Extend.Web
             }
         }
 
-
         /// <summary>
         /// Valids the URL.
         /// </summary>
@@ -962,13 +1007,8 @@ namespace NostreetsExtensions.Extend.Web
         /// <returns></returns>
         public static bool ValidUrl(this string url, out Uri uri)
         {
-            if (!Regex.IsMatch(url, @"^https?:\/\/", RegexOptions.IgnoreCase))
-                url = "http://" + url;
-
-            url.IsValidUri(out uri, a => a.Scheme == Uri.UriSchemeHttp || a.Scheme == Uri.UriSchemeHttps);
-
-            return false;
-        } 
+            return url.IsValidUri(out uri, a => a.Scheme == Uri.UriSchemeHttp || a.Scheme == Uri.UriSchemeHttps);
+        }
         #endregion
     }
 }

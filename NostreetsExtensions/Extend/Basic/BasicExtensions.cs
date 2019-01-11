@@ -2636,6 +2636,11 @@ namespace NostreetsExtensions.Extend.Basic
             return result;
         }
 
+        public static bool DoesAssemblyExist(this string nameToCheck)
+        {
+            return Assembly.GetExecutingAssembly().GetReferencedAssemblies().FirstOrDefault(c => c.FullName == nameToCheck) == null;
+        }
+
         /// <summary>
         /// Scans for file path.
         /// </summary>
