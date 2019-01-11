@@ -38,6 +38,7 @@ namespace NostreetsExtensions.Extend.Web
 {
     public static class Web
     {
+        #region Static
         /// <summary>
         /// Creates the HTTP response message.
         /// </summary>
@@ -55,6 +56,69 @@ namespace NostreetsExtensions.Extend.Web
             result.Content = new StringContent((string)content, Encoding.UTF8, contentType);
         }
 
+        /// <summary>
+        /// Gets the local ip addresses.
+        /// </summary>
+        /// <returns></returns>
+        public static string GetIPAddress()
+        {
+            string result = null;
+
+            if (HttpContext.Current != null)
+                HttpContext.Current.GetIP4Address();
+            else
+            {
+                string hostName = Dns.GetHostName();
+                IPHostEntry ipEntry = Dns.GetHostEntry(hostName);
+                result = ipEntry.AddressList[ipEntry.AddressList.Length - 1].ToString();
+            }
+
+            return result;
+        }
+
+        public static string GetValueFromWebConfig(string key)
+        {
+            string result = null;
+            // Get the configuration.
+            Configuration config = WebConfigurationManager.OpenWebConfiguration("~");
+            bool doesKeyExist = false;
+
+            foreach (KeyValueConfigurationElement item in config.AppSettings.Settings)
+                if (item.Key == key)
+                    doesKeyExist = true;
+
+            if (doesKeyExist)
+                result = config.AppSettings.Settings[key].Value;
+
+            return result;
+        }
+
+        /// <summary>
+        /// Updates the web configuration.
+        /// </summary>
+        /// <param name="key">The key.</param>
+        /// <param name="value">The value.</param>
+        public static void UpdateWebConfig(string key, string value)
+        {
+            // Get the configuration.
+            Configuration config = WebConfigurationManager.OpenWebConfiguration("~");
+            bool doesKeyExist = false;
+
+            foreach (KeyValueConfigurationElement item in config.AppSettings.Settings)
+                if (item.Key == key)
+                    doesKeyExist = true;
+
+            if (!doesKeyExist)
+                config.AppSettings.Settings.Add(key, value);
+            else
+                config.AppSettings.Settings[key].Value = value;
+
+            // Save to the file,
+            config.Save(ConfigurationSaveMode.Minimal); 
+        }
+        #endregion
+
+        #region Extensions
         /// <summary>
         /// Creates the response.
         /// </summary>
@@ -344,26 +408,6 @@ namespace NostreetsExtensions.Extend.Web
         }
 
         /// <summary>
-        /// Gets the local ip addresses.
-        /// </summary>
-        /// <returns></returns>
-        public static string GetIPAddress()
-        {
-            string result = null;
-
-            if (HttpContext.Current != null)
-                HttpContext.Current.GetIP4Address();
-            else
-            {
-                string hostName = Dns.GetHostName();
-                IPHostEntry ipEntry = Dns.GetHostEntry(hostName);
-                result = ipEntry.AddressList[ipEntry.AddressList.Length - 1].ToString();
-            }
-
-            return result;
-        }
-
-        /// <summary>
         /// Gets the request ip address.
         /// </summary>
         /// <param name="context">The context.</param>
@@ -518,12 +562,12 @@ namespace NostreetsExtensions.Extend.Web
         /// <param name="app">The application.</param>
         /// <param name="connectionString">The connection string.</param>
         /// <param name="useDashboard">if set to <c>true</c> [use dashboard].</param>
-        public static void HangfireStart(this IAppBuilder app, string connectionString, bool useDashboard = true)
+        public static void HangfireStart(this IAppBuilder app, string connectionString, bool useDashboard = true, string dashboardPath = "/hangfire/dashboard", DashboardOptions options = null)
         {
             GlobalConfiguration.Configuration.UseSqlServerStorage(connectionString);
 
             if (useDashboard)
-                app.UseHangfireDashboard();
+                app.UseHangfireDashboard(dashboardPath, options ?? new DashboardOptions());
 
             app.UseHangfireServer();
         }
@@ -909,29 +953,7 @@ namespace NostreetsExtensions.Extend.Web
             }
         }
 
-        /// <summary>
-        /// Updates the web configuration.
-        /// </summary>
-        /// <param name="key">The key.</param>
-        /// <param name="value">The value.</param>
-        public static void UpdateWebConfig(string key, string value)
-        {
-            // Get the configuration.
-            Configuration config = WebConfigurationManager.OpenWebConfiguration("~");
-            bool doesKeyExist = false;
 
-            foreach (KeyValueConfigurationElement item in config.AppSettings.Settings)
-                if (item.Key == key)
-                    doesKeyExist = true;
-
-            if (!doesKeyExist)
-                config.AppSettings.Settings.Add(key, value);
-            else
-                config.AppSettings.Settings[key].Value = value;
-
-            // Save to the file,
-            config.Save(ConfigurationSaveMode.Minimal);
-        }
         /// <summary>
         /// Valids the URL.
         /// </summary>
@@ -946,6 +968,7 @@ namespace NostreetsExtensions.Extend.Web
             url.IsValidUri(out uri, a => a.Scheme == Uri.UriSchemeHttp || a.Scheme == Uri.UriSchemeHttps);
 
             return false;
-        }
+        } 
+        #endregion
     }
 }

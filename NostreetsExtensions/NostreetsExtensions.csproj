@@ -81,6 +81,9 @@
     <Reference Include="Hangfire.Core, Version=1.6.21.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\Hangfire.Core.1.6.21\lib\net45\Hangfire.Core.dll</HintPath>
     </Reference>
+    <Reference Include="Hangfire.Dashboard.Authorization, Version=2.1.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\Hangfire.Dashboard.Authorization.2.1.0\lib\net45\Hangfire.Dashboard.Authorization.dll</HintPath>
+    </Reference>
     <Reference Include="Hangfire.SqlServer, Version=1.6.21.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\Hangfire.SqlServer.1.6.21\lib\net45\Hangfire.SqlServer.dll</HintPath>
     </Reference>
@@ -242,6 +245,9 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="DataControl\Attributes\AuthAttributes.cs" />
+    <Compile Include="DataControl\Attributes\Gzip.cs" />
+    <Compile Include="DataControl\Attributes\HangfireAuthorizationFilter.cs" />
     <Compile Include="DataControl\Classes\DBObject.cs" />
     <Compile Include="DataControl\Classes\Error.cs" />
     <Compile Include="DataControl\Classes\FlatEnum.cs" />
@@ -311,8 +317,6 @@
     </None>
     <None Include="packages.config" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="DataControl\Attributes\" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
