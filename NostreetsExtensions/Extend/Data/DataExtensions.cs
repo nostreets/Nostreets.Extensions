@@ -21,6 +21,78 @@ namespace NostreetsExtensions.Extend.Data
 {
     public static class Data
     {
+        #region Static
+
+        /// <summary>
+        /// Maps the specified source.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="source">The source.</param>
+        /// <param name="mapper">The mapper. Key == Query Name / Value == Class Name </param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentNullException">source</exception>
+        /// <exception cref="ArgumentException">
+        /// not nullable
+        /// or
+        /// type mismatch
+        /// or
+        /// not nullable
+        /// or
+        /// type mismatch
+        /// </exception>
+        public static T Map<T>(ExpandoObject source, Dictionary<string, string> mapper = null)
+        {
+            if (source == null)
+                throw new ArgumentNullException("source");
+
+            T result = default(T);
+            IDictionary<string, object> realSource = source;
+
+            if (realSource.Count > 1)
+            {
+
+                result = result.Instantiate();
+                Dictionary<string, PropertyInfo> _propertyMap = typeof(T).GetProperties().ToDictionary(p => p.Name.ToLower(), p => p);
+
+
+                foreach (var kv in source)
+                {
+                    bool mapperHasKey = mapper != null && mapper.ContainsKey(kv.Key);
+
+                    if (_propertyMap.TryGetValue(!mapperHasKey ? kv.Key.ToLower() : mapper[kv.Key].ToLower(), out PropertyInfo p))
+                    {
+                        Type propType = p.PropertyType;
+                        bool doesTypesMatch = kv.Value.GetType() == propType,
+                             canCast = kv.Value.TryCast(propType, out object value);
+
+                        if (kv.Value == null && !propType.IsByRef && propType.Name != "Nullable`1")
+                            throw new ArgumentException("not nullable");
+
+                        else if (!doesTypesMatch && !canCast)
+                            throw new ArgumentException("type mismatch");
+
+                        p.SetValue(result, value, null);
+                    }
+                }
+            }
+            else
+            {
+                object value = realSource.ElementAt(0).Value;
+
+                if (value == null && !typeof(T).IsByRef && typeof(T).Name != "Nullable`1")
+                    throw new ArgumentException("not nullable");
+
+                else if (value.GetType() != typeof(T))
+                    throw new ArgumentException("type mismatch");
+
+                result = (T)value;
+            }
+
+            return result;
+        }
+
+        #endregion
+
         #region Extension
         /// <summary>
         /// Gets the column names.
@@ -711,78 +783,6 @@ namespace NostreetsExtensions.Extend.Data
 
             return result;
         }
-        #endregion
-
-        #region Static
-
-        /// <summary>
-        /// Maps the specified source.
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="source">The source.</param>
-        /// <param name="mapper">The mapper. Key == Query Name / Value == Class Name </param>
-        /// <returns></returns>
-        /// <exception cref="ArgumentNullException">source</exception>
-        /// <exception cref="ArgumentException">
-        /// not nullable
-        /// or
-        /// type mismatch
-        /// or
-        /// not nullable
-        /// or
-        /// type mismatch
-        /// </exception>
-        public static T Map<T>(ExpandoObject source, Dictionary<string, string> mapper = null)
-        {
-            if (source == null)
-                throw new ArgumentNullException("source");
-
-            T result = default(T);
-            IDictionary<string, object> realSource = source;
-
-            if (realSource.Count > 1)
-            {
-
-                result = result.Instantiate();
-                Dictionary<string, PropertyInfo> _propertyMap = typeof(T).GetProperties().ToDictionary(p => p.Name.ToLower(), p => p);
-
-
-                foreach (var kv in source)
-                {
-                    bool mapperHasKey = mapper != null && mapper.ContainsKey(kv.Key);
-
-                    if (_propertyMap.TryGetValue(!mapperHasKey ? kv.Key.ToLower() : mapper[kv.Key].ToLower(), out PropertyInfo p))
-                    {
-                        Type propType = p.PropertyType;
-                        bool doesTypesMatch = kv.Value.GetType() == propType,
-                             canCast = kv.Value.TryCast(propType, out object value);
-
-                        if (kv.Value == null && !propType.IsByRef && propType.Name != "Nullable`1")
-                            throw new ArgumentException("not nullable");
-
-                        else if (!doesTypesMatch && !canCast)
-                            throw new ArgumentException("type mismatch");
-
-                        p.SetValue(result, value, null);
-                    }
-                }
-            }
-            else
-            {
-                object value = realSource.ElementAt(0).Value;
-
-                if (value == null && !typeof(T).IsByRef && typeof(T).Name != "Nullable`1")
-                    throw new ArgumentException("not nullable");
-
-                else if (value.GetType() != typeof(T))
-                    throw new ArgumentException("type mismatch");
-
-                result = (T)value;
-            }
-
-            return result;
-        }
-
         #endregion
 
     }

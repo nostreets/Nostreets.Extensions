@@ -16,12 +16,12 @@ using RestSharp.Authenticators;
 using System;
 using System.Collections.Generic;
 using System.Configuration;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Reflection;
 using System.Text;
 using System.Web;
 using System.Web.Configuration;
@@ -73,7 +73,7 @@ namespace NostreetsExtensions.Extend.Web
                 result = ipEntry.AddressList[ipEntry.AddressList.Length - 1].ToString();
             }
 
-            return result;
+            return result; 
         }
 
         public static string GetValueFromWebConfig(string key)
@@ -119,7 +119,7 @@ namespace NostreetsExtensions.Extend.Web
         #endregion
 
         #region Extensions
-        public static string GetSitemap(this HttpContextBase context, string rootUrl, params string[] assemblyNames)//this IEnumerable<SitemapNode> sitemapNodes)
+        public static string GetSitemap(this HttpContextBase context, string rootUrl, params string[] urls) 
         {
             if (rootUrl == null)
                 throw new ArgumentNullException("rootUrl");
@@ -135,27 +135,13 @@ namespace NostreetsExtensions.Extend.Web
             string sitemapContent = "<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">";
 
 
-            foreach (var name in assemblyNames)
+            foreach (var url in urls)
             {
-                if (name.DoesAssemblyExist())
-                {
-                    var controllers = Assembly.Load(name).GetTypes().Where(
-                                       type => typeof(Controller).IsAssignableFrom(type) || type.Name.EndsWith("controller")
-                                   ).ToList();
 
-                    foreach (var controller in controllers)
-                    {
-                        var methods = controller.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly).Where(method => typeof(ActionResult).IsAssignableFrom(method.ReturnType));
-                        foreach (var method in methods)
-                        {
-                            sitemapContent += "<url>";
-                            sitemapContent += string.Format("<loc>{0}/{1}/{2}</loc>", rootUrl,
-                            controller.Name.ToLower().Replace("controller", ""), method.Name.ToLower());
-                            sitemapContent += string.Format("<lastmod>{0}</lastmod>", DateTime.UtcNow.ToString("yyyy-MM-dd"));
-                            sitemapContent += "</url>";
-                        }
-                    }
-                }
+                sitemapContent += "<url>";
+                sitemapContent += string.Format("<loc>{0}/{1}</loc>", rootUrl, url);
+                sitemapContent += string.Format("<lastmod>{0}</lastmod>", DateTime.UtcNow.ToString("yyyy-MM-dd"));
+                sitemapContent += "</url>";
             }
 
             sitemapContent += "</urlset>";
@@ -163,6 +149,69 @@ namespace NostreetsExtensions.Extend.Web
             return sitemapContent;
 
 
+        }
+
+        public static string GetSitemap(this System.Web.Mvc.UrlHelper urlHelper, IEnumerable<Tuple<string, string, object, SitemapFrequency, double>> routes)
+        {
+            XNamespace xmlns = "http://www.sitemaps.org/schemas/sitemap/0.9";
+            XElement root = new XElement(xmlns + "urlset");
+            IEnumerable<SitemapNode> sitemapNodes = getSitemapNodes(urlHelper);
+
+            foreach (SitemapNode sitemapNode in sitemapNodes)
+            {
+                XElement urlElement = new XElement(
+                    xmlns + "url",
+                    new XElement(xmlns + "loc", Uri.EscapeUriString(sitemapNode.Url)),
+                    sitemapNode.LastModified == null ? null : new XElement(
+                        xmlns + "lastmod",
+                        sitemapNode.LastModified.Value.ToLocalTime().ToString("yyyy-MM-ddTHH:mm:sszzz")),
+                    sitemapNode.Frequency == null ? null : new XElement(
+                        xmlns + "changefreq",
+                        sitemapNode.Frequency.Value.ToString().ToLowerInvariant()),
+                    sitemapNode.Priority == null ? null : new XElement(
+                        xmlns + "priority",
+                        sitemapNode.Priority.Value.ToString("F1", CultureInfo.InvariantCulture)));
+                root.Add(urlElement);
+            }
+
+            XDocument document = new XDocument(root);
+            return document.ToString();
+
+            IReadOnlyCollection<SitemapNode> getSitemapNodes(System.Web.Mvc.UrlHelper _urlHelper)
+            {
+                if (routes == null)
+                    throw new ArgumentNullException("routes");
+
+                List<SitemapNode> nodes = new List<SitemapNode>();
+
+                //nodes.Add(
+                //    new SitemapNode()
+                //    {
+                //        Url = urlHelper.AbsoluteRouteUrl("HomeGetIndex" , new { id = Id } ),
+                //        Priority = 1
+                //    });
+
+
+                foreach (var route in routes)
+                {
+                    nodes.Add(
+                       new SitemapNode()
+                       {
+                           Url = _urlHelper.AbsoluteRouteUrl("{0}Get{1}".FormatString(route.Item1, route.Item2), route.Item3),
+                           Frequency = route.Item4,
+                           Priority = route.Item5
+                       });
+                }
+
+                return nodes;
+            }
+        }
+
+
+        public static string AbsoluteRouteUrl(this System.Web.Mvc.UrlHelper urlHelper, string routeName, object routeValues = null)
+        {
+            string scheme = urlHelper.RequestContext.HttpContext.Request.Url.Scheme;
+            return urlHelper.RouteUrl(routeName, routeValues, scheme);
         }
 
         /// <summary>
