@@ -27,6 +27,17 @@ namespace NostreetsExtensions.Extend.Basic
     {
         #region Static
 
+        public static Assembly GetAssembly(this string assemblyName)
+        {
+            Assembly result = null;
+
+            foreach (Assembly assemble in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                if (assemble.FullName.Contains(assemblyName) || assemble.GetName().Name == assemblyName) { result = assemble; break; }
+            }
+
+            return result;
+        }
 
 
         /// <summary>
@@ -889,14 +900,14 @@ namespace NostreetsExtensions.Extend.Basic
         /// <summary>
         /// Gets the assembly.
         /// </summary>
-        /// <param name="assembly">The assembly.</param>
+        /// <param name="appDomain">The assembly.</param>
         /// <param name="assemblyName">Name of the assembly.</param>
         /// <returns></returns>
-        public static Assembly GetAssembly(this AppDomain assembly, string assemblyName)
+        public static Assembly GetAssembly(this AppDomain appDomain, string assemblyName)
         {
             Assembly result = null;
 
-            foreach (Assembly assemble in AppDomain.CurrentDomain.GetAssemblies())
+            foreach (Assembly assemble in appDomain.GetAssemblies())
             {
                 if (assemble.FullName.Contains(assemblyName) || assemble.GetName().Name == assemblyName) { result = assemble; break; }
             }
@@ -904,6 +915,8 @@ namespace NostreetsExtensions.Extend.Basic
             return result;
         }
 
+
+        
         public static Type GetTypeWithAssembly(this Assembly assembly, string typeName)
         {
             return assembly.GetTypes().FirstOrDefault(t => t.Name == typeName);

@@ -1,11 +1,10 @@
-﻿using System;
-using System.IO.Compression;
+﻿using System.IO.Compression;
 using System.Web.Mvc;
 
 namespace NostreetsExtensions.DataControl.Attributes
 {
 
-    public class GzipAttribute :  ActionFilterAttribute
+    public class GzipAttribute : ActionFilterAttribute
     {
         public override void OnActionExecuted(ActionExecutedContext filterContext)
         {
@@ -16,17 +15,20 @@ namespace NostreetsExtensions.DataControl.Attributes
                 context.Response.Filter != null &&
                 !filterContext.ActionDescriptor.IsDefined(typeof(GzipAttribute), true))
             {
-                string acceptEncoding = context.Request.Headers["Accept-Encoding"].ToLower(); ;
+                string acceptEncoding = context.Request.Headers["Accept-Encoding"]?.ToLower(); ;
 
-                if (acceptEncoding.Contains("gzip"))
+                if (acceptEncoding != null)
                 {
-                    context.Response.Filter = new GZipStream(context.Response.Filter, CompressionMode.Compress);
-                    context.Response.AppendHeader("Content-Encoding", "gzip");
-                }
-                else if (acceptEncoding.Contains("deflate"))
-                {
-                    context.Response.Filter = new DeflateStream(context.Response.Filter, CompressionMode.Compress);
-                    context.Response.AppendHeader("Content-encoding", "deflate");
+                    if (acceptEncoding.Contains("gzip"))
+                    {
+                        context.Response.Filter = new GZipStream(context.Response.Filter, CompressionMode.Compress);
+                        context.Response.AppendHeader("Content-Encoding", "gzip");
+                    }
+                    else if (acceptEncoding.Contains("deflate"))
+                    {
+                        context.Response.Filter = new DeflateStream(context.Response.Filter, CompressionMode.Compress);
+                        context.Response.AppendHeader("Content-encoding", "deflate");
+                    } 
                 }
             }
         }

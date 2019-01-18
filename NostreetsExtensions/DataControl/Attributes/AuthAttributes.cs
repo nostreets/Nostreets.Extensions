@@ -1,7 +1,7 @@
 ﻿using Newtonsoft.Json;
 using NostreetsExtensions;
 using NostreetsExtensions.Extend.Basic;
-using NostreetsExtensions.Helpers;
+using NostreetsExtensions.Helpers.Data;
 using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
