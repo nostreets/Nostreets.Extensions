@@ -73,7 +73,7 @@ namespace NostreetsExtensions.Extend.Web
                 result = ipEntry.AddressList[ipEntry.AddressList.Length - 1].ToString();
             }
 
-            return result; 
+            return result;
         }
 
         public static string GetValueFromWebConfig(string key)
@@ -119,7 +119,7 @@ namespace NostreetsExtensions.Extend.Web
         #endregion
 
         #region Extensions
-        public static string GetSitemap(this HttpContextBase context, string rootUrl, params string[] urls) 
+        public static string GetSitemap(this HttpContextBase context, string rootUrl, params string[] urls)
         {
             if (rootUrl == null)
                 throw new ArgumentNullException("rootUrl");
@@ -135,11 +135,15 @@ namespace NostreetsExtensions.Extend.Web
             string sitemapContent = "<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">";
 
 
-            foreach (var url in urls)
+            foreach (string url in urls)
             {
-
                 sitemapContent += "<url>";
-                sitemapContent += string.Format("<loc>{0}/{1}</loc>", rootUrl, url);
+
+                if (url.IsValidUrl())
+                    sitemapContent += string.Format("<loc>{0}</loc>", url);
+                else
+                    sitemapContent += string.Format("<loc>{0}/{1}</loc>", rootUrl, url);
+
                 sitemapContent += string.Format("<lastmod>{0}</lastmod>", DateTime.UtcNow.ToString("yyyy-MM-dd"));
                 sitemapContent += "</url>";
             }
@@ -147,9 +151,68 @@ namespace NostreetsExtensions.Extend.Web
             sitemapContent += "</urlset>";
 
             return sitemapContent;
-
-
         }
+
+
+        public static string GetSitemap(this HttpContextBase context, string rootUrl, params object[] urlsObjects)
+        {
+            if (rootUrl == null)
+                throw new ArgumentNullException("rootUrl");
+
+            if (!rootUrl.IsValidUrl())
+                throw new Exception("rootUrl is not a valid url...");
+
+
+            context.Response.StatusCode = 200;
+            context.Response.ContentType = "application/xml";
+            context.Response.ContentEncoding = Encoding.UTF8;
+
+            string sitemapContent = "<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">";
+
+
+            foreach (object data in urlsObjects)
+            {
+                string url = null,
+                       changefreq = null;
+                double priority = 0.5;
+
+                if (data.HasProperty("url"))
+                    url = (string)data.GetPropertyValue("url");
+                else if (data.HasProperty("Url"))
+                    url = (string)data.GetPropertyValue("Url");
+                if (data.HasProperty("changefreq"))
+                    changefreq = (string)data.GetPropertyValue("changefreq");
+                else if (data.HasProperty("ChangeFreq"))
+                    changefreq = (string)data.GetPropertyValue("ChangeFreq");
+                if (data.HasProperty("priority"))
+                    priority = (double)data.GetPropertyValue("priority");
+                else if (data.HasProperty("Priority"))
+                    priority = (double)data.GetPropertyValue("Priority");
+
+                if (url != null)
+                {
+                    sitemapContent += "<url>";
+
+                    if (url.IsValidUrl())
+                        sitemapContent += string.Format("<loc>{0}</loc>", url);
+                    else
+                        sitemapContent += string.Format("<loc>{0}/{1}</loc>", rootUrl, url);
+
+                    if (changefreq != null)
+                        sitemapContent += string.Format("<changefreq>{0}</changefreq>", changefreq);
+
+
+                    sitemapContent += string.Format("<priority>{0}</priority>", priority);
+                    sitemapContent += string.Format("<lastmod>{0}</lastmod>", DateTime.UtcNow.ToString("yyyy-MM-dd"));
+                    sitemapContent += "</url>";
+                }
+            }
+
+            sitemapContent += "</urlset>";
+
+            return sitemapContent;
+        }
+
 
         public static string GetSitemap(this System.Web.Mvc.UrlHelper urlHelper, IEnumerable<Tuple<string, string, object, SitemapFrequency, double>> routes)
         {
@@ -796,7 +859,7 @@ namespace NostreetsExtensions.Extend.Web
         /// <param name="url">The path.</param>
         /// <param name="defaults">The defaults.</param>
         /// <exception cref="System.ArgumentNullException">@namespace</exception>
-        public static void RegisterMvcExternalRoute(this RouteCollection routes, string @namespace, string url = null, object defaults = null)
+        public static void RegisterMvcExternalRoutes(this RouteCollection routes, string @namespace, string url = null, object defaults = null)
         {
             if (@namespace == null || @namespace == "")
                 throw new ArgumentNullException("@namespace");

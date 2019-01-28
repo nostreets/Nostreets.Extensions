@@ -1669,6 +1669,20 @@ namespace NostreetsExtensions.Extend.Basic
         }
 
         /// <summary>
+        /// Determines whether the specified property has property.
+        /// </summary>
+        /// <param name="obj">The type.</param>
+        /// <param name="prop">The property name.</param>
+        /// <returns>
+        ///   <c>true</c> if the specified property has property; otherwise, <c>false</c>.
+        /// </returns>
+        public static bool HasProperty(this object obj, string prop)
+        {
+            Type type = obj.GetType() == typeof(Type) ? (Type)obj : obj.GetType();
+            return type.GetProperties().FirstOrDefault(a => a.Name == prop) == null ? false : true;
+        }
+
+        /// <summary>
         /// Ins the specified arguments.
         /// </summary>
         /// <typeparam name="T"></typeparam>
