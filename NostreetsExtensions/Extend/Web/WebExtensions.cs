@@ -23,6 +23,7 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Web;
 using System.Web.Configuration;
 using System.Web.Http;
@@ -1111,15 +1112,20 @@ namespace NostreetsExtensions.Extend.Web
             }
         }
 
-        /// <summary>
-        /// Valids the URL.
-        /// </summary>
-        /// <param name="url">The URL.</param>
-        /// <param name="uri">The URI.</param>
-        /// <returns></returns>
-        public static bool ValidUrl(this string url, out Uri uri)
+        public static bool ValidUrl(this string s, out Uri resultURI)
         {
-            return url.IsValidUri(out uri, a => a.Scheme == Uri.UriSchemeHttp || a.Scheme == Uri.UriSchemeHttps);
+            resultURI = null;
+            if (s != null)
+            {
+                if (!Regex.IsMatch(s, @"^https?:\/\/", RegexOptions.IgnoreCase))
+                    s = "http://" + s;
+
+                if (Uri.TryCreate(s, UriKind.Absolute, out resultURI))
+                    return (resultURI.Scheme == Uri.UriSchemeHttp ||
+                            resultURI.Scheme == Uri.UriSchemeHttps);
+            }
+
+            return false;
         }
         #endregion
     }
