@@ -37,7 +37,7 @@ namespace NostreetsExtensions.Helpers.Data
 
     }
 
-    public abstract class OleDbService
+    public abstract class OleDbService : Disposable
     {
         public OleDbService(string filePath)
         {

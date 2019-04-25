@@ -16,6 +16,7 @@ using NostreetsExtensions.DataControl.Classes;
 using NostreetsExtensions.Extend.Basic;
 using NostreetsExtensions.Interfaces;
 using NostreetsExtensions.Utilities;
+using System.Data.Linq;
 
 namespace NostreetsExtensions.Extend.Data
 {
@@ -782,6 +783,67 @@ namespace NostreetsExtensions.Extend.Data
             }
 
             return result;
+        }
+
+        public static List<T> GetRecords<T>(this DataContext context, Func<T, bool> predicate = null) where T : class
+        {
+            List<T> result = null;
+            Table<T> records = context.GetTable<T>();
+
+            if (predicate != null)
+                result = records.Where(predicate).ToList();
+            else if (records.Count() > 0)
+                result = records.ToList();
+
+            return result;
+
+        }
+
+        public static T GetRecord<T>(this DataContext context, Func<T, bool> predicate) where T : class
+        {
+            T result = null;
+            Table<T> records = context.GetTable<T>();
+
+            if (predicate != null && records.Count() > 0)
+                result = records.FirstOrDefault(predicate);
+
+            return result;
+
+        }
+
+        public static void InsertRecord<T>(this DataContext context, T model) where T : class
+        {
+            Table<T> records = context.GetTable<T>();
+            records.InsertOnSubmit(model);
+            context.SubmitChanges();
+        }
+
+        public static void InsertRecords<T>(this DataContext context, IEnumerable<T> models) where T : class
+        {
+            Table<T> records = context.GetTable<T>();
+            records.InsertAllOnSubmit(models);
+            context.SubmitChanges();
+        }
+
+        public static void UpdateRecords<T>(this DataContext context, IEnumerable<T> models) where T : class
+        {
+            Table<T> records = context.GetTable<T>();
+            records.AttachAll(models);
+            context.SubmitChanges();
+        }
+
+        public static void DeleteRecord<T>(this DataContext context, T model) where T : class
+        {
+            Table<T> records = context.GetTable<T>();
+            records.DeleteOnSubmit(model);
+            context.SubmitChanges();
+        }
+
+        public static void DeleteRecords<T>(this DataContext context, IEnumerable<T> models) where T : class
+        {
+            Table<T> records = context.GetTable<T>();
+            records.DeleteAllOnSubmit(models);
+            context.SubmitChanges();
         }
         #endregion
 

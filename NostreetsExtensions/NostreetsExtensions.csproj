@@ -259,6 +259,7 @@
     <Compile Include="Extend\Basic\BasicExtensions.cs" />
     <Compile Include="Extend\Command\CommandExtensions.cs" />
     <Compile Include="Extend\Data\DataExtensions.cs" />
+    <Compile Include="Extend\Form\FormExtensions.cs" />
     <Compile Include="Extend\Google\GoogleExtensions.cs" />
     <Compile Include="Extend\IOC\IOCExtensions.cs" />
     <Compile Include="Extend\Web\WebExtensions.cs" />
