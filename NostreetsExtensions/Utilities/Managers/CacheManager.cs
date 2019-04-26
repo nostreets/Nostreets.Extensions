@@ -236,8 +236,6 @@ namespace NostreetsExtensions.Utilities
             options.AbortOnConnectFail = false;
             options.SyncTimeout = int.MaxValue;
             options.ConnectRetry = 10;
-            options.WriteBuffer = 10000000;
-            options.ConnectTimeout = 30000;
             options.KeepAlive = 180;
 
             return options;

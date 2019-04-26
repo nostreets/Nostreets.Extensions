@@ -19,8 +19,6 @@ namespace NostreetsExtensions.Utilities
         public List<object> GetAll(string sheetName)
         {
             List<object> result = null;
-            string[] excelSchema = null;
-            Type[] schemaTypes = null;
             Type dynamicType = null;
 
             Instance.ExecuteCmd(() => Connection, string.Format("Select * From [{0}$]", sheetName), null,
@@ -28,12 +26,6 @@ namespace NostreetsExtensions.Utilities
                 {
                     if (result == null)
                         result = new List<object>();
-
-                    //if (excelSchema == null)
-                    //    excelSchema = reader.GetColumnNames();
-
-                    //if (schemaTypes == null)
-                    //    schemaTypes = reader.GetColumnTypes();
 
 
                     if (dynamicType == null)

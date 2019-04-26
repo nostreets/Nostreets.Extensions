@@ -37,176 +37,179 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Antlr3.Runtime, Version=3.5.0.2, Culture=neutral, PublicKeyToken=eb42632606e9261f, processorArchitecture=MSIL">
-      <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\Antlr.3.5.0.2\lib\Antlr3.Runtime.dll</HintPath>
+      <HintPath>..\..\Nostreets-Sandbox\Nostreets Sandbox\packages\Antlr.3.5.0.2\lib\Antlr3.Runtime.dll</HintPath>
     </Reference>
     <Reference Include="Castle.Core, Version=4.0.0.0, Culture=neutral, PublicKeyToken=407dd0808d44fbdc, processorArchitecture=MSIL">
-      <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\Castle.Core.4.3.1\lib\net45\Castle.Core.dll</HintPath>
+      <HintPath>..\..\Nostreets-Sandbox\Nostreets Sandbox\packages\Castle.Core.4.3.1\lib\net45\Castle.Core.dll</HintPath>
     </Reference>
     <Reference Include="Castle.Windsor, Version=4.0.0.0, Culture=neutral, PublicKeyToken=407dd0808d44fbdc, processorArchitecture=MSIL">
-      <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\Castle.Windsor.4.1.1\lib\net45\Castle.Windsor.dll</HintPath>
+      <HintPath>..\..\Nostreets-Sandbox\Nostreets Sandbox\packages\Castle.Windsor.4.1.1\lib\net45\Castle.Windsor.dll</HintPath>
     </Reference>
     <Reference Include="CommonServiceLocator, Version=2.0.4.0, Culture=neutral, PublicKeyToken=489b6accfaf20ef0, processorArchitecture=MSIL">
-      <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\Unity.5.8.13\lib\net46\CommonServiceLocator.dll</HintPath>
+      <HintPath>..\..\Nostreets-Sandbox\Nostreets Sandbox\packages\Unity.5.8.13\lib\net46\CommonServiceLocator.dll</HintPath>
     </Reference>
     <Reference Include="Dynamitey, Version=2.0.9.136, Culture=neutral, PublicKeyToken=cbf53ea3aeb972c6, processorArchitecture=MSIL">
-      <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\Dynamitey.2.0.9.136\lib\net40\Dynamitey.dll</HintPath>
+      <HintPath>..\..\Nostreets-Sandbox\Nostreets Sandbox\packages\Dynamitey.2.0.9.136\lib\net40\Dynamitey.dll</HintPath>
     </Reference>
     <Reference Include="EntityFramework, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
-      <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\EntityFramework.6.2.0\lib\net45\EntityFramework.dll</HintPath>
+      <HintPath>..\..\Nostreets-Sandbox\Nostreets Sandbox\packages\EntityFramework.6.2.0\lib\net45\EntityFramework.dll</HintPath>
     </Reference>
     <Reference Include="EntityFramework.SqlServer, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
-      <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\EntityFramework.6.2.0\lib\net45\EntityFramework.SqlServer.dll</HintPath>
+      <HintPath>..\..\Nostreets-Sandbox\Nostreets Sandbox\packages\EntityFramework.6.2.0\lib\net45\EntityFramework.SqlServer.dll</HintPath>
     </Reference>
     <Reference Include="Google.Apis, Version=1.37.0.0, Culture=neutral, PublicKeyToken=4b01fa6e34db77ab, processorArchitecture=MSIL">
-      <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\Google.Apis.1.37.0\lib\net45\Google.Apis.dll</HintPath>
+      <HintPath>..\..\Nostreets-Sandbox\Nostreets Sandbox\packages\Google.Apis.1.37.0\lib\net45\Google.Apis.dll</HintPath>
     </Reference>
-    <Reference Include="Google.Apis.Analytics.v3, Version=1.37.0.1268, Culture=neutral, PublicKeyToken=4b01fa6e34db77ab, processorArchitecture=MSIL">
-      <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\Google.Apis.Analytics.v3.1.37.0.1268\lib\net45\Google.Apis.Analytics.v3.dll</HintPath>
+    <Reference Include="Google.Apis.Analytics.v3, Version=1.37.0.1306, Culture=neutral, PublicKeyToken=4b01fa6e34db77ab, processorArchitecture=MSIL">
+      <HintPath>..\..\Nostreets-Sandbox\Nostreets Sandbox\packages\Google.Apis.Analytics.v3.1.37.0.1306\lib\net45\Google.Apis.Analytics.v3.dll</HintPath>
     </Reference>
     <Reference Include="Google.Apis.Auth, Version=1.37.0.0, Culture=neutral, PublicKeyToken=4b01fa6e34db77ab, processorArchitecture=MSIL">
-      <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\Google.Apis.Auth.1.37.0\lib\net45\Google.Apis.Auth.dll</HintPath>
+      <HintPath>..\..\Nostreets-Sandbox\Nostreets Sandbox\packages\Google.Apis.Auth.1.37.0\lib\net45\Google.Apis.Auth.dll</HintPath>
     </Reference>
     <Reference Include="Google.Apis.Auth.PlatformServices, Version=1.37.0.0, Culture=neutral, PublicKeyToken=4b01fa6e34db77ab, processorArchitecture=MSIL">
-      <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\Google.Apis.Auth.1.37.0\lib\net45\Google.Apis.Auth.PlatformServices.dll</HintPath>
+      <HintPath>..\..\Nostreets-Sandbox\Nostreets Sandbox\packages\Google.Apis.Auth.1.37.0\lib\net45\Google.Apis.Auth.PlatformServices.dll</HintPath>
     </Reference>
     <Reference Include="Google.Apis.Core, Version=1.37.0.0, Culture=neutral, PublicKeyToken=4b01fa6e34db77ab, processorArchitecture=MSIL">
-      <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\Google.Apis.Core.1.37.0\lib\net45\Google.Apis.Core.dll</HintPath>
+      <HintPath>..\..\Nostreets-Sandbox\Nostreets Sandbox\packages\Google.Apis.Core.1.37.0\lib\net45\Google.Apis.Core.dll</HintPath>
     </Reference>
-    <Reference Include="Google.Apis.Gmail.v1, Version=1.37.0.1431, Culture=neutral, PublicKeyToken=4b01fa6e34db77ab, processorArchitecture=MSIL">
-      <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\Google.Apis.Gmail.v1.1.37.0.1431\lib\net45\Google.Apis.Gmail.v1.dll</HintPath>
+    <Reference Include="Google.Apis.Gmail.v1, Version=1.37.0.1480, Culture=neutral, PublicKeyToken=4b01fa6e34db77ab, processorArchitecture=MSIL">
+      <HintPath>..\..\Nostreets-Sandbox\Nostreets Sandbox\packages\Google.Apis.Gmail.v1.1.37.0.1480\lib\net45\Google.Apis.Gmail.v1.dll</HintPath>
     </Reference>
     <Reference Include="Google.Apis.PlatformServices, Version=1.37.0.0, Culture=neutral, PublicKeyToken=4b01fa6e34db77ab, processorArchitecture=MSIL">
-      <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\Google.Apis.1.37.0\lib\net45\Google.Apis.PlatformServices.dll</HintPath>
+      <HintPath>..\..\Nostreets-Sandbox\Nostreets Sandbox\packages\Google.Apis.1.37.0\lib\net45\Google.Apis.PlatformServices.dll</HintPath>
     </Reference>
     <Reference Include="Hangfire.Core, Version=1.6.21.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\Hangfire.Core.1.6.21\lib\net45\Hangfire.Core.dll</HintPath>
+      <HintPath>..\..\Nostreets-Sandbox\Nostreets Sandbox\packages\Hangfire.Core.1.6.21\lib\net45\Hangfire.Core.dll</HintPath>
     </Reference>
     <Reference Include="Hangfire.Dashboard.Authorization, Version=2.1.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\Hangfire.Dashboard.Authorization.2.1.0\lib\net45\Hangfire.Dashboard.Authorization.dll</HintPath>
+      <HintPath>..\..\Nostreets-Sandbox\Nostreets Sandbox\packages\Hangfire.Dashboard.Authorization.2.1.0\lib\net45\Hangfire.Dashboard.Authorization.dll</HintPath>
     </Reference>
     <Reference Include="Hangfire.SqlServer, Version=1.6.21.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\Hangfire.SqlServer.1.6.21\lib\net45\Hangfire.SqlServer.dll</HintPath>
+      <HintPath>..\..\Nostreets-Sandbox\Nostreets Sandbox\packages\Hangfire.SqlServer.1.6.21\lib\net45\Hangfire.SqlServer.dll</HintPath>
     </Reference>
     <Reference Include="HtmlAgilityPack, Version=1.8.11.0, Culture=neutral, PublicKeyToken=bd319b19eaf3b43a, processorArchitecture=MSIL">
-      <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\HtmlAgilityPack.1.8.11\lib\Net45\HtmlAgilityPack.dll</HintPath>
+      <HintPath>..\..\Nostreets-Sandbox\Nostreets Sandbox\packages\HtmlAgilityPack.1.8.11\lib\Net45\HtmlAgilityPack.dll</HintPath>
     </Reference>
     <Reference Include="ImpromptuInterface, Version=7.0.1.0, Culture=neutral, PublicKeyToken=0b1781c923b2975b, processorArchitecture=MSIL">
-      <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\ImpromptuInterface.7.0.1\lib\net40\ImpromptuInterface.dll</HintPath>
+      <HintPath>..\..\Nostreets-Sandbox\Nostreets Sandbox\packages\ImpromptuInterface.7.0.1\lib\net40\ImpromptuInterface.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Build" />
     <Reference Include="Microsoft.Owin, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\Microsoft.Owin.4.0.0\lib\net451\Microsoft.Owin.dll</HintPath>
+      <HintPath>..\..\Nostreets-Sandbox\Nostreets Sandbox\packages\Microsoft.Owin.4.0.0\lib\net451\Microsoft.Owin.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Owin.Host.SystemWeb, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\Microsoft.Owin.Host.SystemWeb.4.0.0\lib\net451\Microsoft.Owin.Host.SystemWeb.dll</HintPath>
+      <HintPath>..\..\Nostreets-Sandbox\Nostreets Sandbox\packages\Microsoft.Owin.Host.SystemWeb.4.0.0\lib\net451\Microsoft.Owin.Host.SystemWeb.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Web.Infrastructure, Version=1.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\Microsoft.Web.Infrastructure.1.0.0.0\lib\net40\Microsoft.Web.Infrastructure.dll</HintPath>
+      <HintPath>..\..\Nostreets-Sandbox\Nostreets Sandbox\packages\Microsoft.Web.Infrastructure.1.0.0.0\lib\net40\Microsoft.Web.Infrastructure.dll</HintPath>
     </Reference>
+    <Reference Include="netstandard, Version=2.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51" />
     <Reference Include="Newtonsoft.Json, Version=12.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\Newtonsoft.Json.12.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
+      <HintPath>..\..\Nostreets-Sandbox\Nostreets Sandbox\packages\Newtonsoft.Json.12.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="Owin, Version=1.0.0.0, Culture=neutral, PublicKeyToken=f0ebd12fd5e55cc5, processorArchitecture=MSIL">
-      <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\Owin.1.0\lib\net40\Owin.dll</HintPath>
+      <HintPath>..\..\Nostreets-Sandbox\Nostreets Sandbox\packages\Owin.1.0\lib\net40\Owin.dll</HintPath>
     </Reference>
     <Reference Include="Pipelines.Sockets.Unofficial, Version=1.0.0.0, Culture=neutral, PublicKeyToken=42ea0a778e13fbe2, processorArchitecture=MSIL">
-      <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\Pipelines.Sockets.Unofficial.1.0.9\lib\net461\Pipelines.Sockets.Unofficial.dll</HintPath>
+      <HintPath>..\..\Nostreets-Sandbox\Nostreets Sandbox\packages\Pipelines.Sockets.Unofficial.1.0.9\lib\net461\Pipelines.Sockets.Unofficial.dll</HintPath>
     </Reference>
     <Reference Include="RazorGenerator.Mvc, Version=2.0.0.0, Culture=neutral, PublicKeyToken=7b26dc2a43f6a0d4, processorArchitecture=MSIL">
-      <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\RazorGenerator.Mvc.2.4.9\lib\net40\RazorGenerator.Mvc.dll</HintPath>
+      <HintPath>..\..\Nostreets-Sandbox\Nostreets Sandbox\packages\RazorGenerator.Mvc.2.4.9\lib\net40\RazorGenerator.Mvc.dll</HintPath>
     </Reference>
     <Reference Include="Remotion.Linq, Version=2.2.0.0, Culture=neutral, PublicKeyToken=fee00910d6e5f53b, processorArchitecture=MSIL">
-      <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\Remotion.Linq.2.2.0\lib\net45\Remotion.Linq.dll</HintPath>
+      <HintPath>..\..\Nostreets-Sandbox\Nostreets Sandbox\packages\Remotion.Linq.2.2.0\lib\net45\Remotion.Linq.dll</HintPath>
     </Reference>
     <Reference Include="RestSharp, Version=106.5.4.0, Culture=neutral, PublicKeyToken=598062e77f915f75, processorArchitecture=MSIL">
-      <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\RestSharp.106.5.4\lib\net452\RestSharp.dll</HintPath>
+      <HintPath>..\..\Nostreets-Sandbox\Nostreets Sandbox\packages\RestSharp.106.5.4\lib\net452\RestSharp.dll</HintPath>
     </Reference>
     <Reference Include="StackExchange.Redis, Version=2.0.0.0, Culture=neutral, PublicKeyToken=c219ff1ca8c2ce46, processorArchitecture=MSIL">
-      <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\StackExchange.Redis.2.0.519\lib\net461\StackExchange.Redis.dll</HintPath>
+      <HintPath>..\..\Nostreets-Sandbox\Nostreets Sandbox\packages\StackExchange.Redis.2.0.519\lib\net461\StackExchange.Redis.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Buffers, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
-      <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\System.Buffers.4.5.0\lib\netstandard2.0\System.Buffers.dll</HintPath>
+      <HintPath>..\..\Nostreets-Sandbox\Nostreets Sandbox\packages\System.Buffers.4.5.0\lib\netstandard2.0\System.Buffers.dll</HintPath>
     </Reference>
     <Reference Include="System.ComponentModel.DataAnnotations" />
     <Reference Include="System.Configuration" />
     <Reference Include="System.Configuration.ConfigurationManager, Version=4.0.1.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
-      <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\System.Configuration.ConfigurationManager.4.5.0\lib\net461\System.Configuration.ConfigurationManager.dll</HintPath>
+      <HintPath>..\..\Nostreets-Sandbox\Nostreets Sandbox\packages\System.Configuration.ConfigurationManager.4.5.0\lib\net461\System.Configuration.ConfigurationManager.dll</HintPath>
     </Reference>
     <Reference Include="System.Core" />
+    <Reference Include="System.Data.Linq" />
     <Reference Include="System.Data.OracleClient" />
     <Reference Include="System.Diagnostics.PerformanceCounter, Version=4.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
-      <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\System.Diagnostics.PerformanceCounter.4.5.0\lib\net461\System.Diagnostics.PerformanceCounter.dll</HintPath>
+      <HintPath>..\..\Nostreets-Sandbox\Nostreets Sandbox\packages\System.Diagnostics.PerformanceCounter.4.5.0\lib\net461\System.Diagnostics.PerformanceCounter.dll</HintPath>
     </Reference>
     <Reference Include="System.Drawing" />
     <Reference Include="System.IO.Compression" />
     <Reference Include="System.IO.Pipelines, Version=4.0.0.1, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
-      <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\System.IO.Pipelines.4.5.2\lib\netstandard2.0\System.IO.Pipelines.dll</HintPath>
+      <HintPath>..\..\Nostreets-Sandbox\Nostreets Sandbox\packages\System.IO.Pipelines.4.5.2\lib\netstandard2.0\System.IO.Pipelines.dll</HintPath>
     </Reference>
     <Reference Include="System.Management.Automation, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\System.Management.Automation.dll.10.0.10586.0\lib\net40\System.Management.Automation.dll</HintPath>
+      <HintPath>..\..\Nostreets-Sandbox\Nostreets Sandbox\packages\System.Management.Automation.dll.10.0.10586.0\lib\net40\System.Management.Automation.dll</HintPath>
     </Reference>
     <Reference Include="System.Memory, Version=4.0.1.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
-      <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\System.Memory.4.5.1\lib\netstandard2.0\System.Memory.dll</HintPath>
+      <HintPath>..\..\Nostreets-Sandbox\Nostreets Sandbox\packages\System.Memory.4.5.1\lib\netstandard2.0\System.Memory.dll</HintPath>
     </Reference>
     <Reference Include="System.Net" />
     <Reference Include="System.Net.Http.Formatting, Version=5.2.7.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\Microsoft.AspNet.WebApi.Client.5.2.7\lib\net45\System.Net.Http.Formatting.dll</HintPath>
+      <HintPath>..\..\Nostreets-Sandbox\Nostreets Sandbox\packages\Microsoft.AspNet.WebApi.Client.5.2.7\lib\net45\System.Net.Http.Formatting.dll</HintPath>
     </Reference>
     <Reference Include="System.Numerics" />
     <Reference Include="System.Numerics.Vectors, Version=4.1.4.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\System.Numerics.Vectors.4.5.0\lib\net46\System.Numerics.Vectors.dll</HintPath>
+      <HintPath>..\..\Nostreets-Sandbox\Nostreets Sandbox\packages\System.Numerics.Vectors.4.5.0\lib\net46\System.Numerics.Vectors.dll</HintPath>
     </Reference>
     <Reference Include="System.Runtime.Caching" />
     <Reference Include="System.Runtime.CompilerServices.Unsafe, Version=4.0.4.1, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\System.Runtime.CompilerServices.Unsafe.4.5.2\lib\netstandard2.0\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
+      <HintPath>..\..\Nostreets-Sandbox\Nostreets Sandbox\packages\System.Runtime.CompilerServices.Unsafe.4.5.2\lib\netstandard2.0\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
     </Reference>
     <Reference Include="System.Runtime.Remoting" />
     <Reference Include="System.Security.AccessControl, Version=4.1.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\System.Security.AccessControl.4.5.0\lib\net461\System.Security.AccessControl.dll</HintPath>
+      <HintPath>..\..\Nostreets-Sandbox\Nostreets Sandbox\packages\System.Security.AccessControl.4.5.0\lib\net461\System.Security.AccessControl.dll</HintPath>
     </Reference>
     <Reference Include="System.Security.Permissions, Version=4.0.1.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
-      <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\System.Security.Permissions.4.5.0\lib\net461\System.Security.Permissions.dll</HintPath>
+      <HintPath>..\..\Nostreets-Sandbox\Nostreets Sandbox\packages\System.Security.Permissions.4.5.0\lib\net461\System.Security.Permissions.dll</HintPath>
     </Reference>
     <Reference Include="System.Security.Principal.Windows, Version=4.1.1.1, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\System.Security.Principal.Windows.4.5.1\lib\net461\System.Security.Principal.Windows.dll</HintPath>
+      <HintPath>..\..\Nostreets-Sandbox\Nostreets Sandbox\packages\System.Security.Principal.Windows.4.5.1\lib\net461\System.Security.Principal.Windows.dll</HintPath>
     </Reference>
     <Reference Include="System.ServiceProcess" />
     <Reference Include="System.Threading.Channels, Version=4.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
-      <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\System.Threading.Channels.4.5.0\lib\netstandard2.0\System.Threading.Channels.dll</HintPath>
+      <HintPath>..\..\Nostreets-Sandbox\Nostreets Sandbox\packages\System.Threading.Channels.4.5.0\lib\netstandard2.0\System.Threading.Channels.dll</HintPath>
     </Reference>
     <Reference Include="System.Threading.Tasks.Extensions, Version=4.2.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
-      <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\System.Threading.Tasks.Extensions.4.5.1\lib\netstandard2.0\System.Threading.Tasks.Extensions.dll</HintPath>
+      <HintPath>..\..\Nostreets-Sandbox\Nostreets Sandbox\packages\System.Threading.Tasks.Extensions.4.5.1\lib\netstandard2.0\System.Threading.Tasks.Extensions.dll</HintPath>
     </Reference>
     <Reference Include="System.Transactions" />
     <Reference Include="System.ValueTuple, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
-      <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\System.ValueTuple.4.5.0\lib\net461\System.ValueTuple.dll</HintPath>
+      <HintPath>..\..\Nostreets-Sandbox\Nostreets Sandbox\packages\System.ValueTuple.4.5.0\lib\net461\System.ValueTuple.dll</HintPath>
     </Reference>
     <Reference Include="System.Web" />
     <Reference Include="System.Web.Helpers, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\Microsoft.AspNet.WebPages.3.2.7\lib\net45\System.Web.Helpers.dll</HintPath>
+      <HintPath>..\..\Nostreets-Sandbox\Nostreets Sandbox\packages\Microsoft.AspNet.WebPages.3.2.7\lib\net45\System.Web.Helpers.dll</HintPath>
     </Reference>
     <Reference Include="System.Web.Http, Version=5.2.7.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\Microsoft.AspNet.WebApi.Core.5.2.7\lib\net45\System.Web.Http.dll</HintPath>
+      <HintPath>..\..\Nostreets-Sandbox\Nostreets Sandbox\packages\Microsoft.AspNet.WebApi.Core.5.2.7\lib\net45\System.Web.Http.dll</HintPath>
     </Reference>
     <Reference Include="System.Web.Mvc, Version=5.2.7.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\Microsoft.AspNet.Mvc.5.2.7\lib\net45\System.Web.Mvc.dll</HintPath>
+      <HintPath>..\..\Nostreets-Sandbox\Nostreets Sandbox\packages\Microsoft.AspNet.Mvc.5.2.7\lib\net45\System.Web.Mvc.dll</HintPath>
     </Reference>
     <Reference Include="System.Web.Optimization, Version=1.1.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\Microsoft.AspNet.Web.Optimization.1.1.3\lib\net40\System.Web.Optimization.dll</HintPath>
+      <HintPath>..\..\Nostreets-Sandbox\Nostreets Sandbox\packages\Microsoft.AspNet.Web.Optimization.1.1.3\lib\net40\System.Web.Optimization.dll</HintPath>
     </Reference>
     <Reference Include="System.Web.Razor, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\Microsoft.AspNet.Razor.3.2.7\lib\net45\System.Web.Razor.dll</HintPath>
+      <HintPath>..\..\Nostreets-Sandbox\Nostreets Sandbox\packages\Microsoft.AspNet.Razor.3.2.7\lib\net45\System.Web.Razor.dll</HintPath>
     </Reference>
     <Reference Include="System.Web.WebPages, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\Microsoft.AspNet.WebPages.3.2.7\lib\net45\System.Web.WebPages.dll</HintPath>
+      <HintPath>..\..\Nostreets-Sandbox\Nostreets Sandbox\packages\Microsoft.AspNet.WebPages.3.2.7\lib\net45\System.Web.WebPages.dll</HintPath>
     </Reference>
     <Reference Include="System.Web.WebPages.Deployment, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\Microsoft.AspNet.WebPages.3.2.7\lib\net45\System.Web.WebPages.Deployment.dll</HintPath>
+      <HintPath>..\..\Nostreets-Sandbox\Nostreets Sandbox\packages\Microsoft.AspNet.WebPages.3.2.7\lib\net45\System.Web.WebPages.Deployment.dll</HintPath>
     </Reference>
     <Reference Include="System.Web.WebPages.Razor, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\Microsoft.AspNet.WebPages.3.2.7\lib\net45\System.Web.WebPages.Razor.dll</HintPath>
+      <HintPath>..\..\Nostreets-Sandbox\Nostreets Sandbox\packages\Microsoft.AspNet.WebPages.3.2.7\lib\net45\System.Web.WebPages.Razor.dll</HintPath>
     </Reference>
+    <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -214,37 +217,39 @@
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Xml" />
     <Reference Include="Unity.Abstractions, Version=3.3.1.0, Culture=neutral, PublicKeyToken=6d32ff45e0ccc69f, processorArchitecture=MSIL">
-      <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\Unity.5.8.13\lib\net46\Unity.Abstractions.dll</HintPath>
+      <HintPath>..\..\Nostreets-Sandbox\Nostreets Sandbox\packages\Unity.5.8.13\lib\net46\Unity.Abstractions.dll</HintPath>
     </Reference>
     <Reference Include="Unity.Configuration, Version=5.2.5.0, Culture=neutral, PublicKeyToken=6d32ff45e0ccc69f, processorArchitecture=MSIL">
-      <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\Unity.5.8.13\lib\net46\Unity.Configuration.dll</HintPath>
+      <HintPath>..\..\Nostreets-Sandbox\Nostreets Sandbox\packages\Unity.5.8.13\lib\net46\Unity.Configuration.dll</HintPath>
     </Reference>
     <Reference Include="Unity.Container, Version=5.8.13.0, Culture=neutral, PublicKeyToken=489b6accfaf20ef0, processorArchitecture=MSIL">
-      <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\Unity.5.8.13\lib\net46\Unity.Container.dll</HintPath>
+      <HintPath>..\..\Nostreets-Sandbox\Nostreets Sandbox\packages\Unity.5.8.13\lib\net46\Unity.Container.dll</HintPath>
     </Reference>
     <Reference Include="Unity.Interception, Version=5.5.5.0, Culture=neutral, PublicKeyToken=489b6accfaf20ef0, processorArchitecture=MSIL">
-      <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\Unity.5.8.13\lib\net46\Unity.Interception.dll</HintPath>
+      <HintPath>..\..\Nostreets-Sandbox\Nostreets Sandbox\packages\Unity.5.8.13\lib\net46\Unity.Interception.dll</HintPath>
     </Reference>
     <Reference Include="Unity.Interception.Configuration, Version=5.1.7.0, Culture=neutral, PublicKeyToken=489b6accfaf20ef0, processorArchitecture=MSIL">
-      <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\Unity.5.8.13\lib\net46\Unity.Interception.Configuration.dll</HintPath>
+      <HintPath>..\..\Nostreets-Sandbox\Nostreets Sandbox\packages\Unity.5.8.13\lib\net46\Unity.Interception.Configuration.dll</HintPath>
     </Reference>
     <Reference Include="Unity.Mvc5, Version=1.3.0.0, Culture=neutral, PublicKeyToken=43da31bc42a85347, processorArchitecture=MSIL">
-      <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\Unity.Mvc5.1.3.0\lib\net45\Unity.Mvc5.dll</HintPath>
+      <HintPath>..\..\Nostreets-Sandbox\Nostreets Sandbox\packages\Unity.Mvc5.1.3.0\lib\net45\Unity.Mvc5.dll</HintPath>
     </Reference>
     <Reference Include="Unity.RegistrationByConvention, Version=2.1.9.0, Culture=neutral, PublicKeyToken=489b6accfaf20ef0, processorArchitecture=MSIL">
-      <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\Unity.5.8.13\lib\net46\Unity.RegistrationByConvention.dll</HintPath>
+      <HintPath>..\..\Nostreets-Sandbox\Nostreets Sandbox\packages\Unity.5.8.13\lib\net46\Unity.RegistrationByConvention.dll</HintPath>
     </Reference>
     <Reference Include="Unity.ServiceLocation, Version=2.1.2.0, Culture=neutral, PublicKeyToken=489b6accfaf20ef0, processorArchitecture=MSIL">
-      <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\Unity.5.8.13\lib\net46\Unity.ServiceLocation.dll</HintPath>
+      <HintPath>..\..\Nostreets-Sandbox\Nostreets Sandbox\packages\Unity.5.8.13\lib\net46\Unity.ServiceLocation.dll</HintPath>
     </Reference>
     <Reference Include="WebActivatorEx, Version=2.0.0.0, Culture=neutral, PublicKeyToken=7b26dc2a43f6a0d4, processorArchitecture=MSIL">
-      <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\WebActivatorEx.2.0.3\lib\net40\WebActivatorEx.dll</HintPath>
+      <HintPath>..\..\Nostreets-Sandbox\Nostreets Sandbox\packages\WebActivatorEx.2.0.3\lib\net40\WebActivatorEx.dll</HintPath>
     </Reference>
     <Reference Include="WebGrease, Version=1.6.5135.21930, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\..\NostreetsSandbox\Nostreets Sandbox\packages\WebGrease.1.6.0\lib\WebGrease.dll</HintPath>
+      <HintPath>..\..\Nostreets-Sandbox\Nostreets Sandbox\packages\WebGrease.1.6.0\lib\WebGrease.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="App_Start\RazorGeneratorMvcStart.cs" />
+    <Compile Include="App_Start\UnityConfig.cs" />
     <Compile Include="DataControl\Attributes\AuthAttributes.cs" />
     <Compile Include="DataControl\Attributes\Gzip.cs" />
     <Compile Include="DataControl\Attributes\HangfireAuthorizationFilter.cs" />
