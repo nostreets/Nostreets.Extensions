@@ -20,8 +20,6 @@ namespace NostreetsExtensions.DataControl.Classes
     {
         public string TokenId { get; set; }
 
-        public string UserId { get; set; }
-
         public string Code { get; set; }
     }
 

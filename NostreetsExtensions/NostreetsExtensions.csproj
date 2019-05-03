@@ -248,8 +248,6 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="App_Start\RazorGeneratorMvcStart.cs" />
-    <Compile Include="App_Start\UnityConfig.cs" />
     <Compile Include="DataControl\Attributes\AuthAttributes.cs" />
     <Compile Include="DataControl\Attributes\Gzip.cs" />
     <Compile Include="DataControl\Attributes\HangfireAuthorizationFilter.cs" />
