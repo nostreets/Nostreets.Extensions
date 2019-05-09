@@ -1301,6 +1301,33 @@ namespace NostreetsExtensions.Extend.Basic
             return result;
         }
 
+        public static Type GetPropertyType(this object obj, int ordinal)
+        {
+            if (obj.GetType() == typeof(Type).GetType())
+                throw new Exception("obj cannot be a Type its self to be able to GetPropertyValue...");
+
+            return obj.GetType().GetProperties().Where((a, b) => b == ordinal).First().PropertyType;
+        }
+
+        public static Type GetPropertyType(this object obj, string propertyName)
+        {
+            if (obj.GetType() == typeof(Type).GetType())
+                throw new Exception("obj cannot be a Type its self to be able to GetPropertyValue...");
+
+            return obj.GetType().GetProperties().Single(pi => pi.Name == propertyName).PropertyType;
+        }
+
+        public static Type GetPropertyType(this Type obj, int ordinal)
+        {
+            return obj.GetProperties().Where((a, b) => b == ordinal).First().PropertyType;
+        }
+
+        
+        public static Type GetPropertyType(this Type obj, string propertyName)
+        {
+            return obj.GetProperties().Single(pi => pi.Name == propertyName).PropertyType;
+        }
+
         /// <summary>
         /// Gets the property value.
         /// </summary>
