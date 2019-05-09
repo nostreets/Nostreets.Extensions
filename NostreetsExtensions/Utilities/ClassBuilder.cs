@@ -54,7 +54,7 @@ namespace NostreetsExtensions.Utilities
         /// </param>
         private Type CreateType(
             List<Tuple<string, Type, Dictionary<Type, object[]>>> props,
-            List<Tuple<string, Type, MethodAttributes, Dictionary<Type, ParameterAttributes>, Dictionary<Type, object[]>>> methods)
+            List<Tuple<string, Type, MethodAttributes, List<Tuple<Type, ParameterAttributes>>, Dictionary<Type, object[]>>> methods)
         {
             if (props != null && props.Any(a => a.Item1 == null) || props.Any(a => a.Item2 == null))
                 throw new Exception("The property names and return types must never be null...");
@@ -82,7 +82,7 @@ namespace NostreetsExtensions.Utilities
         private object CreateObject(
             List<Tuple<string, Type,
             Dictionary<Type, object[]>>> props,
-            List<Tuple<string, Type, MethodAttributes, Dictionary<Type, ParameterAttributes>, Dictionary<Type, object[]>>> methods)
+            List<Tuple<string, Type, MethodAttributes, List<Tuple<Type, ParameterAttributes>>, Dictionary<Type, object[]>>> methods)
         {
             if (props != null && props.Any(a => a.Item1 == null) || props.Any(a => a.Item2 == null))
                 throw new Exception("The property names and return types must never be null...");
@@ -144,11 +144,11 @@ namespace NostreetsExtensions.Utilities
                 }
         }
 
-        private void CreateMethod(TypeBuilder typeBuilder, string methodName, Type returnType, MethodAttributes methodAttributes, Dictionary<Type, ParameterAttributes> paramTypes, 
+        private void CreateMethod(TypeBuilder typeBuilder, string methodName, Type returnType, MethodAttributes methodAttributes, List<Tuple<Type, ParameterAttributes>> paramTypes, 
             Dictionary<Type, object[]> attributes)
         {
-            paramTypes = paramTypes ?? new Dictionary<Type, ParameterAttributes>();
-            MethodBuilder methodBuilder = typeBuilder.DefineMethod(methodName, methodAttributes, returnType, paramTypes.Keys.ToArray());
+            paramTypes = paramTypes ?? new List<Tuple<Type, ParameterAttributes>>();
+            MethodBuilder methodBuilder = typeBuilder.DefineMethod(methodName, methodAttributes, returnType, paramTypes.Select(a => a.Item1).ToArray());
 
             ILGenerator il = methodBuilder.GetILGenerator();
 
@@ -165,7 +165,7 @@ namespace NostreetsExtensions.Utilities
                 //Push args array reference onto the stack, followed
                 //by the current argument index (i). The Ldelem_Ref opcode
                 //will resolve them to args[i].
-                if (paramTypes.ElementAt(i).Value == ParameterAttributes.Out)
+                if (paramTypes[i].Item2 == ParameterAttributes.Out)
                 {
                     // Argument 1 of dynamic method is argument array.
                     il.Emit(OpCodes.Ldarg_1);
@@ -174,7 +174,7 @@ namespace NostreetsExtensions.Utilities
                 }
 
                 // If parameter [i] is a value type perform an unboxing.
-                Type parameterType = paramTypes.ElementAt(i).Key;
+                Type parameterType = paramTypes[i].Item1;
                 if (parameterType.IsValueType)
                     il.Emit(OpCodes.Unbox_Any, parameterType);
             }
@@ -182,9 +182,9 @@ namespace NostreetsExtensions.Utilities
             //Create locals for out parameters
             for (int i = 0; i < paramTypes.Count; i++)
             {
-                if (paramTypes.ElementAt(i).Value == ParameterAttributes.Out)
+                if (paramTypes[i].Item2 == ParameterAttributes.Out)
                 {
-                    locals[i] = il.DeclareLocal(paramTypes.ElementAt(i).Key.GetElementType());
+                    locals[i] = il.DeclareLocal(paramTypes[i].Item1.GetElementType());
                     il.Emit(OpCodes.Ldloca, locals[locals.Length - 1]);
                 }
             }
@@ -200,14 +200,14 @@ namespace NostreetsExtensions.Utilities
 
             for (int idx = 0; idx < paramTypes.Count; ++idx)
             {
-                if (paramTypes.ElementAt(idx).Value == ParameterAttributes.Out || paramTypes.ElementAt(idx).Key.IsByRef)
+                if (paramTypes[idx].Item2 == ParameterAttributes.Out || paramTypes[idx].Item1.IsByRef)
                 {
                     il.Emit(OpCodes.Ldarg_1);
                     il.Emit(OpCodes.Ldc_I4, idx);
                     il.Emit(OpCodes.Ldloc, locals[idx].LocalIndex);
 
-                    if (paramTypes.ElementAt(idx).Key.GetElementType().IsValueType)
-                        il.Emit(OpCodes.Box, paramTypes.ElementAt(idx).Key.GetElementType());
+                    if (paramTypes[idx].Item1.GetElementType().IsValueType)
+                        il.Emit(OpCodes.Box, paramTypes[idx].Item1.GetElementType());
 
                     il.Emit(OpCodes.Stelem_Ref);
                 }
@@ -242,7 +242,7 @@ namespace NostreetsExtensions.Utilities
         public static Type CreateType(
             string className,
             List<Tuple<string, Type, Dictionary<Type, object[]>>> props,
-            List<Tuple<string, Type, MethodAttributes, Dictionary<Type, ParameterAttributes>, Dictionary<Type, object[]>>> methods)
+            List<Tuple<string, Type, MethodAttributes, List<Tuple<Type, ParameterAttributes>>, Dictionary<Type, object[]>>> methods)
         {
             ClassBuilder builder = new ClassBuilder(className);
             return builder.CreateType(props, methods);
@@ -251,7 +251,7 @@ namespace NostreetsExtensions.Utilities
         public static object CreateObject(
             string className,
             List<Tuple<string, Type, Dictionary<Type, object[]>>> props,
-            List<Tuple<string, Type, MethodAttributes, Dictionary<Type, ParameterAttributes>, Dictionary<Type, object[]>>> methods)
+            List<Tuple<string, Type, MethodAttributes, List<Tuple<Type, ParameterAttributes>>, Dictionary<Type, object[]>>> methods)
         {
             ClassBuilder builder = new ClassBuilder(className);
             return builder.CreateObject(props, methods);

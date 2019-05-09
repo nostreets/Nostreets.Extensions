@@ -46,7 +46,7 @@ namespace NostreetsExtensions.Extend.Basic
         /// <param name="props">The props.</param>
         /// <param name="methods">The methods.</param>
         /// <returns></returns>
-        public static Type CreateClass(List<Tuple<string, Type, Dictionary<Type, object[]>>> props, List<Tuple<string, Type, MethodAttributes, Dictionary<Type, ParameterAttributes>, Dictionary<Type, object[]>>> methods)
+        public static Type CreateClass(List<Tuple<string, Type, Dictionary<Type, object[]>>> props, List<Tuple<string, Type, MethodAttributes, List<Tuple<Type, ParameterAttributes>>, Dictionary<Type, object[]>>> methods)
         {
             return CreateClass(null, props, methods);
         }
@@ -58,7 +58,7 @@ namespace NostreetsExtensions.Extend.Basic
         /// <param name="props">The props.</param>
         /// <param name="methods">The methods.</param>
         /// <returns></returns>
-        public static Type CreateClass(string name, List<Tuple<string, Type, Dictionary<Type, object[]>>> props, List<Tuple<string, Type, MethodAttributes, Dictionary<Type, ParameterAttributes>, Dictionary<Type, object[]>>> methods)
+        public static Type CreateClass(string name, List<Tuple<string, Type, Dictionary<Type, object[]>>> props, List<Tuple<string, Type, MethodAttributes, List<Tuple<Type, ParameterAttributes>>, Dictionary<Type, object[]>>> methods)
         {
             return ClassBuilder.CreateType(name ?? "Class" + Guid.NewGuid().ToString(), props, methods);
         }
@@ -328,7 +328,7 @@ namespace NostreetsExtensions.Extend.Basic
 
             Type type = obj as Type ?? obj.GetType();
             List<Tuple<string, Type, Dictionary<Type, object[]>>> props = new List<Tuple<string, Type, Dictionary<Type, object[]>>>();
-            List<Tuple<string, Type, MethodAttributes, Dictionary<Type, ParameterAttributes>, Dictionary<Type, object[]>>> methods = new List<Tuple<string, Type, MethodAttributes, Dictionary<Type, ParameterAttributes>, Dictionary<Type, object[]>>>();
+            List<Tuple<string, Type, MethodAttributes, List<Tuple<Type, ParameterAttributes>>, Dictionary<Type, object[]>>> methods = new List<Tuple<string, Type, MethodAttributes, List<Tuple<Type, ParameterAttributes>>, Dictionary<Type, object[]>>>();
 
             foreach (PropertyInfo prop in type.GetProperties())
                 props.Add(
@@ -341,11 +341,11 @@ namespace NostreetsExtensions.Extend.Basic
 
             foreach (MethodInfo method in type.GetMethods())
                 methods.Add(
-                    new Tuple<string, Type, MethodAttributes, Dictionary<Type, ParameterAttributes>, Dictionary<Type, object[]>>(
+                    new Tuple<string, Type, MethodAttributes, List<Tuple<Type, ParameterAttributes>>, Dictionary<Type, object[]>>(
                         method.Name,
                         method.ReturnType,
                         method.Attributes,
-                        method.GetParameters().ToDictionary(a => new KeyValuePair<Type, ParameterAttributes>(a.ParameterType, a.Attributes)),
+                        method.GetParameters().Select(a => new Tuple<Type, ParameterAttributes>(a.ParameterType, a.Attributes)).ToList(),
                         attributeParams.Keys.Any(a => a == method.Name) ? attributeParams.Single(a => a.Key == method.Name).Value : null
                     )
                 );
@@ -381,8 +381,8 @@ namespace NostreetsExtensions.Extend.Basic
                                 , props.Select(a => new Tuple<string, Type, Dictionary<Type, object[]>>(a.Name, a.PropertyType,
                                     attributeParams.Any(b => b.Key == a.Name) ? attributeParams.FirstOrDefault(b => b.Key == a.Name).Value : null)
                                 ).ToList()
-                                , methods.Select(a => new Tuple<string, Type, MethodAttributes, Dictionary<Type, ParameterAttributes>, Dictionary<Type, object[]>>(a.Name, a.ReturnType, a.Attributes,
-                                    a.GetParameters().ToDictionary(b => new KeyValuePair<Type, ParameterAttributes>(b.ParameterType, b.Attributes)),
+                                , methods.Select(a => new Tuple<string, Type, MethodAttributes, List<Tuple<Type, ParameterAttributes>>, Dictionary<Type, object[]>>(a.Name, a.ReturnType, a.Attributes,
+                                    a.GetParameters().Select(b => new Tuple<Type, ParameterAttributes>(b.ParameterType, b.Attributes)).ToList(),
                                     attributeParams.Any(b => b.Key == a.Name) ? attributeParams.FirstOrDefault(b => b.Key == a.Name).Value : null)
                               ).ToList()
                             );
@@ -420,10 +420,10 @@ namespace NostreetsExtensions.Extend.Basic
                 i++;
             }
 
-            List<Tuple<string, Type, MethodAttributes, Dictionary<Type, ParameterAttributes>, Dictionary<Type, object[]>>> methods = new List<Tuple<string, Type, MethodAttributes, Dictionary<Type, ParameterAttributes>, Dictionary<Type, object[]>>>();
+            List<Tuple<string, Type, MethodAttributes, List<Tuple<Type, ParameterAttributes>>, Dictionary<Type, object[]>>> methods = new List<Tuple<string, Type, MethodAttributes, List<Tuple<Type, ParameterAttributes>>, Dictionary<Type, object[]>>>();
             foreach (MethodInfo method in objType.GetMethods())
-                methods.Add(new Tuple<string, Type, MethodAttributes, Dictionary<Type, ParameterAttributes>, Dictionary<Type, object[]>>(
-                    method.Name, method.ReturnType, method.Attributes, method.GetParameters().ToDictionary(a => new KeyValuePair<Type, ParameterAttributes>(a.ParameterType, a.Attributes)), null));
+                methods.Add(new Tuple<string, Type, MethodAttributes, List<Tuple<Type, ParameterAttributes>>, Dictionary<Type, object[]>>(
+                    method.Name, method.ReturnType, method.Attributes, method.GetParameters().Select(a => new Tuple<Type, ParameterAttributes>(a.ParameterType, a.Attributes)).ToList(), null));
 
             return ClassBuilder.CreateType(objType.Name, properties, methods);
         }
@@ -916,7 +916,7 @@ namespace NostreetsExtensions.Extend.Basic
         }
 
 
-        
+
         public static Type GetTypeWithAssembly(this Assembly assembly, string typeName)
         {
             return assembly.GetTypes().FirstOrDefault(t => t.Name == typeName);
@@ -1340,13 +1340,21 @@ namespace NostreetsExtensions.Extend.Basic
         /// <exception cref="InvalidDataException">type does not implements IEnumerable</exception>
         public static Type GetTypeOfT(this Type type)
         {
+            Type result = null;
+
             if (type == null)
                 throw new ArgumentNullException("type");
 
-            if (!type.IsGenericType) //(!type.HasInterface<IEnumerable>() || !type.HasInterface<ICollection>() || !type.HasInterface<IList>())
+            if (!type.HasInterface<IEnumerable>())
                 throw new InvalidDataException("type is not a generic type...");
 
-            return type.GetGenericArguments()[0];
+
+            if (type.BaseType == typeof(Array))
+                result = type.GetElementType();
+            if (result == null)
+                result = type.GetGenericArguments()[0];
+
+            return result;
         }
 
         /// <summary>
@@ -1363,7 +1371,7 @@ namespace NostreetsExtensions.Extend.Basic
 
             Type type = obj.GetType();
 
-            if (!type.IsGenericType) //(!type.HasInterface<IEnumerable>() || !type.HasInterface<ICollection>() || !type.HasInterface<IList>())
+            if (!type.HasInterface<IEnumerable>())
                 throw new InvalidDataException("type is not a generic type...");
 
             return type.GetGenericArguments()[0];
