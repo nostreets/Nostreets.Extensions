@@ -2000,10 +2000,10 @@ namespace NostreetsExtensions.Extend.Basic
         public static bool IsCollection(this Type item, bool excludeStrings = true)
         {
             return (!excludeStrings)
-                        ? (item.HasInterface<IEnumerable>() || item.HasInterface<ICollection>() || item.HasInterface<IList>())
+                        ? (item.HasInterface<IEnumerable>() /*|| item.HasInterface<ICollection>() || item.HasInterface<IList>()*/)
                         : (item == typeof(string))
                         ? false
-                        : (item.HasInterface<IEnumerable>() || item.HasInterface<ICollection>() || item.HasInterface<IList>());
+                        : (item.HasInterface<IEnumerable>() /*|| item.HasInterface<ICollection>() || item.HasInterface<IList>()*/);
         }
 
         /// <summary>
