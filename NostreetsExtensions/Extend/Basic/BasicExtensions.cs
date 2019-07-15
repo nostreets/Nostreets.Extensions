@@ -2287,16 +2287,35 @@ namespace NostreetsExtensions.Extend.Basic
         /// <typeparam name="T"></typeparam>
         /// <param name="obj">The object.</param>
         /// <param name="target">The target.</param>
-        public static void MapProperties<T>(this object obj, ref T target)
+        public static void MapProperties<T>(this object obj, ref T target) where T : new()
         {
-            PropertyInfo[] curProps = obj.GetType() == typeof(Type) ? ((Type)obj).GetProperties() : obj.GetType().GetProperties();
-            PropertyInfo[] targetProps = target.GetType().GetProperties();
+            if (target == null)
+                target = new T();
 
-            foreach (PropertyInfo prop in curProps)
+            if (obj.GetType() != typeof(Dictionary<string, object>))
             {
-                PropertyInfo newProp = targetProps.FirstOrDefault(a => a.Name == prop.Name && a.PropertyType == prop.PropertyType);
-                if (newProp != null)
-                    target.SetPropertyValue(prop.Name, newProp);
+                PropertyInfo[] curProps = obj.GetType() == typeof(Type) ? ((Type)obj).GetProperties() : obj.GetType().GetProperties();
+                PropertyInfo[] targetProps = target.GetType().GetProperties();
+
+                foreach (PropertyInfo prop in curProps)
+                {
+                    PropertyInfo newProp = targetProps.FirstOrDefault(a => a.Name == prop.Name && a.PropertyType == prop.PropertyType);
+                    if (newProp != null)
+                        target.SetPropertyValue(prop.Name, newProp);
+                }
+            }
+            else {
+                var someObject = new T();
+                var someObjectType = someObject.GetType();
+
+                foreach (var item in (Dictionary<string, object>)obj)
+                {
+                    someObjectType
+                             .GetProperty(item.Key)
+                             .SetValue(someObject, item.Value, null);
+                }
+
+                target = someObject;
             }
         }
 
@@ -3073,6 +3092,17 @@ namespace NostreetsExtensions.Extend.Basic
 
             return result;
         }
+
+        public static Dictionary<string, object> ToDictionary(this object source, BindingFlags bindingAttr = BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Instance)
+        {
+            return source.GetType().GetProperties(bindingAttr).ToDictionary
+            (
+                propInfo => propInfo.Name,
+                propInfo => propInfo.GetValue(source, null)
+            );
+
+        }
+
         /// <summary>
         /// To the dictionary.
         /// </summary>
