@@ -20,6 +20,7 @@ namespace NostreetsExtensions.Interfaces
         void Delete(IEnumerable<object> ids);
         List<object> Where(Func<object, bool> predicate);
         object FirstOrDefault(Func<object, bool> predicate);
+        List<dynamic> QueryResults(string query, Dictionary<string, object> parameters = null);
     }
 
 
@@ -41,6 +42,7 @@ namespace NostreetsExtensions.Interfaces
         List<T> Where(Func<T, bool> predicate);
         T FirstOrDefault(Func<T, bool> predicate);
         void Backup(string disk = null);
+        List<TResult> QueryResults<TResult>(string query, Dictionary<string, object> parameters = null);
     }
 
     public interface IDBService<T, IdType>
@@ -62,11 +64,11 @@ namespace NostreetsExtensions.Interfaces
         void Delete(IEnumerable<IdType> ids);
         T FirstOrDefault(Func<T, bool> predicate);
         void Backup(string disk = null);
+        List<TResult> QueryResults<TResult>(string query, Dictionary<string, object> parameters = null);
     }
 
     public interface IDBService<T, IdType, AddType, UpdateType>
     {
-
         List<T> GetAll();
         T Get(IdType id);
         T Get(IdType id, Converter<T, T> converter);
@@ -85,5 +87,6 @@ namespace NostreetsExtensions.Interfaces
         List<T> Where(Func<T, bool> predicate);
         T FirstOrDefault(Func<T, bool> predicate);
         void Backup(string disk = null);
+        List<TResult> QueryResults<TResult>(string query, Dictionary<string, object> parameters = null);
     }
 }

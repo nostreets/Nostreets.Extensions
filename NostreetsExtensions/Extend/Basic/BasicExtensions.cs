@@ -1322,7 +1322,7 @@ namespace NostreetsExtensions.Extend.Basic
             return obj.GetProperties().Where((a, b) => b == ordinal).First().PropertyType;
         }
 
-        
+
         public static Type GetPropertyType(this Type obj, string propertyName)
         {
             return obj.GetProperties().Single(pi => pi.Name == propertyName).PropertyType;
@@ -1498,10 +1498,24 @@ namespace NostreetsExtensions.Extend.Basic
         /// <typeparam name="T"></typeparam>
         /// <param name="type">The type.</param>
         /// <returns>
+        ///   <c>true</c> if the specified property has attribute; otherwise, <c>false</c>.
+        /// </returns>
+        /// <exception cref="InvalidDataException">T must have a base Type of Attribute...</exception>
+        public static bool HasAttribute<T>(this Type type) where T : Attribute
+        {
+            return type.GetCustomAttribute<T>() != null;
+        }
+
+        /// <summary>
+        /// Determines whether this instance has attribute.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="type">The type.</param>
+        /// <returns>
         ///   <c>true</c> if the specified type has attribute; otherwise, <c>false</c>.
         /// </returns>
         /// <exception cref="InvalidDataException">T must have a base Type of Attribute...</exception>
-        public static bool HasAttribute<T>(this Type type)
+        public static bool HasAttributeInProperties<T>(this Type type)
         {
             if (typeof(T).IsSubclassOf(typeof(Attribute)))
                 throw new InvalidDataException("T must have a base Type of Attribute...");
@@ -2304,7 +2318,8 @@ namespace NostreetsExtensions.Extend.Basic
                         target.SetPropertyValue(prop.Name, newProp);
                 }
             }
-            else {
+            else
+            {
                 var someObject = new T();
                 var someObjectType = someObject.GetType();
 
@@ -3348,6 +3363,20 @@ namespace NostreetsExtensions.Extend.Basic
                 i++;
             }
             return true;
+        }
+
+        public static Task ForEachAsync<T>(this IEnumerable<T> source, Func<T, Task> body)
+        {
+            return Task.WhenAll(
+                from item in source
+                select Task.Run(() => body(item)));
+        }
+
+        public static Task ForEachAsync<T>(this IEnumerable<T> source, Action<T> body)
+        {
+            return Task.WhenAll(
+                from item in source
+                select Task.Run(() => body(item)));
         }
 
         #endregion Extensions
