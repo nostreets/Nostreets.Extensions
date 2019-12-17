@@ -32,6 +32,15 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
+  <PropertyGroup Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('$(TargetFramework)', '^net\d'))">
+    <DefineConstants>NETFRAMEWORK</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('$(TargetFramework)', '^netstandard\d'))">
+    <DefineConstants>NETSTANDARD</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('$(TargetFramework)', '^netcoreapp\d'))">
+    <DefineConstants>NETCORE</DefineConstants>
+  </PropertyGroup>
   <PropertyGroup>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
   </PropertyGroup>
@@ -73,15 +82,18 @@
     <Compile Include="DataControl\Classes\Sitemap.cs" />
     <Compile Include="DataControl\Classes\Token.cs" />
     <Compile Include="DataControl\Enums\Enums.cs" />
-    <Compile Include="Extend\Basic\BasicExtensions.cs" />
-    <Compile Include="Extend\Command\CommandExtensions.cs" />
-    <Compile Include="Extend\Data\DataExtensions.cs" />
-    <Compile Include="Extend\Form\FormExtensions.cs" />
-    <Compile Include="Extend\Google\GoogleExtensions.cs" />
-    <Compile Include="Extend\IOC\IOCExtensions.cs" />
-    <Compile Include="Extend\Web\WebExtensions.cs" />
+    <Compile Include="Extend\BasicExtensions.cs" />
+    <Compile Include="Extend\CommandExtensions.cs" />
+    <Compile Include="Extend\Core\ConfigExtensions.cs" />
+    <Compile Include="Extend\DataExtensions.cs" />
+    <Compile Include="Extend\FormExtensions.cs" />
+    <Compile Include="Extend\GoogleExtensions.cs" />
+    <Compile Include="Extend\IOCExtensions.cs" />
+    <Compile Include="Extend\WebExtensions.cs" />
     <Compile Include="Helpers\Web\HttpServices.cs" />
     <Compile Include="Interfaces\IHttpResponse.cs" />
+    <Compile Include="Utilities\Managers\Core\CacheManager.cs" />
+    <Compile Include="Utilities\Managers\Core\ConfigurationManager.cs" />
     <Compile Include="Utilities\ViewEngine.cs" />
     <Compile Include="Utilities\Encryption.cs" />
     <Compile Include="Helpers\Data\OleDbExecutor.cs" />
@@ -126,7 +138,6 @@
     <Compile Include="Utilities\CustomSerializer.cs" />
     <Compile Include="Utilities\ExpressionBuilder.cs" />
     <Compile Include="Utilities\FileManager.cs" />
-    <Compile Include="Utilities\Managers\ConfigManager.cs" />
     <Compile Include="Utilities\Scanners.cs" />
     <Compile Include="Utilities\Managers\SessionManager.cs" />
     <Compile Include="Utilities\Solution.cs" />
@@ -178,6 +189,12 @@
     </PackageReference>
     <PackageReference Include="Microsoft.AspNet.WebApi.Core">
       <Version>5.2.7</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory">
+      <Version>3.0.1</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.Configuration">
+      <Version>3.0.1</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.Owin.Host.SystemWeb">
       <Version>4.0.0</Version>

@@ -39,7 +39,6 @@ namespace NostreetsExtensions.Extend.Basic
             return result;
         }
 
-
         /// <summary>
         /// Creates the class.
         /// </summary>
@@ -144,6 +143,7 @@ namespace NostreetsExtensions.Extend.Basic
 
             return result.Distinct().ToList();
         }
+
         /// <summary>
         /// Gets the os drive.
         /// </summary>
@@ -218,6 +218,7 @@ namespace NostreetsExtensions.Extend.Basic
 
             return result.Distinct().ToList();
         }
+
         /// <summary>
         /// Globals the stack trace.
         /// </summary>
@@ -308,9 +309,11 @@ namespace NostreetsExtensions.Extend.Basic
 
             return solutionDirPath.ScanForFilePath(null, "sln");
         }
+
         #endregion Static
 
         #region Extensions
+
         /// <summary>
         /// Adds the attribute.
         /// </summary>
@@ -540,7 +543,6 @@ namespace NostreetsExtensions.Extend.Basic
             }
 
             return result;
-
         }
 
         /// <summary>
@@ -565,7 +567,6 @@ namespace NostreetsExtensions.Extend.Basic
             }
 
             return result;
-
         }
 
         /// <summary>
@@ -914,8 +915,6 @@ namespace NostreetsExtensions.Extend.Basic
 
             return result;
         }
-
-
 
         public static Type GetTypeWithAssembly(this Assembly assembly, string typeName)
         {
@@ -1322,7 +1321,6 @@ namespace NostreetsExtensions.Extend.Basic
             return obj.GetProperties().Where((a, b) => b == ordinal).First().PropertyType;
         }
 
-
         public static Type GetPropertyType(this Type obj, string propertyName)
         {
             return obj.GetProperties().Single(pi => pi.Name == propertyName).PropertyType;
@@ -1374,7 +1372,6 @@ namespace NostreetsExtensions.Extend.Basic
 
             if (!type.HasInterface<IEnumerable>())
                 throw new InvalidDataException("type is not a generic type...");
-
 
             if (type.BaseType == typeof(Array))
                 result = type.GetElementType();
@@ -1531,6 +1528,7 @@ namespace NostreetsExtensions.Extend.Basic
 
             return result;
         }
+
         /// <summary>
         /// Determines whether the specified constructor has constuctor.
         /// </summary>
@@ -2100,6 +2098,11 @@ namespace NostreetsExtensions.Extend.Basic
                 default:
                     return false;
             }
+        }
+
+        public static bool IsString(this object obj) { 
+            Type nnType = Nullable.GetUnderlyingType(obj.GetType()) ?? obj.GetType();
+            return nnType == typeof(string) || nnType == typeof(char[]);
         }
 
         /// <summary>
@@ -2877,6 +2880,7 @@ namespace NostreetsExtensions.Extend.Basic
 
             return SetProperty(objType, prop, newPropType ?? prop.PropertyType, newName ?? prop.Name);
         }
+
         /// <summary>
         /// Sets the property value.
         /// </summary>
@@ -2934,6 +2938,7 @@ namespace NostreetsExtensions.Extend.Basic
 
             return result;
         }
+
         /// <summary>
         /// Starts the of week.
         /// </summary>
@@ -3115,7 +3120,6 @@ namespace NostreetsExtensions.Extend.Basic
                 propInfo => propInfo.Name,
                 propInfo => propInfo.GetValue(source, null)
             );
-
         }
 
         /// <summary>
@@ -3341,7 +3345,6 @@ namespace NostreetsExtensions.Extend.Basic
                     result = false;
                 }
             }
-
             else
                 result = false;
 
@@ -3377,6 +3380,13 @@ namespace NostreetsExtensions.Extend.Basic
             return Task.WhenAll(
                 from item in source
                 select Task.Run(() => body(item)));
+        }
+        public static IEnumerable<List<T>> SplitList<T>(this List<T> list, int nSize = 25)
+        {
+            for (int i = 0; i < list.Count; i += nSize)
+            {
+                yield return list.GetRange(i, Math.Min(nSize, list.Count - i));
+            }
         }
 
         #endregion Extensions

@@ -36,7 +36,7 @@ namespace NostreetsExtensions.Utilities
         private static MethodInfo endsWithMethod = typeof(string).GetMethod("EndsWith", new Type[] { typeof(string) });
 
 
-        public static Expression<Func<T, bool>> GetPredicate<T>(IList<Filter> filters)
+        public static Expression<Func<T, bool>> GetPredicate<T>(IList<PartialExp> filters)
         {
             if (filters.Count == 0)
                 return null;
@@ -117,7 +117,7 @@ namespace NostreetsExtensions.Utilities
         //    return Expression.AndAlso(bin1, bin2);
         //}
 
-        public static Expression<Func<T, bool>> GetPredicate<T>(IList<Filter> filters, Type type)
+        public static Expression<Func<T, bool>> GetPredicate<T>(IList<PartialExp> filters, Type type)
         {
             if (filters.Count == 0)
                 return null;
@@ -155,7 +155,7 @@ namespace NostreetsExtensions.Utilities
             return Expression.Lambda<Func<T, bool>>(exp, param);
         }
 
-        private static Expression GetExpression(ParameterExpression param, Filter filter)
+        private static Expression GetExpression(ParameterExpression param, PartialExp filter)
         {
             MemberExpression member = Expression.Property(param, filter.PropertyName);
             ConstantExpression constant = Expression.Constant(filter.Value);
@@ -190,7 +190,7 @@ namespace NostreetsExtensions.Utilities
             return null;
         }
 
-        private static BinaryExpression GetANDExpression(ParameterExpression param, Filter filter1, Filter filter2)
+        private static BinaryExpression GetANDExpression(ParameterExpression param, PartialExp filter1, PartialExp filter2)
         {
             Expression bin1 = GetExpression(param, filter1);
             Expression bin2 = GetExpression(param, filter2);
@@ -199,10 +199,10 @@ namespace NostreetsExtensions.Utilities
         }
     }
 
-    public class Filter
+    public class PartialExp
     {
-        public Filter() { }
-        public Filter(string propertyName, Op vs, object value)
+        public PartialExp() { }
+        public PartialExp(string propertyName, Op vs, object value)
         {
             PropertyName = propertyName;
             Value = value;

@@ -1,17 +1,18 @@
-﻿using Newtonsoft.Json.Linq;
+﻿using System;
+using Newtonsoft.Json.Linq;
 using NostreetsExtensions.Extend.Basic;
 using StackExchange.Redis;
-using System;
-using System.Runtime.Caching;
-using System.Configuration;
+using Microsoft.Extensions.Caching.Memory;
 
-namespace NostreetsExtensions.Utilities.Managers
+namespace NostreetsExtensions.Utilities.Managers.Core
 {
+
     public static class CacheManager
     {
+
         static CacheManager()
         {
-            _instance = MemoryCache.Default;
+            _instance = new MemoryCache(new MemoryCacheOptions());
 
             if (ConfigurationManager.AppSettings["Redis.Host"] != null)
                 _redisCache = new RedisCache(RedisCache.GetConfigurationOptions());
@@ -21,17 +22,16 @@ namespace NostreetsExtensions.Utilities.Managers
         private static MemoryCache _instance = null;
         private static RedisCache _redisCache = null;
 
+
         private static void Contains(string key, out bool instanceContains, out bool redisContains)
         {
-            instanceContains = _instance.Contains(key);
+            instanceContains = _instance.TryGetValue(key, out object data);
             redisContains = (_redisCache != null) ? _redisCache.Contains(key) : false;
 
 
             if (key != null)
                 if (instanceContains)
                 {
-                    object data = _instance.Get(key);
-
                     if (_redisCache != null && !redisContains)
                     {
                         _redisCache.Set(key, data, TimeSpan.FromMinutes(180));
@@ -40,8 +40,8 @@ namespace NostreetsExtensions.Utilities.Managers
                 }
                 else if (_redisCache != null && redisContains)
                 {
-                    object data = _redisCache.Get(key);
-                    _instance.Add(key, data, new CacheItemPolicy { AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(180) });
+                    data = _redisCache.Get(key);
+                    _instance.Set(key, data, new MemoryCacheEntryOptions() { AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(180) });
                     instanceContains = true;
                 }
 
@@ -72,7 +72,7 @@ namespace NostreetsExtensions.Utilities.Managers
                 {
                     result = _redisCache.Get<T>(key);
                     if (!instanceContains)
-                        _instance.Add(key, result, new CacheItemPolicy { AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(180) });
+                        _instance.Set(key, result, new MemoryCacheEntryOptions() { AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(180) });
                 }
             }
 
@@ -89,10 +89,8 @@ namespace NostreetsExtensions.Utilities.Managers
 
 
             if (!instanceContains)
-                _instance.Add(key, data, new CacheItemPolicy { AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(minsTillExp) });
+                _instance.Set(key, data, new MemoryCacheEntryOptions() { AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(minsTillExp) });
 
-            else
-                _instance.Set(key, data, new CacheItemPolicy { AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(minsTillExp) });
         }
 
         public static void Remove(string key)
@@ -115,7 +113,6 @@ namespace NostreetsExtensions.Utilities.Managers
         }
 
     }
-
 
     #region Redis Cache
 
