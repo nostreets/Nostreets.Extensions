@@ -1,9 +1,9 @@
-# NostreetExtensions
+# Nostreet.Extensions
 ####  Static Utility Extension Class For C#
 
 #### Example
 ```C#
 
-using NostreetExtensions;
+using Nostreet.Extensions;
 
 ```
