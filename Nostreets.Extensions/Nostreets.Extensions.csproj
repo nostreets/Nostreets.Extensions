@@ -7,8 +7,8 @@
     <ProjectGuid>{D75EF23C-2E65-4BF7-90D3-C21C73A3E9C3}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>NostreetsExtensions</RootNamespace>
-    <AssemblyName>NostreetsExtensions</AssemblyName>
+    <RootNamespace>Nostreets.Extensions</RootNamespace>
+    <AssemblyName>Nostreets.Extensions</AssemblyName>
     <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
