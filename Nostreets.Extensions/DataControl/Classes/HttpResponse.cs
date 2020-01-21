@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Net;
-using NostreetsExtensions.Extend.Web;
-using NostreetsExtensions.Interfaces;
+using Nostreets.Extensions.Extend.Web;
+using Nostreets.Extensions.Interfaces;
 
-namespace NostreetsExtensions.DataControl.Classes
+namespace Nostreets.Extensions.DataControl.Classes
 {
     public class HttpResponse<T> : WebResponse, IHttpResponse<T>
     {

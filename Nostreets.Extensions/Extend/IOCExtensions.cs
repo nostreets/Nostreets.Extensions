@@ -1,12 +1,12 @@
 ﻿using Castle.Windsor;
-using NostreetsExtensions.Extend.Basic;
+using Nostreets.Extensions.Extend.Basic;
 using System;
 using System.Linq;
 using System.Reflection;
 using Unity;
 using Unity.Resolution;
 
-namespace NostreetsExtensions.Extend.IOC
+namespace Nostreets.Extensions.Extend.IOC
 {
     public static class IOCExtensions
     {

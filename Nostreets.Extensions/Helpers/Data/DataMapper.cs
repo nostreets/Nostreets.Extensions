@@ -3,10 +3,10 @@ using System.Data;
 using System.Linq;
 using System.Reflection;
 using Newtonsoft.Json;
-using NostreetsExtensions.Extend.Basic;
-using NostreetsExtensions.Extend.Data;
+using Nostreets.Extensions.Extend.Basic;
+using Nostreets.Extensions.Extend.Data;
 
-namespace NostreetsExtensions.Helpers.Data
+namespace Nostreets.Extensions.Helpers.Data
 {
     public class DataMapper
     {

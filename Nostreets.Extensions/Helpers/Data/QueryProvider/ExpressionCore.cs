@@ -8,7 +8,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
 
-namespace NostreetsExtensions.Helpers.Data.QueryProvider
+namespace Nostreets.Extensions.Helpers.Data.QueryProvider
 {
     /// <summary>
     /// Replaces references to one specific instance of an expression node with another node

@@ -10,7 +10,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 
-namespace NostreetsExtensions.Helpers.Data.QueryProvider
+namespace Nostreets.Extensions.Helpers.Data.QueryProvider
 {
     public class SqlQueryProvider : DbEntityProvider
     {

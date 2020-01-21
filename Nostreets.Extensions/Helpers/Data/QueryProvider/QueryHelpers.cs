@@ -9,7 +9,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace NostreetsExtensions.Helpers.Data.QueryProvider
+namespace Nostreets.Extensions.Helpers.Data.QueryProvider
 {
 
     /// <summary>

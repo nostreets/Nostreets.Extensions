@@ -1,10 +1,10 @@
-﻿using NostreetsExtensions.Extend.Basic;
+﻿using Nostreets.Extensions.Extend.Basic;
 using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Reflection;
 
-namespace NostreetsExtensions.Utilities
+namespace Nostreets.Extensions.Utilities
 {
 
     public static class ExpressionHelper

@@ -7,7 +7,7 @@ using System.Web.Http;
 using System.Web.Http.Controllers;
 using System.Web.Http.Dispatcher;
 
-namespace NostreetsExtensions.Helpers.Web
+namespace Nostreets.Extensions.Helpers.Web
 {
     public class AssemblyResolver : IAssembliesResolver
     {

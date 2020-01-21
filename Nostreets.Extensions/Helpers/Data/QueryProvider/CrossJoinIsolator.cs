@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 
-namespace NostreetsExtensions.Helpers.Data.QueryProvider
+namespace Nostreets.Extensions.Helpers.Data.QueryProvider
 {
     /// <summary>
     /// Isolates cross joins from other types of joins using nested sub queries

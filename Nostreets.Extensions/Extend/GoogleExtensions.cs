@@ -3,7 +3,7 @@ using Google.Apis.Gmail.v1;
 using Google.Apis.Gmail.v1.Data;
 using Google.Apis.Services;
 using Google.Apis.Util.Store;
-using NostreetsExtensions.Extend.Basic;
+using Nostreets.Extensions.Extend.Basic;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -11,7 +11,7 @@ using System.Linq;
 using System.Threading;
 using System.Web;
 
-namespace NostreetsExtensions.Extend.Google
+namespace Nostreets.Extensions.Extend.Google
 {
     public static class Google
     {

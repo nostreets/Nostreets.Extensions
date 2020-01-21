@@ -10,7 +10,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
 
-namespace NostreetsExtensions.Helpers.Data.QueryProvider
+namespace Nostreets.Extensions.Helpers.Data.QueryProvider
 {
     /// <summary>
     /// Rewrite aggregate expressions, moving them into same select expression that has the group-by clause

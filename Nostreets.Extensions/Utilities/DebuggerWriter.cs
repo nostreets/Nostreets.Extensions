@@ -7,7 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace NostreetsExtensions.Utilities
+namespace Nostreets.Extensions.Utilities
 {
     public class DebuggerWriter : TextWriter
     {

@@ -5,7 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 
-namespace NostreetsExtensions.Utilities
+namespace Nostreets.Extensions.Utilities
 {
     public class Solution
     {

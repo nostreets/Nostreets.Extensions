@@ -5,7 +5,7 @@ using System.Management.Automation;
 using System.Reflection;
 using System.Text;
 
-namespace NostreetsExtensions.Extend.Command
+namespace Nostreets.Extensions.Extend.Command
 {
     public static class Command
     {

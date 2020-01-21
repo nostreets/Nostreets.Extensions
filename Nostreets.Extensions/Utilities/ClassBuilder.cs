@@ -4,7 +4,7 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 
-namespace NostreetsExtensions.Utilities
+namespace Nostreets.Extensions.Utilities
 {
     public class ClassBuilder
     {

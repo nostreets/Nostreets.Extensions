@@ -2,7 +2,7 @@
 using System.Reflection;
 using System.Xml.Serialization;
 
-namespace NostreetsExtensions.Helpers.Data.QueryProvider
+namespace Nostreets.Extensions.Helpers.Data.QueryProvider
 {
     [Serializable(), XmlRoot(Namespace = "", IsNullable = false, ElementName = "Entity")]
     public class EntityMap

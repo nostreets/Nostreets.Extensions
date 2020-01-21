@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace NostreetsExtensions.Utilities
+namespace Nostreets.Extensions.Utilities
 {
     public abstract class Disposable : IDisposable
     {

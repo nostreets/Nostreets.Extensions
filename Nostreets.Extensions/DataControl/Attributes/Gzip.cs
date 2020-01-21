@@ -1,7 +1,7 @@
 ﻿using System.IO.Compression;
 using System.Web.Mvc;
 
-namespace NostreetsExtensions.DataControl.Attributes
+namespace Nostreets.Extensions.DataControl.Attributes
 {
 
     public class GzipAttribute : ActionFilterAttribute

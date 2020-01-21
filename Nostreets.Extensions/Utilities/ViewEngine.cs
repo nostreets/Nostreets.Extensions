@@ -4,7 +4,7 @@ using System.Reflection;
 using System.Web;
 using System.Web.Mvc;
 
-namespace NostreetsExtensions.Utilities
+namespace Nostreets.Extensions.Utilities
 {
     public class CSharpRazorViewEngine : RazorViewEngine
     {

@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Web.Mvc;
 
-namespace NostreetsExtensions.DataControl.Classes
+namespace Nostreets.Extensions.DataControl.Classes
 {
     public class SitemapNode
     {

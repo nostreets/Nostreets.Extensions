@@ -1,4 +1,4 @@
-﻿namespace NostreetsExtensions.DataControl.Classes
+﻿namespace Nostreets.Extensions.DataControl.Classes
 {
     public class InboundEmail 
     {

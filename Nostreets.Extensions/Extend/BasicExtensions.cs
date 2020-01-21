@@ -1,7 +1,7 @@
 ﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
-using NostreetsExtensions.Utilities;
+using Nostreets.Extensions.Utilities;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -21,7 +21,7 @@ using System.Xml;
 using System.Xml.Linq;
 using System.Xml.Serialization;
 
-namespace NostreetsExtensions.Extend.Basic
+namespace Nostreets.Extensions.Extend.Basic
 {
     public static class Basic
     {

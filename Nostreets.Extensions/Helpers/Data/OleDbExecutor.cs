@@ -1,4 +1,4 @@
-﻿using NostreetsExtensions.Interfaces;
+﻿using Nostreets.Extensions.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -7,7 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace NostreetsExtensions.Helpers.Data
+namespace Nostreets.Extensions.Helpers.Data
 {
     internal sealed class OleDbExecutor : IOleDbExecutor
     {

@@ -1,12 +1,12 @@
-﻿using NostreetsExtensions.Interfaces;
-using NostreetsExtensions.Utilities;
+﻿using Nostreets.Extensions.Interfaces;
+using Nostreets.Extensions.Utilities;
 using System.Configuration;
 using System.Data.OleDb;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Web.Configuration;
 
-namespace NostreetsExtensions.Helpers.Data
+namespace Nostreets.Extensions.Helpers.Data
 {
     public abstract class SqlService : Disposable
     {

@@ -7,7 +7,7 @@ using System;
 using System.IO;
 using System.Linq;
 
-namespace NostreetsExtensions.Utilities
+namespace Nostreets.Extensions.Utilities
 {
     public class CustomSerializer : ISerializer, IDeserializer
     {

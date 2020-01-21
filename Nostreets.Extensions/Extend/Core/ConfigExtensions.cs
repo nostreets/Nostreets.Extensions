@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.Configuration;
 using System.Collections.Generic;
 
-namespace NostreetsExtensions.Extend.Core.Config
+namespace Nostreets.Extensions.Extend.Core.Config
 {
     public static class ConfigExtensions
     {

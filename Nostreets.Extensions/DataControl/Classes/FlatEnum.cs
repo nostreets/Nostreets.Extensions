@@ -2,7 +2,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace NostreetsExtensions.DataControl.Classes
+namespace Nostreets.Extensions.DataControl.Classes
 {
     public class FlatEnum<T> where T : struct, IConvertible
     {

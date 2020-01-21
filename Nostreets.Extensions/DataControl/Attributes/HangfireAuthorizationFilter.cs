@@ -1,9 +1,9 @@
 ﻿using Hangfire.Dashboard;
-using NostreetsExtensions.Extend.Basic;
-using NostreetsExtensions.Extend.Web;
+using Nostreets.Extensions.Extend.Basic;
+using Nostreets.Extensions.Extend.Web;
 using System.Web;
 
-namespace NostreetsExtensions.DataControl.Attributes
+namespace Nostreets.Extensions.DataControl.Attributes
 {
     public class HangfireAuthorizationFilter : IDashboardAuthorizationFilter
     {

@@ -1,9 +1,9 @@
-﻿using NostreetsExtensions.Interfaces;
+﻿using Nostreets.Extensions.Interfaces;
 using System;
 using System.Data;
 using System.Data.SqlClient;
 
-namespace NostreetsExtensions.Helpers.Data
+namespace Nostreets.Extensions.Helpers.Data
 {
     internal sealed class SqlExecutor : ISqlExecutor
     {

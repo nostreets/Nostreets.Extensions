@@ -3,10 +3,10 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
-using NostreetsExtensions.DataControl.Classes;
-using NostreetsExtensions.Extend.Basic;
-using NostreetsExtensions.Interfaces;
-using NostreetsExtensions.Utilities;
+using Nostreets.Extensions.DataControl.Classes;
+using Nostreets.Extensions.Extend.Basic;
+using Nostreets.Extensions.Interfaces;
+using Nostreets.Extensions.Utilities;
 
 using Owin;
 
@@ -35,7 +35,7 @@ using System.Xml;
 using System.Xml.Linq;
 using System.Xml.Serialization;
 
-namespace NostreetsExtensions.Extend.Web
+namespace Nostreets.Extensions.Extend.Web
 {
     public static class Web
     {

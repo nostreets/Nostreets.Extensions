@@ -3,7 +3,7 @@ using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
 
-namespace NostreetsExtensions.Extend.Form
+namespace Nostreets.Extensions.Extend.Form
 {
     public static class Forms
     {

@@ -1,11 +1,11 @@
 ﻿using System.Linq;
 using Microsoft.Extensions.Configuration;
-using NostreetsExtensions.Extend.Basic;
-using NostreetsExtensions.Extend.Core.Config;
+using Nostreets.Extensions.Extend.Basic;
+using Nostreets.Extensions.Extend.Core.Config;
 using System.Collections.Specialized;
 
 
-namespace NostreetsExtensions.Utilities.Managers.Core
+namespace Nostreets.Extensions.Utilities.Managers.Core
 {
     public class ConfigurationManager
     {

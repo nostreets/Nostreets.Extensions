@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace NostreetsExtensions.DataControl.Enums
+namespace Nostreets.Extensions.DataControl.Enums
 {
     public enum State
     {

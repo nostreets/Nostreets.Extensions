@@ -1,6 +1,6 @@
-﻿using NostreetsExtensions.Interfaces;
+﻿using Nostreets.Extensions.Interfaces;
 
-namespace NostreetsExtensions.Helpers.Data
+namespace Nostreets.Extensions.Helpers.Data
 {
     public sealed class DataProvider
     {

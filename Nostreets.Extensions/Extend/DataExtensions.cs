@@ -12,13 +12,13 @@ using System.Data.SqlClient;
 using System.Dynamic;
 using System.Linq;
 using System.Reflection;
-using NostreetsExtensions.DataControl.Classes;
-using NostreetsExtensions.Extend.Basic;
-using NostreetsExtensions.Interfaces;
-using NostreetsExtensions.Utilities;
+using Nostreets.Extensions.DataControl.Classes;
+using Nostreets.Extensions.Extend.Basic;
+using Nostreets.Extensions.Interfaces;
+using Nostreets.Extensions.Utilities;
 using System.Data.Linq;
 
-namespace NostreetsExtensions.Extend.Data
+namespace Nostreets.Extensions.Extend.Data
 {
     public static class Data
     {

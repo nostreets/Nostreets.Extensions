@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace NostreetsExtensions.Interfaces
+namespace Nostreets.Extensions.Interfaces
 {
     public interface IDBService
     {

@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace NostreetsExtensions.DataControl.Classes
+namespace Nostreets.Extensions.DataControl.Classes
 {
 
     public class Token : DBObject<string>

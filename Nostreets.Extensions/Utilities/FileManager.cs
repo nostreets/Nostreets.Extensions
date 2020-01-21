@@ -1,8 +1,8 @@
-﻿using NostreetsExtensions.Extend.Basic;
+﻿using Nostreets.Extensions.Extend.Basic;
 using System;
 using System.IO;
 
-namespace NostreetsExtensions.Utilities
+namespace Nostreets.Extensions.Utilities
 {
     public class FileManager
     {

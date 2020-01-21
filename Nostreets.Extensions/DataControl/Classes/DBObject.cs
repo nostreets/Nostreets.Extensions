@@ -1,7 +1,7 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
 
-namespace NostreetsExtensions.DataControl.Classes
+namespace Nostreets.Extensions.DataControl.Classes
 {
     public abstract partial class DBObject<T>
     {

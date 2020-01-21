@@ -3,7 +3,7 @@ using System.Data;
 using System.Data.OleDb;
 using System.Data.SqlClient;
 
-namespace NostreetsExtensions.Interfaces
+namespace Nostreets.Extensions.Interfaces
 {
     public interface ISqlExecutor
     {

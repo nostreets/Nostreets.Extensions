@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Web;
 using System.Web.SessionState;
 
-namespace NostreetsExtensions.Utilities.Managers
+namespace Nostreets.Extensions.Utilities.Managers
 {
     public class SessionManager
     {

@@ -1,7 +1,6 @@
 ﻿using Newtonsoft.Json;
-using NostreetsExtensions;
-using NostreetsExtensions.Extend.Basic;
-using NostreetsExtensions.Helpers.Data;
+using Nostreets.Extensions.Extend.Basic;
+using Nostreets.Extensions.Helpers.Data;
 using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
@@ -13,7 +12,7 @@ using System.Web.Configuration;
 using System.Web.Http;
 using System.Web.Http.Controllers;
 
-namespace NostreetsExtensions.DataControl.Attributes
+namespace Nostreets.Extensions.DataControl.Attributes
 {
     public class AuthByKeyAttribute : AuthorizeAttribute
     {

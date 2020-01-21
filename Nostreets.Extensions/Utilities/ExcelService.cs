@@ -1,10 +1,10 @@
-﻿using NostreetsExtensions.Extend.Data;
-using NostreetsExtensions.Helpers.Data;
+﻿using Nostreets.Extensions.Extend.Data;
+using Nostreets.Extensions.Helpers.Data;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace NostreetsExtensions.Utilities
+namespace Nostreets.Extensions.Utilities
 {
     public class ExcelService : OleDbService
     {

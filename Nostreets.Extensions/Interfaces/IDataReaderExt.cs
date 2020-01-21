@@ -3,7 +3,7 @@ using System.Data;
 using System.Data.SqlClient;
 using System.Data.SqlTypes;
 
-namespace NostreetsExtensions.Interfaces
+namespace Nostreets.Extensions.Interfaces
 {
     public static class IDataReaderExt
     {

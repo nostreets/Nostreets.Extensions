@@ -1,11 +1,11 @@
 ﻿using Newtonsoft.Json.Linq;
-using NostreetsExtensions.Extend.Basic;
+using Nostreets.Extensions.Extend.Basic;
 using StackExchange.Redis;
 using System;
 using System.Runtime.Caching;
 using System.Configuration;
 
-namespace NostreetsExtensions.Utilities.Managers
+namespace Nostreets.Extensions.Utilities.Managers
 {
     public static class CacheManager
     {

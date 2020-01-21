@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Net;
 
-namespace NostreetsExtensions.Interfaces
+namespace Nostreets.Extensions.Interfaces
 {
     public interface IHttpResponse
     {
