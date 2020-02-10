@@ -2284,9 +2284,10 @@ namespace Nostreets.Extensions.Extend.Basic
         /// </summary>
         /// <param name="obj">The object.</param>
         /// <returns></returns>
-        public static string JsonSerialize(this object obj)
+        public static string JsonSerialize(this object obj, JsonSerializerSettings settings = null, Newtonsoft.Json.Formatting formatting = Newtonsoft.Json.Formatting.None)
         {
-            return JsonConvert.SerializeObject(obj, new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() });
+            settings = settings ?? new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() };
+            return JsonConvert.SerializeObject(obj, formatting, settings);
         }
 
         /// <summary>
@@ -3387,6 +3388,44 @@ namespace Nostreets.Extensions.Extend.Basic
             {
                 yield return list.GetRange(i, Math.Min(nSize, list.Count - i));
             }
+        }
+
+        public static bool IsFileLocked(this FileInfo file)
+        {
+            try
+            {
+                using (FileStream stream = file.Open(FileMode.Open, FileAccess.Read, FileShare.None))
+                {
+                    stream.Close();
+                }
+            }
+            catch (IOException ex)
+            {
+                //the file is unavailable because it is:
+                //still being written to
+                //or being processed by another thread
+                //or does not exist (has already been processed)
+                return true;
+            }
+
+            //file is not locked
+            return false;
+        }
+
+        public static bool IsFileLocked(this string path) {
+            return IsFileLocked(new FileInfo(path));
+        }
+
+        public static dynamic ToDynamic<T>(this T obj)
+        {
+            IDictionary<string, object> expando = new ExpandoObject();
+
+            foreach (var propertyInfo in typeof(T).GetProperties())
+            {
+                var currentValue = propertyInfo.GetValue(obj);
+                expando.Add(propertyInfo.Name, currentValue);
+            }
+            return expando as ExpandoObject;
         }
 
         #endregion Extensions

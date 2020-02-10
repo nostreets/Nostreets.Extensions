@@ -464,10 +464,29 @@ namespace Nostreets.Extensions.Extend.Web
                     responseString = reader.ReadToEnd();
                 }
 
-                T responseData;
+                T responseData = default(T);
 
                 if (responseString.IsJson())
-                    responseData = JsonConvert.DeserializeObject<T>(responseString);
+                {
+                    try
+                    {
+                        responseData = JsonConvert.DeserializeObject<T>(responseString);
+                    }
+                    catch (Exception)
+                    {
+                        try
+                        {
+                            var responseDataCollection = JsonConvert.DeserializeObject<List<T>>(responseString);
+                            if (responseDataCollection != null && responseDataCollection.Count == 1)
+                                responseData = responseDataCollection[0];
+                        }
+                        catch (Exception)
+                        {
+                            throw;
+                        }
+                    }
+
+                }
                 else if (responseString.IsXml())
                 {
                     object deserializedJson;
@@ -497,8 +516,6 @@ namespace Nostreets.Extensions.Extend.Web
                         responseData = default(T);
                     //    throw new InvalidCastException("Unable to cast response data to type of " + typeof(T).Name, new Exception(responseString));
                 }
-                else
-                    responseData = default(T);
 
                 return responseData;
             }
@@ -696,6 +713,8 @@ namespace Nostreets.Extensions.Extend.Web
                             requestString = "XML=" + writer.ToString();
                             writer.Close();
                         }
+                        else if (contentType == "text/plain" && data.GetType() == typeof(string))
+                            requestString = (string)data;
                     }
 
                     using (Stream stream = requestStream.GetRequestStream())

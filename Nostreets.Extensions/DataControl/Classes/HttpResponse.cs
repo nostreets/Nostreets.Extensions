@@ -30,7 +30,7 @@ namespace Nostreets.Extensions.DataControl.Classes
         {
             HttpWebRequest requestStream = url.GetRequestStream(method, data, contentType, headers);
 
-            using (HttpWebResponse responseStream = (HttpWebResponse)requestStream.GetResponse())
+            using (HttpWebResponse responseStream = (HttpWebResponse)requestStream.GetResponseAsync().Result)
             {
                 Data = responseStream.GetHttpResponseData<T>(out string responseString);
                 Cookies = responseStream.Cookies;

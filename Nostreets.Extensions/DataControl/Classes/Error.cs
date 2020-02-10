@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using Nostreets.Extensions.Extend.Basic;
 
@@ -15,10 +16,10 @@ namespace Nostreets.Extensions.DataControl.Classes
             DateCreated = DateTime.Now;
             Source = ex.Source;
             HelpLink = ex.HelpLink;
-            Class = ex.StackTraceToDictionary()?["class"];
-            Line = int.Parse(ex.StackTraceToDictionary()?["line"]);
+            Trace = ex.StackTraceToDictionary();
+            Class = Trace?["class"];
+            Line = int.Parse(Trace?["line"]);
             Method = ex.TargetSite.NameWithParams();
-            Trace = ex.StackTrace;
         }
 
         public Error(Exception ex, string data)
@@ -27,10 +28,10 @@ namespace Nostreets.Extensions.DataControl.Classes
             DateCreated = DateTime.Now;
             Source = ex.Source;
             HelpLink = ex.HelpLink;
-            Class = ex.StackTraceToDictionary()?["class"];
-            Line = int.Parse(ex.StackTraceToDictionary()?["line"]);
+            Trace = ex.StackTraceToDictionary();
+            Class = Trace?["class"];
+            Line = int.Parse(Trace?["line"]);
             Method = ex.TargetSite.NameWithParams();
-            Trace = ex.StackTrace;
             Data = data;
         }
 
@@ -40,7 +41,7 @@ namespace Nostreets.Extensions.DataControl.Classes
         public string Class { get; set; }
         public string Method { get; set; }
         public int Line { get; set; }
-        public string Trace { get; set; }
+        public Dictionary<string, string> Trace { get; set; }
         public string HelpLink { get; set; }
         [NotMapped]
         public override string ModifiedUserId { get; set; }

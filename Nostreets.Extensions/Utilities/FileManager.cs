@@ -1,11 +1,20 @@
 ﻿using Nostreets.Extensions.Extend.Basic;
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Nostreets.Extensions.Utilities
 {
     public class FileManager
     {
+        public FileManager()
+        {
+            TargetedDirectory = Directory.GetCurrentDirectory();
+            _latestInstance = this;
+        }
+
         public FileManager(string directory)
         {
             if (!directory.DirectoryExists()) { throw new Exception("Directory Path is not valid..."); }
@@ -18,7 +27,7 @@ namespace Nostreets.Extensions.Utilities
         public string LastFileAccessed { get; private set; }
         public static FileManager LatestInstance { get => _latestInstance; }
 
-        static FileManager _latestInstance = null;
+        private static FileManager _latestInstance = null;
 
         private void NewLog(string[] args = null)
         {
@@ -27,10 +36,38 @@ namespace Nostreets.Extensions.Utilities
             if (args != null && args.Length > 0)
                 for (int i = 0; i < args.Length; i++)
                 {
-                    LatestInstance.WriteToFile("{0} ARGUEMENT IS: {1}\n", i, args[i]);
+                    LatestInstance.WriteToFile($"{i} ARGUEMENT IS: {args[i]}\n");
                 }
         }
 
+
+        public async Task WriteToFileAsync(string fileName, string textToWrite)
+        {
+            fileName = fileName ?? $"{AppDomain.CurrentDomain.FriendlyName}_LOG_{DateTime.Now.Timestamp()}.txt";
+            string filePath = (!TargetedDirectory[TargetedDirectory.Length - 1].Equals("\\")) ? TargetedDirectory + "\\" + fileName : TargetedDirectory + fileName;
+            string[] splitText = textToWrite.Split(new[] { "\n" }, StringSplitOptions.None);
+
+
+            if (!File.Exists(filePath))
+                CreateFile(fileName);
+
+            if (splitText != null && splitText.Length > 0)
+            {
+                foreach (string text in splitText)
+                {
+                    using (StreamWriter sw = new StreamWriter(filePath, true))
+                    {
+                        await sw.WriteLineAsync(text);
+                    }
+                }
+            }
+
+            LastFileAccessed = fileName;
+
+        }
+
+
+        #region Public Methods
         public void CreateFile(string fileName)
         {
             string filePath = (!TargetedDirectory[TargetedDirectory.Length - 1].Equals("\\")) ? TargetedDirectory + "\\" + fileName : TargetedDirectory + fileName;
@@ -44,64 +81,11 @@ namespace Nostreets.Extensions.Utilities
             LastFileAccessed = fileName;
             NewLog();
 
-
-        }
-
-        public void WriteToFile(string textToWrite, params object[] args)
-        {
-            for (int i = 0; i < args.Length; i++)
-            {
-                if (args[i] != null)
-                {
-                    switch (args[i])
-                    {
-                        case DateTime time:
-                            args[i] = time.ToShortDateString().Replace('/', '-');
-                            break;
-
-                        default:
-                            args[i] = args[i].ToString();
-                            break;
-                    }
-                }
-                else
-                {
-                    args[i] = "";
-                }
-
-            }
-
-            WriteToFile(LastFileAccessed, String.Format(textToWrite, args));
         }
 
         public void WriteToFile(string textToWrite)
         {
-            WriteToFile(LastFileAccessed, textToWrite);
-        }
-
-        public void WriteToFile(string fileName, string textToWrite)
-        {
-            string filePath = (!TargetedDirectory[TargetedDirectory.Length - 1].Equals("\\")) ? TargetedDirectory + "\\" + fileName : TargetedDirectory + fileName;
-
-            string[] splitText = textToWrite.Split(new[] { "\n" }, StringSplitOptions.None);
-
-            if (File.Exists(filePath))
-            {
-                if (splitText != null && splitText.Length > 0)
-                {
-                    foreach (string text in splitText)
-                    {
-                        using (StreamWriter sw = new StreamWriter(filePath, true))
-                        {
-                            sw.WriteLine(text);
-                        }
-                    }
-
-                }
-            }
-
-            LastFileAccessed = fileName;
-
+            WriteToFileAsync(LastFileAccessed, textToWrite);
         }
 
         public void CopyFile(string dirOfFileToCopy)
@@ -146,5 +130,6 @@ namespace Nostreets.Extensions.Utilities
             LastFileAccessed = fileName;
 
         }
+        #endregion
     }
 }
