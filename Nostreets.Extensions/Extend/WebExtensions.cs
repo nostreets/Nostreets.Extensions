@@ -452,7 +452,7 @@ namespace Nostreets.Extensions.Extend.Web
         /// <param name="responseStream">The response stream.</param>
         /// <param name="responseString">The response string.</param>
         /// <returns></returns>
-        public static T GetHttpResponseData<T>(this HttpWebResponse responseStream, out string responseString)
+        public static T GetHttpResponseData<T>(this HttpWebResponse responseStream, out string responseString, JsonConverter[] converters = null)
         {
             try
             {
@@ -470,7 +470,7 @@ namespace Nostreets.Extensions.Extend.Web
                 {
                     try
                     {
-                        responseData = JsonConvert.DeserializeObject<T>(responseString);
+                        responseData = JsonConvert.DeserializeObject<T>(responseString, converters);
                     }
                     catch (Exception)
                     {
@@ -785,11 +785,11 @@ namespace Nostreets.Extensions.Extend.Web
         /// <returns></returns>
         /// <exception cref="Exception">url to has to be valid url string to be able to HitEndpoint...
         /// or</exception>
-        public static IHttpResponse<T> HitEndpoint<T>(this string url, string method = "GET", object data = null, string contentType = "application/json", Dictionary<string, string> headers = null)
+        public static IHttpResponse<T> HitEndpoint<T>(this string url, string method = "GET", object data = null, string contentType = "application/json", Dictionary<string, string> headers = null, JsonConverter[] converters = null)
         {
             try
             {
-                return new HttpResponse<T>(url, method, data, contentType, headers);
+                return new HttpResponse<T>(url, method, data, contentType, headers, converters);
             }
             catch (Exception ex)
             {

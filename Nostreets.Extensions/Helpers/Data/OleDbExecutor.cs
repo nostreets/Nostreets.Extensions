@@ -34,6 +34,7 @@ namespace Nostreets.Extensions.Helpers.Data
             Action<OleDbParameterCollection> inputParamMapper,
             Action<IDataReader, short> map,
             Action<OleDbParameterCollection> returnParameters = null,
+            Action<OleDbCommand> cmdModifier = null,
             int? timeOutSpan = null)
         {
             if (map == null)
@@ -112,6 +113,7 @@ namespace Nostreets.Extensions.Helpers.Data
             string cmdText,
             Action<OleDbParameterCollection> inputParamMapper, 
             Action<OleDbParameterCollection> returnParameters = null,
+            Action<OleDbCommand> cmdModifier = null,
             int? timeOutSpan = null)
         {
             OleDbCommand cmd = null;

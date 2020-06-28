@@ -54,13 +54,15 @@ namespace Nostreets.Extensions.Interfaces
             Func<OleDbConnection> dataSouce,
             string cmdText,
             Action<OleDbParameterCollection> inputParamMapper,
-             Action<IDataReader, short> map,
+            Action<IDataReader, short> map,
             Action<OleDbParameterCollection> returnParameters = null,
+            Action<OleDbCommand> cmdModifier = null,
             int? timeOutSpan = null);
 
         int ExecuteNonQuery(Func<OleDbConnection> dataSouce, string cmdText,
             Action<OleDbParameterCollection> inputParamMapper,
             Action<OleDbParameterCollection> returnParameters = null,
+            Action<OleDbCommand> cmdModifier = null,
             int? timeOutSpan = null);
 
         OleDbCommand GetCommand(OleDbConnection conn, string cmdText = null, Action<OleDbParameterCollection> paramMapper = null);

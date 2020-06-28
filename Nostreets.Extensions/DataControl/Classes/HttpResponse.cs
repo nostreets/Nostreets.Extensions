@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Net;
+using Newtonsoft.Json;
 using Nostreets.Extensions.Extend.Web;
 using Nostreets.Extensions.Interfaces;
 
@@ -26,13 +27,13 @@ namespace Nostreets.Extensions.DataControl.Classes
             }
         }
 
-        public HttpResponse(string url, string method = "GET", object data = null, string contentType = "application/json", Dictionary<string, string> headers = null)
+        public HttpResponse(string url, string method = "GET", object data = null, string contentType = "application/json", Dictionary<string, string> headers = null, JsonConverter[] converters = null)
         {
             HttpWebRequest requestStream = url.GetRequestStream(method, data, contentType, headers);
 
             using (HttpWebResponse responseStream = (HttpWebResponse)requestStream.GetResponseAsync().Result)
             {
-                Data = responseStream.GetHttpResponseData<T>(out string responseString);
+                Data = responseStream.GetHttpResponseData<T>(out string responseString, converters);
                 Cookies = responseStream.Cookies;
                 ProtocolVersion = responseStream.ProtocolVersion;
                 StatusDescription = responseStream.StatusDescription;

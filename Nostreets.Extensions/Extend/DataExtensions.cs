@@ -17,6 +17,7 @@ using Nostreets.Extensions.Extend.Basic;
 using Nostreets.Extensions.Interfaces;
 using Nostreets.Extensions.Utilities;
 using System.Data.Linq;
+using System.Data.OleDb;
 
 namespace Nostreets.Extensions.Extend.Data
 {
@@ -449,6 +450,61 @@ namespace Nostreets.Extensions.Extend.Data
 
             return result;
         }
+
+        public static Dictionary<string, Type> GetSchema(this IOleDbExecutor srv, Func<OleDbConnection> dataSouce, string tableName)
+        {
+            OleDbDataReader reader = null;
+            OleDbCommand cmd = null;
+            OleDbConnection conn = null;
+            Dictionary<string, Type> result = null;
+
+            try
+            {
+                if (dataSouce == null)
+                    throw new Exception("dataSouce param must not be null or return null...");
+
+                using (conn = dataSouce())
+                {
+                    if (conn == null)
+                        throw new Exception("dataSouce param must not be null or return null...");
+
+                    if (conn.State != ConnectionState.Open)
+                        conn.Open();
+
+                    string query = "SELECT * FROM {0}".FormatString(tableName);
+                    cmd = srv.GetCommand(conn, query);
+                    cmd.CommandType = CommandType.Text;
+
+                    if (cmd != null)
+                    {
+                        reader = cmd.ExecuteReader();
+
+                        IEnumerable<KeyValuePair<string, Type>> pairs = reader.GetSchemaTable().Rows.Cast<DataRow>().Select(c => new KeyValuePair<string, Type>(c["ColumnName"].ToString(), (Type)c["DataType"]));
+                        foreach (var pair in pairs)
+                        {
+                            if (result == null)
+                                result = new Dictionary<string, Type>();
+
+                            result.Add(pair.Key, pair.Value);
+                        }
+
+                        reader.Close();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            finally
+            {
+                if (conn != null && conn.State != ConnectionState.Closed)
+                    conn.Close();
+            }
+
+            return result;
+        }
+
 
         /// <summary>
         /// Gets the schema.

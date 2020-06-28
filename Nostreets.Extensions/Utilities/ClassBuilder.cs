@@ -17,7 +17,9 @@ namespace Nostreets.Extensions.Utilities
 
         private TypeBuilder CreateClass()
         {
-            AssemblyBuilder assemblyBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(_asemblyName, AssemblyBuilderAccess.Run);
+            //AssemblyBuilder assemblyBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(_asemblyName, AssemblyBuilderAccess.Run);
+            AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(_asemblyName, AssemblyBuilderAccess.Run);
+
             ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule("MainModule");
             TypeBuilder typeBuilder = moduleBuilder.DefineType(_asemblyName.FullName
                                 , TypeAttributes.Public |
