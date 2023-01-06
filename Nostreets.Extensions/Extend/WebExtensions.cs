@@ -926,11 +926,11 @@ namespace Nostreets.Extensions.Extend.Web
         /// <exception cref="System.Exception">URL is not defined!</exception>
         /// <exception cref="Exception">url to has to be valid url string to be able to HitEndpoint...
         /// or</exception>
-        public static IRestResponse<object> RestSharpEndpoint(this string url, string method = "GET", object data = null, string contentType = "application/json", Dictionary<string, string> headers = null)
+        public static RestResponse<object> RestSharpEndpoint(this string url, string method = "GET", object data = null, string contentType = "application/json", Dictionary<string, string> headers = null)
         {
             #region Client
 
-            IRestResponse<object> result = null;
+            RestResponse<object> result = null;
             RestClient rest = null;
             if (url != null)
             {
@@ -946,30 +946,29 @@ namespace Nostreets.Extensions.Extend.Web
             switch (method)
             {
                 case "GET":
-                    request.Method = Method.GET;
+                    request.Method = Method.Get;
                     break;
 
                 case "POST":
-                    request.Method = Method.POST;
+                    request.Method = Method.Post;
                     break;
 
                 case "PATCH":
-                    request.Method = Method.PATCH;
+                    request.Method = Method.Patch;
                     break;
 
                 case "PUT":
-                    request.Method = Method.PUT;
+                    request.Method = Method.Put;
                     break;
 
                 case "DELETE":
-                    request.Method = Method.DELETE;
+                    request.Method = Method.Delete;
                     break;
 
                 default:
-                    request.Method = Method.GET;
+                    request.Method = Method.Get;
                     break;
             };
-            request.JsonSerializer = CustomSerializer.CamelCaseIngoreDictionaryKeys;
             request.RequestFormat = DataFormat.Json;
             request.AddBody(data);
             if (headers != null)
@@ -982,11 +981,11 @@ namespace Nostreets.Extensions.Extend.Web
                     }
                     else if (item.Key == "contentType")
                     {
-                        request.AddParameter(new Parameter { ContentType = item.Value });
+                        request.AddParameter(Parameter.CreateParameter("ContentType", item.Value, ParameterType.HttpHeader));
                     }
                     else
                     {
-                        request.AddParameter(new Parameter { Name = item.Key, Value = item.Value });
+                        request.AddParameter(Parameter.CreateParameter(item.Key, item.Value, ParameterType.HttpHeader));
                     }
                 }
             }
@@ -1010,11 +1009,11 @@ namespace Nostreets.Extensions.Extend.Web
         /// <exception cref="System.Exception">URL is not defined!</exception>
         /// <exception cref="Exception">url to has to be valid url string to be able to HitEndpoint...
         /// or</exception>
-        public static IRestResponse<T> RestSharpEndpoint<T>(this string url, string method = "GET", object data = null, string contentType = "application/json", Dictionary<string, string> headers = null) where T : new()
+        public static RestResponse<T> RestSharpEndpoint<T>(this string url, string method = "GET", object data = null, string contentType = "application/json", Dictionary<string, string> headers = null) where T : new()
         {
             #region Client
 
-            IRestResponse<T> result = null;
+            RestResponse<T> result = null;
             RestClient rest = null;
             if (url != null)
                 rest = new RestClient(url);
@@ -1030,30 +1029,29 @@ namespace Nostreets.Extensions.Extend.Web
             switch (method)
             {
                 case "GET":
-                    request.Method = Method.GET;
+                    request.Method = Method.Get;
                     break;
 
                 case "POST":
-                    request.Method = Method.POST;
+                    request.Method = Method.Post;
                     break;
 
                 case "PATCH":
-                    request.Method = Method.PATCH;
+                    request.Method = Method.Patch;
                     break;
 
                 case "PUT":
-                    request.Method = Method.PUT;
+                    request.Method = Method.Put;
                     break;
 
                 case "DELETE":
-                    request.Method = Method.DELETE;
+                    request.Method = Method.Delete;
                     break;
 
                 default:
-                    request.Method = Method.GET;
+                    request.Method = Method.Get;
                     break;
             };
-            request.JsonSerializer = CustomSerializer.CamelCaseIngoreDictionaryKeys;
             request.RequestFormat = DataFormat.Json;
             request.AddBody(data);
             if (headers != null)
@@ -1061,13 +1059,17 @@ namespace Nostreets.Extensions.Extend.Web
                 foreach (var item in headers)
                 {
                     if (item.Key.Contains("auth"))
+                    {
                         rest.Authenticator = new HttpBasicAuthenticator("username", item.Value);
-
+                    }
                     else if (item.Key == "contentType")
-                        request.AddParameter(new Parameter { Name = item.Key, ContentType = item.Value });
-
+                    {
+                        request.AddParameter(Parameter.CreateParameter("ContentType", item.Value, ParameterType.HttpHeader));
+                    }
                     else
-                        request.AddParameter(new Parameter { Name = item.Key, Value = item.Value });
+                    {
+                        request.AddParameter(Parameter.CreateParameter(item.Key, item.Value, ParameterType.HttpHeader));
+                    }
                 }
             }
 
